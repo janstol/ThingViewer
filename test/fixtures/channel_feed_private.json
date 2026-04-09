@@ -1,0 +1,57 @@
+{
+  "channel": {
+    "id": 111111,
+    "name": "Test private channel",
+    "latitude": "1.0",
+    "longitude": "2.0",
+    "field1": "Field1",
+    "field2": "Field2",
+    "field3": "Field3",
+    "field4": "Field4",
+    "field5": "Field5",
+    "field6": "Field6",
+    "field7": "Field7",
+    "field8": "Field8",
+    "created_at": "2019-06-07T11:10:52Z",
+    "updated_at": "2019-06-07T11:10:52Z",
+    "last_entry_id": 9999
+  },
+  "feeds": [
+    {
+      "created_at": "2019-08-25T07:59:20Z",
+      "entry_id": 9997,
+      "field1": "10.70000",
+      "field2": "20.70000",
+      "field3": "30.70000",
+      "field4": "40.70000",
+      "field5": "50.70000",
+      "field6": "60.70000",
+      "field7": "70.70000",
+      "field8": "80.70000"
+    },
+    {
+      "created_at": "2019-08-25T08:08:57Z",
+      "entry_id": 9998,
+      "field1": "10.80000",
+      "field2": "20.80000",
+      "field3": "30.80000",
+      "field4": "40.80000",
+      "field5": "50.80000",
+      "field6": "60.80000",
+      "field7": "70.80000",
+      "field8": "80.80000"
+    },
+    {
+      "created_at": "2019-08-25T08:18:36Z",
+      "entry_id": 9999,
+      "field1": "10.90000",
+      "field2": "20.90000",
+      "field3": "30.90000",
+      "field4": "40.90000",
+      "field5": "50.90000",
+      "field6": "60.90000",
+      "field7": "70.90000",
+      "field8": "80.90000"
+    }
+  ]
+}

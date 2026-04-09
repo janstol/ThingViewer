@@ -1,0 +1,20 @@
+{
+  "channel": {
+    "id": 123456,
+    "name": "Channel with empty feed",
+    "latitude": "0.0",
+    "longitude": "0.0",
+    "field1": "Field1",
+    "field2": "Field2",
+    "field3": "Field3",
+    "field4": "Field4",
+    "field5": "Field5",
+    "field6": "Field6",
+    "field7": "Field7",
+    "field8": "Field8",
+    "created_at": "2019-06-07T11:10:52Z",
+    "updated_at": "2019-06-07T11:10:52Z",
+    "last_entry_id": 9999
+  },
+  "feeds": []
+}

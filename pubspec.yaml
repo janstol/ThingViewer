@@ -1,0 +1,53 @@
+name: thingviewer
+description: Mobile app for viewing and visualizing data from ThingSpeak.
+
+version: 1.0.0+10000
+
+publish_to: none
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # TODO(migration): remove hive and hive_flutter once the Hive →
+  # SharedPreferences migration has shipped and reached the installed base.
+  # Only used by lib/migration/migration_service.dart.
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.0
+
+  fl_chart: ^0.70.0
+  intl: ^0.20.0
+  http: ^1.2.2
+  package_info_plus: ^8.0.0
+  shared_preferences: ^2.3.2
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+  mockito: ^5.4.4
+  build_runner: ^2.4.13
+
+flutter_launcher_icons:
+  image_path: 'res/images/thingviewer_icon.png'
+  android: true
+  adaptive_icon_background: '#FF067BC2'
+  adaptive_icon_foreground: 'res/images/thingviewer_icon_foreground.png'
+  ios: true
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+
+  generate: true
+
+  assets:
+    - res/images/

@@ -1,0 +1,8 @@
+{
+  "status": "401",
+  "error": {
+    "error_code": "error_auth_required",
+    "message": "Authorization Required",
+    "details": "Please make sure that your API key is correct."
+  }
+}

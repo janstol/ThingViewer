@@ -1,0 +1,432 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../api/thingspeak_api.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/channel.dart';
+import '../../models/field.dart';
+import '../settings/settings_notifier.dart';
+import 'field_chart_notifier.dart';
+
+class FieldChartScreen extends StatefulWidget {
+  final Channel channel;
+  final Field field;
+  final ThingSpeakApi api;
+  final SettingsNotifier settings;
+
+  const FieldChartScreen({
+    super.key,
+    required this.channel,
+    required this.field,
+    required this.api,
+    required this.settings,
+  });
+
+  @override
+  State<FieldChartScreen> createState() => _FieldChartScreenState();
+}
+
+class _FieldChartScreenState extends State<FieldChartScreen> {
+  late final FieldChartNotifier _notifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _notifier =
+        FieldChartNotifier(widget.api, widget.channel, widget.field);
+  }
+
+  @override
+  void dispose() {
+    _notifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.field.displayLabel)),
+      body: ListenableBuilder(
+        listenable: _notifier,
+        builder: (context, _) => switch (_notifier.state) {
+          FieldChartLoading() =>
+            const Center(child: CircularProgressIndicator()),
+          FieldChartEmpty() => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(l10n.fieldChartNoValues),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => _showFilterSheet(context),
+                    icon: const Icon(Icons.filter_list),
+                    label: Text(l10n.filterTitle),
+                  ),
+                ],
+              ),
+            ),
+          FieldChartError(:final cachedValues, :final errorCode,
+                  :final serverMessage) =>
+            Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context)!;
+                final message = switch (errorCode) {
+                  ApiErrorCode.network => l10n.errorNetwork,
+                  ApiErrorCode.credentials => l10n.errorApiCredentials,
+                  ApiErrorCode.general =>
+                    serverMessage ?? l10n.errorGeneral,
+                };
+                return Column(
+                  children: [
+                    Expanded(
+                      child: cachedValues.isEmpty
+                          ? Center(child: Text(message))
+                          : _Chart(
+                              values: cachedValues,
+                              settings: widget.settings,
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Text(
+                        message,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    _FilterButton(onPressed: () => _showFilterSheet(context), l10n: l10n),
+                  ],
+                );
+              },
+            ),
+          FieldChartLoaded(:final values) => Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    l10n.fieldChartShowingValues(values.length),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                Expanded(
+                  child: _Chart(
+                    values: values,
+                    settings: widget.settings,
+                  ),
+                ),
+                _FilterButton(onPressed: () => _showFilterSheet(context), l10n: l10n),
+              ],
+            ),
+        },
+      ),
+    );
+  }
+
+  Future<void> _showFilterSheet(BuildContext context) async {
+    final currentState = _notifier.state;
+    final currentRange = switch (currentState) {
+      FieldChartLoaded(:final range) => range,
+      FieldChartEmpty(:final range) => range,
+      FieldChartError(:final range) => range,
+      FieldChartLoading() => DateTimeRange(
+          start: DateTime.now().subtract(const Duration(days: 7)),
+          end: DateTime.now(),
+        ),
+    };
+
+    final range = await showModalBottomSheet<DateTimeRange>(
+      context: context,
+      builder: (context) => _FilterSheet(
+        initialRange: currentRange,
+        settings: widget.settings,
+      ),
+    );
+
+    if (range != null) _notifier.applyFilter(range);
+  }
+}
+
+class _FilterButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final AppLocalizations l10n;
+
+  const _FilterButton({required this.onPressed, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.filter_list),
+        label: Text(l10n.filterTitle),
+      ),
+    );
+  }
+}
+
+class _Chart extends StatefulWidget {
+  final List<FieldValue> values;
+  final SettingsNotifier settings;
+
+  const _Chart({required this.values, required this.settings});
+
+  @override
+  State<_Chart> createState() => _ChartState();
+}
+
+class _ChartState extends State<_Chart> {
+  late double _minX;
+  late double _maxX;
+
+  // Raw pointer tracking — outside the gesture arena so fl_chart touch still works.
+  final Map<int, Offset> _pointers = {};
+  double? _lastPinchDist;
+  Offset? _lastPinchMid;
+
+  BoxConstraints? _constraints;
+
+  double get _fullMinX =>
+      widget.values.first.createdAt.millisecondsSinceEpoch.toDouble();
+  double get _fullMaxX =>
+      widget.values.last.createdAt.millisecondsSinceEpoch.toDouble();
+  double get _fullRange => _fullMaxX - _fullMinX;
+
+  @override
+  void initState() {
+    super.initState();
+    _minX = _fullMinX;
+    _maxX = _fullMaxX;
+  }
+
+  void _pointerDown(PointerDownEvent e) {
+    _pointers[e.pointer] = e.localPosition;
+    if (_pointers.length == 2) {
+      final pts = _pointers.values.toList();
+      _lastPinchDist = (pts[0] - pts[1]).distance;
+      _lastPinchMid = (pts[0] + pts[1]) / 2;
+    }
+  }
+
+  void _pointerMove(PointerMoveEvent e) {
+    _pointers[e.pointer] = e.localPosition;
+    // Only handle two-finger gestures; single finger is left to fl_chart for tooltip.
+    if (_pointers.length < 2) return;
+    final c = _constraints;
+    if (c == null || c.maxWidth == 0) return;
+
+    final pts = _pointers.values.toList();
+    final newDist = (pts[0] - pts[1]).distance;
+    final newMid = (pts[0] + pts[1]) / 2;
+
+    if (_lastPinchDist != null && _lastPinchMid != null && _lastPinchDist! > 0) {
+      final scale = newDist / _lastPinchDist!;
+      final currentRange = _maxX - _minX;
+      final newRange = (currentRange / scale).clamp(_fullRange / 500, _fullRange);
+
+      final focalFraction = (_lastPinchMid!.dx / c.maxWidth).clamp(0.0, 1.0);
+      final focalData = _minX + focalFraction * currentRange;
+      final panMs = -(newMid.dx - _lastPinchMid!.dx) / c.maxWidth * currentRange;
+
+      double newMin = (focalData - focalFraction * newRange + panMs)
+          .clamp(_fullMinX, _fullMaxX - newRange);
+      setState(() {
+        _minX = newMin;
+        _maxX = newMin + newRange;
+      });
+    }
+    _lastPinchDist = newDist;
+    _lastPinchMid = newMid;
+  }
+
+  void _pointerUp(PointerUpEvent e) {
+    _pointers.remove(e.pointer);
+    _lastPinchDist = null;
+    _lastPinchMid = null;
+  }
+
+  void _pointerCancel(PointerCancelEvent e) {
+    _pointers.remove(e.pointer);
+    _lastPinchDist = null;
+    _lastPinchMid = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    final spots = widget.values
+        .map(
+          (v) => FlSpot(
+            v.createdAt.millisecondsSinceEpoch.toDouble(),
+            v.value,
+          ),
+        )
+        .toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 24, 24, 8),
+      child: ListenableBuilder(
+        listenable: widget.settings,
+        builder: (context, _) {
+          final dateFmt = DateFormat(widget.settings.dateFormat);
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              _constraints = constraints;
+              return Listener(
+                onPointerDown: _pointerDown,
+                onPointerMove: _pointerMove,
+                onPointerUp: _pointerUp,
+                onPointerCancel: _pointerCancel,
+                child: LineChart(
+                  LineChartData(
+                    minX: _minX,
+                    maxX: _maxX,
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots,
+                        isCurved: false,
+                        color: color,
+                        dotData: const FlDotData(show: false),
+                      ),
+                    ],
+                    titlesData: FlTitlesData(
+                      leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: true, reservedSize: 48),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 52,
+                          getTitlesWidget: (value, meta) {
+                            final dt = DateTime.fromMillisecondsSinceEpoch(
+                              value.toInt(),
+                            );
+                            return SideTitleWidget(
+                              meta: meta,
+                              angle: -0.6,
+                              child: Text(
+                                dateFmt.format(dt),
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                    ),
+                    gridData: const FlGridData(show: true),
+                    borderData: FlBorderData(show: false),
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipItems: (spots) => spots.map((s) {
+                          final dt = DateTime.fromMillisecondsSinceEpoch(
+                            s.x.toInt(),
+                          );
+                          final dateStr = DateFormat(
+                            '${widget.settings.dateFormat} ${widget.settings.timeFormat}',
+                          ).format(dt);
+                          return LineTooltipItem(
+                            '${s.y.toStringAsFixed(2)}\n',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: dateStr,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FilterSheet extends StatefulWidget {
+  final DateTimeRange initialRange;
+  final SettingsNotifier settings;
+
+  const _FilterSheet({required this.initialRange, required this.settings});
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  late DateTimeRange _range;
+
+  @override
+  void initState() {
+    super.initState();
+    _range = widget.initialRange;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final dateFmt = DateFormat(widget.settings.dateFormat);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.filterTitle, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          ListTile(
+            title: Text(l10n.filterFrom),
+            subtitle: Text(dateFmt.format(_range.start)),
+          ),
+          ListTile(
+            title: Text(l10n.filterTo),
+            subtitle: Text(dateFmt.format(_range.end)),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: () => _pickDateRange(context),
+            child: Text(l10n.filterTitle),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _range),
+            child: Text(l10n.labelApply),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDateRange(BuildContext context) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _range,
+      firstDate: DateTime(2010),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() => _range = picked);
+    }
+  }
+}

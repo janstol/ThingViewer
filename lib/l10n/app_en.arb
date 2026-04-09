@@ -1,0 +1,63 @@
+{
+  "@@locale": "en",
+  "appName": "ThingViewer",
+  "channelListEmpty": "No saved channels. Tap + to add one.",
+  "channelListSelectHint": "Select a channel",
+  "addChannelTitle": "Add Channel",
+  "addChannelTooltip": "Add channel",
+  "fieldServerUrl": "Server URL",
+  "fieldChannelId": "Channel ID",
+  "fieldPublic": "Public",
+  "fieldPrivate": "Private",
+  "fieldApiKey": "API Key",
+  "fieldApiKeyHelper": "Required for private channels",
+  "channelDetailRefresh": "Refresh",
+  "channelDetailLastEntry": "Last entry",
+  "channelDetailNoFields": "No fields found for this channel.",
+  "fieldChartNoValues": "No values for the selected date range.",
+  "fieldChartShowingValues": "{count, plural, =1{Showing 1 value} other{Showing {count} values}}",
+  "@fieldChartShowingValues": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "filterTitle": "Filter",
+  "filterFrom": "From",
+  "filterTo": "To",
+  "settingsTitle": "Settings",
+  "settingsTooltip": "Settings",
+  "settingsTheme": "Theme",
+  "settingsThemeChoose": "Choose theme",
+  "settingsThemeSystem": "System default",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsDateFormat": "Date format",
+  "settingsDateFormatChoose": "Choose date format",
+  "settingsTimeFormat": "Time format",
+  "settingsTimeFormatChoose": "Choose time format",
+  "privacyPolicy": "Privacy Policy",
+  "aboutTitle": "About",
+  "aboutText": "With ThingViewer you can easily access and visualize data from ThingSpeak™ channels.\n\nTo learn more about ThingSpeak™, visit ",
+  "aboutThingSpeakUrl": "https://thingspeak.com",
+  "labelNa": "N/A",
+  "labelDelete": "DELETE",
+  "labelSave": "Save",
+  "labelApply": "Apply",
+  "labelCancel": "Cancel",
+  "errorServerUrl": "Enter a server URL",
+  "errorServerUrlValid": "Enter a valid server URL",
+  "errorChannelId": "Enter a channel ID",
+  "errorChannelIdValid": "Enter a valid channel ID",
+  "errorApiKey": "API key is required for private channels",
+  "errorNetwork": "Network error. Please check your connection.",
+  "errorApiCredentials": "Please check your channel ID and API key.",
+  "errorGeneral": "An error occurred.",
+  "errorDuplicateChannel": "This channel is already in your list.",
+  "removeChannelTitle": "Remove channel?",
+  "removeChannelText": "Remove {name} from the app? The channel on ThingSpeak will not be affected.",
+  "@removeChannelText": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  }
+}
