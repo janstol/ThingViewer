@@ -3,12 +3,10 @@
 Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak.com/) channels, built with Flutter.
 
 [![CI](https://github.com/janstol/ThingViewer/actions/workflows/ci.yml/badge.svg)](https://github.com/janstol/ThingViewer/actions/workflows/ci.yml)
+[![Demo](https://img.shields.io/badge/demo-WEB-blue)](https://janstol.github.io/ThingViewer/)
 
 <a href='https://play.google.com/store/apps/details?id=dev.stol.thingviewer'>
 <img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width=150/>
-</a>
-<a href='https://janstol.github.io/ThingViewer/'>
-<img alt='Open web demo' src='https://img.shields.io/badge/Web-demo-blue?style=for-the-badge&logo=googlechrome&logoColor=white' height=44/>
 </a>
 
 ## Features
