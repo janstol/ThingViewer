@@ -1,0 +1,37 @@
+name: Question / support
+description: Ask a usage or setup question.
+labels: [question]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [README](https://github.com/janstol/ThingViewer#readme) first — setup, features, and channel configuration are all covered there.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you've already tried
+      description: Any steps you've taken to figure it out yourself.
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Found on the Settings screen. Helps narrow down version-specific issues.
+      placeholder: "e.g. 1.0.0"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked the README and searched existing issues before asking.
+          required: true

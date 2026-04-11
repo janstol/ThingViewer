@@ -34,23 +34,23 @@ Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak
 mise install
 
 # Install dependencies
-mise exec -- flutter pub get
+flutter pub get
 
 # Generate mocks (needed after changing @GenerateMocks annotations)
-mise exec -- flutter pub run build_runner build --delete-conflicting-outputs
+flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
 ### Running
 
 ```bash
-mise exec -- flutter run
+flutter run
 ```
 
 ### Tests & analysis
 
 ```bash
-mise exec -- flutter test
-mise exec -- flutter analyze
+flutter test
+flutter analyze
 ```
 
 ### Release builds
@@ -67,8 +67,8 @@ storeFile=path/to/keystore.jks
 Then build:
 
 ```bash
-mise exec -- flutter build apk          # Android APK
-mise exec -- flutter build appbundle    # Android App Bundle (Play Store)
+flutter build apk          # Android APK
+flutter build appbundle    # Android App Bundle (Play Store)
 ```
 
 ### Updating app icons
@@ -76,7 +76,7 @@ mise exec -- flutter build appbundle    # Android App Bundle (Play Store)
 Edit `res/images/thingviewer_icon.png` (and `thingviewer_icon_foreground.png` for the adaptive foreground layer), then regenerate:
 
 ```bash
-mise exec -- flutter pub run flutter_launcher_icons
+flutter pub run flutter_launcher_icons
 ```
 
 ## Tech stack
