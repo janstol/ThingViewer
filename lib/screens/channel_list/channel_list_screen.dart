@@ -267,7 +267,7 @@ class _ChannelListBody extends StatelessWidget {
             ? Center(child: Text(l10n.channelListEmpty))
             : ReorderableListView.builder(
                 itemCount: channels.length,
-                onReorder: notifier.reorderChannels,
+                onReorderItem: notifier.reorderChannels,
                 itemBuilder: (context, index) {
                   final channel = channels[index];
                   return Dismissible(

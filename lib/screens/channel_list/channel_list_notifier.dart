@@ -63,10 +63,11 @@ class ChannelListNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// `newIndex` is the target position *after* the item at `oldIndex` has
+  /// been removed, matching `ReorderableListView.onReorderItem`.
   Future<void> reorderChannels(int oldIndex, int newIndex) async {
-    final adjusted = newIndex > oldIndex ? newIndex - 1 : newIndex;
     final channel = _channels.removeAt(oldIndex);
-    _channels.insert(adjusted, channel);
+    _channels.insert(newIndex, channel);
     await _storage.saveChannels(_channels);
     _state = ChannelListLoaded(List.unmodifiable(_channels));
     notifyListeners();
