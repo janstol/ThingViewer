@@ -9,6 +9,14 @@ Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak
 <img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width=150/>
 </a>
 
+## Screenshots
+
+<p>
+<img src="docs/screenshots/channel_list_light.png" alt="Channel list, light mode" width="250" />
+<img src="docs/screenshots/chart_dark.png" alt="Field chart, dark mode" width="250" />
+<img src="docs/screenshots/channel_detail_dark.png" alt="Channel detail, dark mode" width="250" />
+</p>
+
 ## Features
 
 - Browse and manage multiple ThingSpeak channels
