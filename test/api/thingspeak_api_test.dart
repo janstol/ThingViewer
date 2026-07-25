@@ -79,6 +79,84 @@ void main() {
     });
   });
 
+  group('_buildUri', () {
+    test('defaults to https://api.thingspeak.com', () async {
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(fixture('channel_feed.json')),
+      );
+      await api.readChannel(publicChannel);
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.scheme, 'https');
+      expect(uri.host, 'api.thingspeak.com');
+      expect(uri.path, '/channels/123456/feeds.json');
+    });
+
+    test('preserves an explicit port on a custom server', () async {
+      const channel = Channel(
+        id: 42,
+        serverUrl: 'http://192.168.1.5:8080',
+        isPublic: true,
+      );
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(fixture('channel_feed.json')),
+      );
+      await api.readChannel(channel);
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.host, '192.168.1.5');
+      expect(uri.port, 8080);
+      expect(uri.path, '/channels/42/feeds.json');
+    });
+
+    test('joins a custom server base path', () async {
+      const channel = Channel(
+        id: 42,
+        serverUrl: 'http://192.168.1.5:8080/thingspeak',
+        isPublic: true,
+      );
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(fixture('channel_feed.json')),
+      );
+      await api.readChannel(channel);
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.host, '192.168.1.5');
+      expect(uri.port, 8080);
+      expect(uri.path, '/thingspeak/channels/42/feeds.json');
+    });
+
+    test('handles a trailing slash on the base URL', () async {
+      const channel = Channel(
+        id: 42,
+        serverUrl: 'http://192.168.1.5:8080/thingspeak/',
+        isPublic: true,
+      );
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(fixture('channel_feed.json')),
+      );
+      await api.readChannel(channel);
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.path, '/thingspeak/channels/42/feeds.json');
+    });
+
+    test('does not leak a query string from the base URL', () async {
+      const channel = Channel(
+        id: 42,
+        serverUrl: 'http://192.168.1.5:8080?foo=bar',
+        isPublic: true,
+      );
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(fixture('channel_feed.json')),
+      );
+      await api.readChannel(channel);
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.queryParameters.containsKey('foo'), isFalse);
+    });
+  });
+
   group('error handling', () {
     test('throws ApiException with credentials code on auth error (400 -1)',
         () async {

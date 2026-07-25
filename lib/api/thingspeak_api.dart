@@ -114,12 +114,14 @@ class ThingSpeakApi {
     ApiParameters? params,
   }) {
     final base = Uri.parse(baseUrl);
-    final queryParams = params?.toQueryParameters();
-    return Uri(
-      scheme: base.scheme,
-      host: base.host,
-      path: path,
-      queryParameters: queryParams?.isNotEmpty == true ? queryParams : null,
+    final basePath = base.path.replaceAll(RegExp(r'/+$'), '');
+    final queryParams = params?.toQueryParameters() ?? const <String, String>{};
+    // `Uri.replace` keeps the original query when queryParameters is null,
+    // so pass an explicit (possibly empty) map to avoid leaking a query
+    // string from a custom base URL into every request.
+    return base.replace(
+      path: '$basePath$path',
+      queryParameters: queryParams.isNotEmpty ? queryParams : const {},
     );
   }
 
@@ -132,7 +134,9 @@ class ThingSpeakApi {
         e.osError?.errorCode == 7 ? ApiErrorCode.network : ApiErrorCode.general,
       );
     } on Exception catch (e) {
-      debugPrint('API error: $e');
+      // Never log `e` directly: http.ClientException.toString() embeds the
+      // request URI, which can carry a private channel's api_key.
+      debugPrint('API error: ${e.runtimeType}');
       throw const ApiException(ApiErrorCode.network);
     }
 
