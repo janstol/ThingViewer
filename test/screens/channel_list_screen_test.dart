@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
+import 'package:thingviewer/theme.dart';
 
 import 'channel_detail_notifier_test.mocks.dart';
 
@@ -17,7 +20,23 @@ const _channel = Channel(
   name: 'My Channel',
 );
 
+const _otherChannel = Channel(
+  id: 2,
+  serverUrl: 'https://api.thingspeak.com',
+  isPublic: true,
+  name: 'Other Channel',
+);
+
+final _fields = [
+  Field(
+    id: 1,
+    label: 'Temp',
+    values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
+  ),
+];
+
 Widget _wrap(Widget child) => MaterialApp(
+      theme: AppTheme.light(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: child,
@@ -87,5 +106,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('My Channel'), findsOneWidget);
+  });
+
+  group('start channel', () {
+    setUp(() {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
+      when(mockApi.readFeed(any, any)).thenAnswer((_) async => _fields);
+    });
+
+    testWidgets('set to a saved channel opens its detail screen, Back returns to the list', (tester) async {
+      // Narrow (phone) layout: the default 800x600 test surface is wide
+      // enough to trigger the tablet split view instead.
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel, _otherChannel]),
+        'startChannelId': _channel.id,
+        'startChannelServerUrl': _channel.serverUrl,
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+
+      await tester.pumpWidget(_wrap(ChannelListScreen(
+        api: mockApi,
+        channelStorage: storage,
+        settings: await _settings(),
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Temp'), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('My Channel'), findsOneWidget);
+      expect(find.text('Other Channel'), findsOneWidget);
+    });
+
+    testWidgets('unset shows the channel list', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel, _otherChannel]),
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+
+      await tester.pumpWidget(_wrap(ChannelListScreen(
+        api: mockApi,
+        channelStorage: storage,
+        settings: await _settings(),
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('My Channel'), findsOneWidget);
+      expect(find.text('Other Channel'), findsOneWidget);
+    });
+
+    testWidgets('a stale (deleted) channel identity falls back to the list', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_otherChannel]),
+        'startChannelId': _channel.id,
+        'startChannelServerUrl': _channel.serverUrl,
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+
+      await tester.pumpWidget(_wrap(ChannelListScreen(
+        api: mockApi,
+        channelStorage: storage,
+        settings: await _settings(),
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Other Channel'), findsOneWidget);
+    });
   });
 }

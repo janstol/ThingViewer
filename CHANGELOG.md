@@ -9,6 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Channel descriptions from ThingSpeak are now shown on the channel detail screen.
 - Website and source-code links (`url` / `github_url`) from ThingSpeak are now shown as buttons on the channel detail screen, when set.
+- A "Start screen" setting lets you open the app directly on a chosen saved channel's detail screen instead of the channel list.
 
 ### Fixed
 

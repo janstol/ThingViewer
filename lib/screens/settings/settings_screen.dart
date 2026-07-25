@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../models/channel.dart';
 import 'settings_notifier.dart';
 
 const _dateFormats = [
@@ -21,8 +22,13 @@ const _timeFormats = [
 
 class SettingsScreen extends StatelessWidget {
   final SettingsNotifier settings;
+  final List<Channel> channels;
 
-  const SettingsScreen({super.key, required this.settings});
+  const SettingsScreen({
+    super.key,
+    required this.settings,
+    required this.channels,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +40,7 @@ class SettingsScreen extends StatelessWidget {
         builder: (context, _) => ListView(
           children: [
             _ThemeTile(settings: settings),
+            _StartScreenTile(settings: settings, channels: channels),
             _FormatTile(
               icon: Icons.calendar_today_outlined,
               title: l10n.settingsDateFormat,
@@ -113,6 +120,64 @@ class _ThemeTile extends StatelessWidget {
           ),
         );
         if (selected != null && context.mounted) settings.setThemeMode(selected);
+      },
+    );
+  }
+}
+
+// showDialog<Channel?> can't tell "user picked Channel list" (null) apart
+// from "user dismissed the dialog" (also null), so wrap the choice.
+class _StartChoice {
+  final Channel? channel;
+  const _StartChoice(this.channel);
+}
+
+class _StartScreenTile extends StatelessWidget {
+  final SettingsNotifier settings;
+  final List<Channel> channels;
+
+  const _StartScreenTile({required this.settings, required this.channels});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final current = settings.startChannel(channels);
+    final subtitle = current?.displayName ?? l10n.settingsStartScreenChannelList;
+
+    return ListTile(
+      leading: const Icon(Icons.home_outlined),
+      title: Text(l10n.settingsStartScreen),
+      subtitle: Text(subtitle),
+      onTap: () async {
+        final selected = await showDialog<_StartChoice>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: Text(l10n.settingsStartScreenChoose),
+            children: [
+              RadioGroup<Channel?>(
+                groupValue: current,
+                onChanged: (v) => Navigator.pop(context, _StartChoice(v)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<Channel?>(
+                      title: Text(l10n.settingsStartScreenChannelList),
+                      value: null,
+                    ),
+                    for (final channel in channels)
+                      RadioListTile<Channel?>(
+                        title: Text(channel.displayName),
+                        value: channel,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+        if (selected != null && context.mounted) {
+          settings.setStartChannel(selected.channel);
+        }
       },
     );
   }

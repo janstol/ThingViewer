@@ -31,11 +31,19 @@ class ChannelListScreen extends StatefulWidget {
 class _ChannelListScreenState extends State<ChannelListScreen> {
   late final ChannelListNotifier _notifier;
   Channel? _selectedChannel;
+  Channel? _pendingStartChannel;
 
   @override
   void initState() {
     super.initState();
     _notifier = ChannelListNotifier(widget.channelStorage);
+    final channels = switch (_notifier.state) {
+      ChannelListLoaded(:final channels) => channels,
+      _ => const <Channel>[],
+    };
+    final startChannel = widget.settings.startChannel(channels);
+    _selectedChannel = startChannel;
+    _pendingStartChannel = startChannel;
   }
 
   @override
@@ -50,6 +58,18 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= _kTabletBreakpoint;
+        // Consume the pending start channel once, on the first layout pass,
+        // regardless of width - this prevents a later rotation from firing
+        // a stray push on the narrow layout.
+        final pending = _pendingStartChannel;
+        if (pending != null) {
+          _pendingStartChannel = null;
+          if (!isWide) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _openChannel(pending);
+            });
+          }
+        }
         return isWide
             ? _WideLayout(
                 notifier: _notifier,
@@ -71,10 +91,25 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                 notifier: _notifier,
                 api: widget.api,
                 settings: widget.settings,
+                onOpenChannel: _openChannel,
                 onAddChannel: _openAddChannel,
                 l10n: l10n,
               );
       },
+    );
+  }
+
+  void _openChannel(Channel channel) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChannelDetailScreen(
+          channel: channel,
+          api: widget.api,
+          settings: widget.settings,
+          onChannelUpdated: _notifier.updateChannel,
+        ),
+      ),
     );
   }
 
@@ -102,6 +137,7 @@ class _NarrowLayout extends StatelessWidget {
   final ChannelListNotifier notifier;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final ValueChanged<Channel> onOpenChannel;
   final VoidCallback onAddChannel;
   final AppLocalizations l10n;
 
@@ -109,6 +145,7 @@ class _NarrowLayout extends StatelessWidget {
     required this.notifier,
     required this.api,
     required this.settings,
+    required this.onOpenChannel,
     required this.onAddChannel,
     required this.l10n,
   });
@@ -118,22 +155,12 @@ class _NarrowLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ThingViewer'),
-        actions: [_SettingsButton(settings: settings)],
+        actions: [_SettingsButton(settings: settings, notifier: notifier)],
       ),
       body: _ChannelListBody(
         notifier: notifier,
         l10n: l10n,
-        onTap: (channel) => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChannelDetailScreen(
-              channel: channel,
-              api: api,
-              settings: settings,
-              onChannelUpdated: notifier.updateChannel,
-            ),
-          ),
-        ),
+        onTap: onOpenChannel,
         onDelete: notifier.removeChannel,
       ),
       floatingActionButton: FloatingActionButton(
@@ -173,7 +200,7 @@ class _WideLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ThingViewer'),
-        actions: [_SettingsButton(settings: settings)],
+        actions: [_SettingsButton(settings: settings, notifier: notifier)],
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: l10n.addChannelTooltip,
@@ -221,8 +248,9 @@ class _WideLayout extends StatelessWidget {
 
 class _SettingsButton extends StatelessWidget {
   final SettingsNotifier settings;
+  final ChannelListNotifier notifier;
 
-  const _SettingsButton({required this.settings});
+  const _SettingsButton({required this.settings, required this.notifier});
 
   @override
   Widget build(BuildContext context) {
@@ -230,12 +258,21 @@ class _SettingsButton extends StatelessWidget {
     return IconButton(
       icon: const Icon(Icons.settings_outlined),
       tooltip: l10n.settingsTooltip,
-      onPressed: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SettingsScreen(settings: settings),
-        ),
-      ),
+      onPressed: () {
+        final channels = switch (notifier.state) {
+          ChannelListLoaded(:final channels) => channels,
+          _ => const <Channel>[],
+        };
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SettingsScreen(
+              settings: settings,
+              channels: channels,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -286,6 +286,24 @@ abstract class AppLocalizations {
   /// **'Choose time format'**
   String get settingsTimeFormatChoose;
 
+  /// No description provided for @settingsStartScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Start screen'**
+  String get settingsStartScreen;
+
+  /// No description provided for @settingsStartScreenChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose start screen'**
+  String get settingsStartScreenChoose;
+
+  /// No description provided for @settingsStartScreenChannelList.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel list'**
+  String get settingsStartScreenChannelList;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:

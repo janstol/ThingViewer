@@ -113,6 +113,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTimeFormatChoose => 'Choose time format';
 
   @override
+  String get settingsStartScreen => 'Start screen';
+
+  @override
+  String get settingsStartScreenChoose => 'Choose start screen';
+
+  @override
+  String get settingsStartScreenChannelList => 'Channel list';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override
