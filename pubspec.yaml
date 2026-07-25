@@ -19,7 +19,7 @@ dependencies:
   # base. Only used by lib/migration/migration_service.dart.
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  path_provider: ^2.1.0
+  path_provider: ^2.1.6
 
   fl_chart: ^0.70.0
   intl: ^0.20.0
