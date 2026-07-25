@@ -362,7 +362,7 @@ class _ChartState extends State<_Chart> {
                             '${widget.settings.dateFormat} ${widget.settings.timeFormat}',
                           ).format(dt);
                           return LineTooltipItem(
-                            '${s.y.toStringAsFixed(2)}\n',
+                            '${formatFieldValue(s.y)}\n',
                             TextStyle(
                               color: colorScheme.onInverseSurface,
                               fontWeight: FontWeight.bold,

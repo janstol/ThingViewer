@@ -137,7 +137,7 @@ class _FieldList extends StatelessWidget {
                   : null,
               trailing: field.lastValue != null
                   ? Text(
-                      field.lastValue!.toStringAsFixed(2),
+                      formatFieldValue(field.lastValue!),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: dataAccent,
                             fontWeight: FontWeight.bold,
