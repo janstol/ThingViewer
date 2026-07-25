@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Channel descriptions from ThingSpeak are now shown on the channel detail screen.
+- Website and source-code links (`url` / `github_url`) from ThingSpeak are now shown as buttons on the channel detail screen, when set.
 
 ### Fixed
 

@@ -7,6 +7,8 @@ class Channel {
   final String? apiKey;
   final String? name;
   final String? description;
+  final String? url;
+  final String? githubUrl;
   final DateTime? updatedAt;
   final int fieldCount;
 
@@ -17,6 +19,8 @@ class Channel {
     this.apiKey,
     this.name,
     this.description,
+    this.url,
+    this.githubUrl,
     this.updatedAt,
     this.fieldCount = 0,
   });
@@ -30,6 +34,8 @@ class Channel {
     String? apiKey,
     String? name,
     String? description,
+    String? url,
+    String? githubUrl,
     DateTime? updatedAt,
     int? fieldCount,
   }) {
@@ -40,6 +46,8 @@ class Channel {
       apiKey: apiKey ?? this.apiKey,
       name: name ?? this.name,
       description: description ?? this.description,
+      url: url ?? this.url,
+      githubUrl: githubUrl ?? this.githubUrl,
       updatedAt: updatedAt ?? this.updatedAt,
       fieldCount: fieldCount ?? this.fieldCount,
     );

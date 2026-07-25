@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
@@ -13,6 +14,88 @@ import 'channel_detail_notifier.dart';
 String? _trimmedDescription(Channel channel) {
   final description = channel.description?.trim();
   return description != null && description.isNotEmpty ? description : null;
+}
+
+/// Validates an author-supplied link before offering it as a button.
+///
+/// Rejects anything that isn't `http`/`https` — `url` is free text from the
+/// channel settings and goes straight to [launchUrl], so a scheme like
+/// `javascript:` must never reach it.
+String? _safeUrl(String? raw) {
+  final uri = Uri.tryParse(raw?.trim() ?? '');
+  if (uri == null || !uri.hasAuthority) return null;
+  return uri.scheme == 'http' || uri.scheme == 'https' ? uri.toString() : null;
+}
+
+bool _hasHeader(Channel channel) =>
+    _trimmedDescription(channel) != null ||
+    _safeUrl(channel.url) != null ||
+    _safeUrl(channel.githubUrl) != null;
+
+class _ChannelHeader extends StatelessWidget {
+  final Channel channel;
+  final bool centered;
+
+  const _ChannelHeader({required this.channel, this.centered = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final description = _trimmedDescription(channel);
+    final websiteUrl = _safeUrl(channel.url);
+    final sourceUrl = _safeUrl(channel.githubUrl);
+
+    return Column(
+      crossAxisAlignment:
+          centered ? CrossAxisAlignment.center : CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (websiteUrl != null || sourceUrl != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              children: [
+                if (websiteUrl != null)
+                  TextButton.icon(
+                    icon: const Icon(Icons.link),
+                    label: Text(l10n.channelDetailWebsite),
+                    onPressed: () => launchUrl(
+                      Uri.parse(websiteUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                if (sourceUrl != null)
+                  TextButton.icon(
+                    icon: const Icon(Icons.code),
+                    label: Text(l10n.channelDetailSource),
+                    onPressed: () => launchUrl(
+                      Uri.parse(sourceUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        if (description != null)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              (websiteUrl != null || sourceUrl != null) ? 4 : 16,
+              16,
+              12,
+            ),
+            child: Text(
+              description,
+              textAlign: centered ? TextAlign.center : null,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class ChannelDetailScreen extends StatefulWidget {
@@ -129,31 +212,20 @@ class _FieldList extends StatelessWidget {
           '${settings.dateFormat} ${settings.timeFormat}',
         );
         final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
-        final description = _trimmedDescription(channel);
-        final hasDescription = description != null;
+        final hasHeader = _hasHeader(channel);
         return ListView.builder(
-          itemCount: fields.length + (hasDescription ? 1 : 0),
+          itemCount: fields.length + (hasHeader ? 1 : 0),
           itemBuilder: (context, i) {
-            if (hasDescription && i == 0) {
+            if (hasHeader && i == 0) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: Text(
-                      description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                    ),
-                  ),
+                  _ChannelHeader(channel: channel),
                   const Divider(height: 1),
                 ],
               );
             }
-            final field = fields[hasDescription ? i - 1 : i];
+            final field = fields[hasHeader ? i - 1 : i];
             final lastUpdated = field.lastUpdated;
             return ListTile(
               title: Text(field.displayLabel),
@@ -198,21 +270,15 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final description = _trimmedDescription(channel);
+    final hasHeader = _hasHeader(channel);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (description != null) ...[
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
+            if (hasHeader) ...[
+              _ChannelHeader(channel: channel, centered: true),
               const SizedBox(height: 16),
             ],
             Text(message),

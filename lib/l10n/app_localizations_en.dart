@@ -51,6 +51,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelDetailNoFields => 'No fields found for this channel.';
 
   @override
+  String get channelDetailWebsite => 'Website';
+
+  @override
+  String get channelDetailSource => 'Source code';
+
+  @override
   String get fieldChartNoValues => 'No values for the selected date range.';
 
   @override

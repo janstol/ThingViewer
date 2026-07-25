@@ -65,15 +65,32 @@ class ThingSpeakApi {
   /// Reads channel metadata (name, description, fields).
   ///
   /// `https://api.thingspeak.com/channels/{id}/feeds.json?results=0`
+  ///
+  /// Also fires a best-effort request to `/channels/{id}.json` for `url` and
+  /// `github_url`, which the feeds endpoint doesn't return. That leg never
+  /// fails the call — it's unclear whether a private channel needs the
+  /// account-level User API Key rather than the channel Read API Key stored
+  /// here, so any failure is treated the same as the fields simply being absent.
   Future<Channel> readChannel(Channel channel) async {
-    final uri = _buildUri(
+    final feedsUri = _buildUri(
       baseUrl: channel.serverUrl,
       path: '/channels/${channel.id}/feeds.json',
       params: ApiParameters(apiKey: channel.apiKey, results: 0, location: true),
     );
+    final settingsUri = _buildUri(
+      baseUrl: channel.serverUrl,
+      path: '/channels/${channel.id}.json',
+      params: ApiParameters(apiKey: channel.apiKey),
+    );
 
-    final raw = await _sendRequest(uri);
-    return await compute(_parseChannel, _ParseChannelArgs(raw, channel));
+    final results = await Future.wait([
+      _sendRequest(feedsUri),
+      _trySendRequest(settingsUri),
+    ]);
+    return await compute(
+      _parseChannel,
+      _ParseChannelArgs(results[0]!, channel, results[1]),
+    );
   }
 
   /// Reads the latest feed data for all fields in a channel.
@@ -161,6 +178,15 @@ class ThingSpeakApi {
     throw ApiException(ApiErrorCode.general, serverMessage ?? 'Error $status');
   }
 
+  /// Like [_sendRequest], but swallows [ApiException] and returns null.
+  Future<String?> _trySendRequest(Uri uri) async {
+    try {
+      return await _sendRequest(uri);
+    } on ApiException {
+      return null;
+    }
+  }
+
   // --- Isolate-safe parsers ---
 
   static Channel _parseChannel(_ParseChannelArgs args) {
@@ -172,9 +198,23 @@ class ThingSpeakApi {
       if (channelJson.containsKey('field$i')) fieldCount = i;
     }
 
+    String? url;
+    String? githubUrl;
+    if (args.settingsRaw != null) {
+      try {
+        final settingsJson = jsonDecode(args.settingsRaw!) as Map<String, dynamic>;
+        url = settingsJson['url'] as String?;
+        githubUrl = settingsJson['github_url'] as String?;
+      } catch (_) {
+        // Best-effort: absent, malformed, or an error body — leave both null.
+      }
+    }
+
     return args.channel.copyWith(
       name: channelJson['name'] as String?,
       description: channelJson['description'] as String?,
+      url: url,
+      githubUrl: githubUrl,
       updatedAt: channelJson['updated_at'] != null
           ? DateTime.tryParse(channelJson['updated_at'] as String)
           : null,
@@ -241,7 +281,8 @@ class ThingSpeakApi {
 class _ParseChannelArgs {
   final String raw;
   final Channel channel;
-  const _ParseChannelArgs(this.raw, this.channel);
+  final String? settingsRaw;
+  const _ParseChannelArgs(this.raw, this.channel, this.settingsRaw);
 }
 
 class _ParseFieldArgs {

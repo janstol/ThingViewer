@@ -140,4 +140,106 @@ void main() {
 
     expect(find.text('No fields found for this channel.'), findsOneWidget);
   });
+
+  testWidgets('shows both link buttons when url and githubUrl are set',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      url: 'https://dweet.io',
+      githubUrl: 'https://github.com/example/thingviewer-tree',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Website'), findsOneWidget);
+    expect(find.text('Source code'), findsOneWidget);
+  });
+
+  testWidgets('shows only the Website button when githubUrl is null',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      url: 'https://dweet.io',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Website'), findsOneWidget);
+    expect(find.text('Source code'), findsNothing);
+  });
+
+  testWidgets('shows no buttons when there are no links, description unaffected',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      description: 'A description of the channel',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('A description of the channel'), findsOneWidget);
+    expect(find.text('Website'), findsNothing);
+    expect(find.text('Source code'), findsNothing);
+  });
+
+  testWidgets('shows the header when links are present but description is null',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      url: 'https://dweet.io',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Website'), findsOneWidget);
+    expect(find.byType(Divider), findsOneWidget);
+  });
+
+  testWidgets('rejects a javascript: scheme url, no button rendered',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      url: 'javascript:alert(1)',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Website'), findsNothing);
+    expect(find.text('Source code'), findsNothing);
+  });
 }

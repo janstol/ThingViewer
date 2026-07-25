@@ -32,6 +32,10 @@ void main() {
   http.Response ok(String body) =>
       http.Response(body, 200, headers: {'content-type': 'application/json'});
 
+  Uri feedsUriFrom(List<dynamic> captured) => captured
+      .cast<Uri>()
+      .firstWhere((uri) => uri.path.endsWith('feeds.json'));
+
   group('readChannel', () {
     test('parses channel name and field count', () async {
       when(mockClient.get(any)).thenAnswer(
@@ -44,6 +48,31 @@ void main() {
       expect(result.description, 'Test channel description');
       expect(result.fieldCount, 8);
       expect(result.id, 123456);
+    });
+
+    test('parses url and githubUrl from the settings endpoint', () async {
+      when(mockClient.get(argThat(predicate<Uri>((uri) => uri.path.endsWith('feeds.json')))))
+          .thenAnswer((_) async => ok(fixture('channel_feed.json')));
+      when(mockClient.get(argThat(predicate<Uri>((uri) => !uri.path.endsWith('feeds.json')))))
+          .thenAnswer((_) async => ok(fixture('channel_settings.json')));
+
+      final result = await api.readChannel(publicChannel);
+
+      expect(result.url, 'https://dweet.io');
+      expect(result.githubUrl, 'https://github.com/example/thingviewer-tree');
+    });
+
+    test('returns null links when the settings endpoint 404s', () async {
+      when(mockClient.get(argThat(predicate<Uri>((uri) => uri.path.endsWith('feeds.json')))))
+          .thenAnswer((_) async => ok(fixture('channel_feed.json')));
+      when(mockClient.get(argThat(predicate<Uri>((uri) => !uri.path.endsWith('feeds.json')))))
+          .thenAnswer((_) async => http.Response('Not Found', 404));
+
+      final result = await api.readChannel(publicChannel);
+
+      expect(result.name, 'Test public channel');
+      expect(result.url, isNull);
+      expect(result.githubUrl, isNull);
     });
   });
 
@@ -87,7 +116,7 @@ void main() {
       );
       await api.readChannel(publicChannel);
 
-      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
       expect(uri.scheme, 'https');
       expect(uri.host, 'api.thingspeak.com');
       expect(uri.path, '/channels/123456/feeds.json');
@@ -104,7 +133,7 @@ void main() {
       );
       await api.readChannel(channel);
 
-      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
       expect(uri.host, '192.168.1.5');
       expect(uri.port, 8080);
       expect(uri.path, '/channels/42/feeds.json');
@@ -121,7 +150,7 @@ void main() {
       );
       await api.readChannel(channel);
 
-      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
       expect(uri.host, '192.168.1.5');
       expect(uri.port, 8080);
       expect(uri.path, '/thingspeak/channels/42/feeds.json');
@@ -138,7 +167,7 @@ void main() {
       );
       await api.readChannel(channel);
 
-      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
       expect(uri.path, '/thingspeak/channels/42/feeds.json');
     });
 
@@ -153,7 +182,7 @@ void main() {
       );
       await api.readChannel(channel);
 
-      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
       expect(uri.queryParameters.containsKey('foo'), isFalse);
     });
   });

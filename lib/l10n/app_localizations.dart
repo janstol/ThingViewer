@@ -178,6 +178,18 @@ abstract class AppLocalizations {
   /// **'No fields found for this channel.'**
   String get channelDetailNoFields;
 
+  /// No description provided for @channelDetailWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get channelDetailWebsite;
+
+  /// No description provided for @channelDetailSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get channelDetailSource;
+
   /// No description provided for @fieldChartNoValues.
   ///
   /// In en, this message translates to:

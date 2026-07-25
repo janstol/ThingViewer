@@ -1,0 +1,15 @@
+{
+  "id": 624218,
+  "name": "Ultraschall-Wasser-Zähler",
+  "latitude": "0.0",
+  "longitude": "0.0",
+  "created_at": "2019-06-07T11:10:52Z",
+  "updated_at": "2019-06-07T11:10:52Z",
+  "last_entry_id": 9999,
+  "description": "Test channel description",
+  "public_flag": true,
+  "url": "https://dweet.io",
+  "ranking": 0,
+  "github_url": "https://github.com/example/thingviewer-tree",
+  "tags": []
+}
