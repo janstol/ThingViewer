@@ -12,6 +12,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.8'
@@ -25,3 +29,6 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Build app bundle (smoke)
+        run: flutter build appbundle --release

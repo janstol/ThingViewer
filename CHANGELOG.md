@@ -9,6 +9,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Field values are no longer rounded to 2 decimal places on the channel detail readout and chart tooltip, which flattened high-precision channels into apparently unchanging graphs. Values now show a minimum of 2 and a maximum of 6 decimal places.
 
+### Changed
+
+- Bumped the Flutter SDK to 3.44.8, unblocking Dependabot updates for `path_provider`, `package_info_plus`, and `mockito` that require a newer Dart SDK.
+- Enabled optimized resource shrinking for release builds (Android Gradle plugin 8.13.2, Gradle 8.14.5), reducing app bundle size. Removed the deprecated Jetifier flag.
+
 ## [0.9.0] - 2026-07-25
 
 Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into a flat `ChangeNotifier` app, with a one-time Hive → SharedPreferences migration to carry existing users' channels and settings across.
