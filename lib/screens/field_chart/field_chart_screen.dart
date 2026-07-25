@@ -6,8 +6,13 @@ import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
+import '../../theme.dart';
 import '../settings/settings_notifier.dart';
 import 'field_chart_notifier.dart';
+
+/// Fixed padding applied around a lone data point so the chart doesn't get
+/// a zero-width x-range (minX == maxX).
+const _singlePointPadding = Duration(hours: 1);
 
 class FieldChartScreen extends StatefulWidget {
   final Channel channel;
@@ -195,14 +200,23 @@ class _ChartState extends State<_Chart> {
       widget.values.last.createdAt.millisecondsSinceEpoch.toDouble();
   double get _fullRange => _fullMaxX - _fullMinX;
 
+  bool get _isSinglePoint => widget.values.length < 2;
+
   @override
   void initState() {
     super.initState();
-    _minX = _fullMinX;
-    _maxX = _fullMaxX;
+    if (_isSinglePoint) {
+      final padding = _singlePointPadding.inMilliseconds.toDouble();
+      _minX = _fullMinX - padding;
+      _maxX = _fullMaxX + padding;
+    } else {
+      _minX = _fullMinX;
+      _maxX = _fullMaxX;
+    }
   }
 
   void _pointerDown(PointerDownEvent e) {
+    if (_isSinglePoint) return;
     _pointers[e.pointer] = e.localPosition;
     if (_pointers.length == 2) {
       final pts = _pointers.values.toList();
@@ -212,6 +226,7 @@ class _ChartState extends State<_Chart> {
   }
 
   void _pointerMove(PointerMoveEvent e) {
+    if (_isSinglePoint) return;
     _pointers[e.pointer] = e.localPosition;
     // Only handle two-finger gestures; single finger is left to fl_chart for tooltip.
     if (_pointers.length < 2) return;
@@ -256,7 +271,8 @@ class _ChartState extends State<_Chart> {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = Theme.of(context).extension<BrandColors>()!.dataAccent;
     final spots = widget.values
         .map(
           (v) => FlSpot(
@@ -290,6 +306,17 @@ class _ChartState extends State<_Chart> {
                         isCurved: false,
                         color: color,
                         dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              color.withValues(alpha: 0.2),
+                              color.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                     titlesData: FlTitlesData(
@@ -326,6 +353,7 @@ class _ChartState extends State<_Chart> {
                     borderData: FlBorderData(show: false),
                     lineTouchData: LineTouchData(
                       touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (_) => colorScheme.inverseSurface,
                         getTooltipItems: (spots) => spots.map((s) {
                           final dt = DateTime.fromMillisecondsSinceEpoch(
                             s.x.toInt(),
@@ -335,15 +363,16 @@ class _ChartState extends State<_Chart> {
                           ).format(dt);
                           return LineTooltipItem(
                             '${s.y.toStringAsFixed(2)}\n',
-                            const TextStyle(
-                              color: Colors.white,
+                            TextStyle(
+                              color: colorScheme.onInverseSurface,
                               fontWeight: FontWeight.bold,
                             ),
                             children: [
                               TextSpan(
                                 text: dateStr,
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: colorScheme.onInverseSurface
+                                      .withValues(alpha: 0.7),
                                   fontWeight: FontWeight.normal,
                                   fontSize: 11,
                                 ),
