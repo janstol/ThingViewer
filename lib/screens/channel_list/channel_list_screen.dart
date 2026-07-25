@@ -338,10 +338,19 @@ class _ChannelTile extends StatelessWidget {
       title: Text(channel.displayName),
       subtitle: Text('${channel.serverUrl} · ${channel.id}'),
       selected: isSelected,
-      selectedTileColor:
-          Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
+      // ListTile.selected defaults its text/icon colour to colorScheme.primary
+      // (brandGreen), which is only 2.43:1 on white — fails WCAG AA. Selection
+      // is already conveyed by selectedTileColor, so keep the foreground plain.
+      selectedColor: Theme.of(context).colorScheme.onSurface,
+      selectedTileColor: Theme.of(context)
+          .colorScheme
+          .secondaryContainer
+          .withValues(alpha: 0.4),
       onTap: onTap,
-      trailing: const Icon(Icons.drag_handle, color: Colors.grey),
+      trailing: Icon(
+        Icons.drag_handle,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
+import '../../theme.dart';
 import '../field_chart/field_chart_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'channel_detail_notifier.dart';
@@ -121,7 +122,7 @@ class _FieldList extends StatelessWidget {
         final dateFmt = DateFormat(
           '${settings.dateFormat} ${settings.timeFormat}',
         );
-        final primaryColor = Theme.of(context).colorScheme.primary;
+        final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
         return ListView.builder(
           itemCount: fields.length,
           itemBuilder: (context, i) {
@@ -138,7 +139,7 @@ class _FieldList extends StatelessWidget {
                   ? Text(
                       field.lastValue!.toStringAsFixed(2),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: primaryColor,
+                            color: dataAccent,
                             fontWeight: FontWeight.bold,
                           ),
                     )
