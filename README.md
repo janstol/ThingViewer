@@ -28,7 +28,7 @@ Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak
 - Configurable date and time formats
 - Responsive layout — master-detail split on tablets
 
-Android is the actively supported and tested target; iOS/macOS/Windows/Linux/Web build but aren't part of CI.
+Android is the actively supported and tested target. Web is built and deployed to the [demo](https://janstol.github.io/ThingViewer/) on every push, but isn't covered by automated tests. iOS/macOS/Windows/Linux build but aren't part of CI.
 
 ## Development
 
