@@ -20,12 +20,16 @@ Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak
 - Configurable date and time formats
 - Responsive layout — master-detail split on tablets
 
+Android is the actively supported and tested target; iOS/macOS/Windows/Linux/Web build but aren't part of CI.
+
 ## Development
 
 ### Requirements
 
 - [mise](https://mise.jdx.dev/) — manages the Flutter version (`mise.toml` pins it)
 - Flutter 3.35.7 / Dart 3.9.2
+
+Commands below assume an activated mise shell (`mise activate` / `mise shell`). If mise isn't activated, prefix each command with `mise exec --`, e.g. `mise exec -- flutter test`.
 
 ### Setup
 
@@ -37,7 +41,7 @@ mise install
 flutter pub get
 
 # Generate mocks (needed after changing @GenerateMocks annotations)
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 ### Running
@@ -76,7 +80,7 @@ flutter build appbundle    # Android App Bundle (Play Store)
 Edit `res/images/thingviewer_icon.png` (and `thingviewer_icon_foreground.png` for the adaptive foreground layer), then regenerate:
 
 ```bash
-flutter pub run flutter_launcher_icons
+dart run flutter_launcher_icons
 ```
 
 ## Tech stack

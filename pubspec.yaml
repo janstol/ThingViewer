@@ -1,7 +1,7 @@
 name: thingviewer
 description: Mobile app for viewing and visualizing data from ThingSpeak.
 
-version: 1.0.0+10000
+version: 0.9.0+900 # (major * 10000) + (minor * 100) + patch
 
 publish_to: none
 
@@ -14,9 +14,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # TODO(migration): remove hive and hive_flutter once the Hive →
-  # SharedPreferences migration has shipped and reached the installed base.
-  # Only used by lib/migration/migration_service.dart.
+  # TODO(migration): remove hive, hive_flutter and path_provider in 1.2.0,
+  # once the Hive → SharedPreferences migration has reached the installed
+  # base. Only used by lib/migration/migration_service.dart.
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.1.0

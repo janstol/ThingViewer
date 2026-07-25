@@ -1,0 +1,27 @@
+# Changelog
+
+All notable changes to this project are documented here.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [0.9.0] - 2026-07-25
+
+Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into a flat `ChangeNotifier` app, with a one-time Hive → SharedPreferences migration to carry existing users' channels and settings across.
+
+### Added
+
+- Material 3 theme with explicit brand colour roles (blue app bar, green FAB) restoring the look of the earlier Material 2 release.
+- `BrandColors` theme extension for chart/data-accent colours with WCAG AA-compliant contrast in both light and dark mode.
+
+### Fixed
+
+- Custom server URLs (self-hosted ThingSpeak instances) no longer drop the port or base path when building API requests.
+- API keys are no longer at risk of appearing in device logs on request failure.
+- Charts for a field with a single data point no longer produce a zero-width x-axis range.
+- Selected channel-list tiles no longer render their text/icon in brandGreen (2.43:1 on white, fails WCAG AA); selection is conveyed by the tile background only.
+
+### Changed
+
+- Migrated from Hive/get_it/BLoC to `SharedPreferences` + `ChangeNotifier`.
+- Updated dependencies to their latest versions compatible with existing constraints (`build_runner`, `equatable`, `path_provider_android`, and others).
+
+[0.9.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.9.0

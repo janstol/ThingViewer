@@ -19,8 +19,10 @@ mise install          # installs the pinned Flutter version
 flutter pub get       # fetch dependencies
 
 # Generate mocks (needed after changing @GenerateMocks annotations)
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
+
+Commands assume an activated mise shell; otherwise prefix each with `mise exec --`.
 
 ---
 
