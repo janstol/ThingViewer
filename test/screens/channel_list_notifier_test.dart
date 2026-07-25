@@ -91,22 +91,21 @@ void main() {
   });
 
   group('reorderChannels', () {
-    // ReorderableListView passes (oldIndex, newIndex) where newIndex is the
-    // position *after* removing the item. The notifier adjusts: if
-    // newIndex > oldIndex, use newIndex - 1.
+    // ReorderableListView.onReorderItem passes (oldIndex, newIndex) where
+    // newIndex is already the target position *after* removing the item.
 
     test('moves item down correctly', () async {
-      // [A, B, C] drag A (0) to after C → newIndex = 3 → adjusted = 2
+      // [A, B, C] drag A (0) to after C → newIndex = 2
       final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
 
-      await notifier.reorderChannels(0, 3);
+      await notifier.reorderChannels(0, 2);
 
       expect((notifier.state as ChannelListLoaded).channels, [_b, _c, _a]);
       notifier.dispose();
     });
 
     test('moves item up correctly', () async {
-      // [A, B, C] drag C (2) to before A → newIndex = 0 → adjusted = 0
+      // [A, B, C] drag C (2) to before A → newIndex = 0
       final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
 
       await notifier.reorderChannels(2, 0);
@@ -116,17 +115,17 @@ void main() {
     });
 
     test('moves item one position down', () async {
-      // [A, B, C] drag A (0) to after B → newIndex = 2 → adjusted = 1
+      // [A, B, C] drag A (0) to after B → newIndex = 1
       final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
 
-      await notifier.reorderChannels(0, 2);
+      await notifier.reorderChannels(0, 1);
 
       expect((notifier.state as ChannelListLoaded).channels, [_b, _a, _c]);
       notifier.dispose();
     });
 
     test('moves item one position up', () async {
-      // [A, B, C] drag B (1) to before A → newIndex = 0 → adjusted = 0
+      // [A, B, C] drag B (1) to before A → newIndex = 0
       final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
 
       await notifier.reorderChannels(1, 0);
@@ -139,7 +138,7 @@ void main() {
       final storage = _FakeChannelStorage(initial: [_a, _b, _c]);
       final notifier = ChannelListNotifier(storage);
 
-      await notifier.reorderChannels(0, 3); // A → end
+      await notifier.reorderChannels(0, 2); // A → end
 
       expect(storage.loadChannels(), [_b, _c, _a]);
       notifier.dispose();
