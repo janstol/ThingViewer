@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Channel descriptions from ThingSpeak are now shown on the channel detail screen.
+
 ### Fixed
 
 - Field values are no longer rounded to 2 decimal places on the channel detail readout and chart tooltip, which flattened high-precision channels into apparently unchanging graphs. Values now show a minimum of 2 and a maximum of 6 decimal places.

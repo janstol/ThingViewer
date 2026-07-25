@@ -41,6 +41,7 @@ void main() {
       final result = await api.readChannel(publicChannel);
 
       expect(result.name, 'Test public channel');
+      expect(result.description, 'Test channel description');
       expect(result.fieldCount, 8);
       expect(result.id, 123456);
     });

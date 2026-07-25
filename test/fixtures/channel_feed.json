@@ -2,6 +2,7 @@
   "channel": {
     "id": 123456,
     "name": "Test public channel",
+    "description": "Test channel description",
     "latitude": "0.0",
     "longitude": "0.0",
     "field1": "Field1",

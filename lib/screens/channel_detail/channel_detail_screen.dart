@@ -10,6 +10,11 @@ import '../field_chart/field_chart_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'channel_detail_notifier.dart';
 
+String? _trimmedDescription(Channel channel) {
+  final description = channel.description?.trim();
+  return description != null && description.isNotEmpty ? description : null;
+}
+
 class ChannelDetailScreen extends StatefulWidget {
   final Channel channel;
   final ThingSpeakApi api;
@@ -66,8 +71,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
         builder: (context, _) => switch (_notifier.state) {
           ChannelDetailLoading() =>
             const Center(child: CircularProgressIndicator()),
-          ChannelDetailEmpty() => Center(
-              child: Text(l10n.channelDetailNoFields),
+          ChannelDetailEmpty(:final channel) => _EmptyState(
+              channel: channel,
+              message: l10n.channelDetailNoFields,
             ),
           ChannelDetailError(:final errorCode, :final serverMessage) => Center(
               child: Column(
@@ -123,10 +129,31 @@ class _FieldList extends StatelessWidget {
           '${settings.dateFormat} ${settings.timeFormat}',
         );
         final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
+        final description = _trimmedDescription(channel);
+        final hasDescription = description != null;
         return ListView.builder(
-          itemCount: fields.length,
+          itemCount: fields.length + (hasDescription ? 1 : 0),
           itemBuilder: (context, i) {
-            final field = fields[i];
+            if (hasDescription && i == 0) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    child: Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                ],
+              );
+            }
+            final field = fields[hasDescription ? i - 1 : i];
             final lastUpdated = field.lastUpdated;
             return ListTile(
               title: Text(field.displayLabel),
@@ -159,6 +186,39 @@ class _FieldList extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final Channel channel;
+  final String message;
+
+  const _EmptyState({required this.channel, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final description = _trimmedDescription(channel);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (description != null) ...[
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            Text(message),
+          ],
+        ),
+      ),
     );
   }
 }
