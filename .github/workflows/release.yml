@@ -19,7 +19,7 @@ jobs:
         run: flutter pub get
 
       - name: Decode keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/release.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
 
       - name: Write key.properties
         run: |
