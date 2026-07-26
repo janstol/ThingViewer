@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/thingspeak_api.dart';
@@ -213,9 +212,6 @@ class _FieldList extends StatelessWidget {
     return ListenableBuilder(
       listenable: settings,
       builder: (context, _) {
-        final dateFmt = DateFormat(
-          '${settings.dateFormat} ${settings.timeFormat}',
-        );
         final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
         final hasHeader = _hasHeader(channel);
         return ListView.builder(
@@ -237,7 +233,7 @@ class _FieldList extends StatelessWidget {
               title: Text(field.displayLabel),
               subtitle: lastUpdated != null
                   ? Text(
-                      '${l10n.channelDetailLastEntry}: ${dateFmt.format(lastUpdated)}',
+                      '${l10n.channelDetailLastEntry}: ${settings.formatDateTime(lastUpdated)}',
                     )
                   : null,
               trailing: field.lastValue != null

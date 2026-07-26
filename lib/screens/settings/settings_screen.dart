@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../storage/settings_storage.dart';
 import 'settings_notifier.dart';
 
 const _dateFormats = [
@@ -39,8 +40,11 @@ class SettingsScreen extends StatelessWidget {
         listenable: settings,
         builder: (context, _) => ListView(
           children: [
+            _SectionHeader(title: l10n.settingsSectionAppearance),
             _ThemeTile(settings: settings),
+            _SectionHeader(title: l10n.settingsSectionGeneral),
             _StartScreenTile(settings: settings, channels: channels),
+            _SectionHeader(title: l10n.settingsSectionDateTime),
             _FormatTile(
               icon: Icons.calendar_today_outlined,
               title: l10n.settingsDateFormat,
@@ -57,6 +61,8 @@ class SettingsScreen extends StatelessWidget {
               dialogTitle: l10n.settingsTimeFormatChoose,
               onSelected: settings.setTimeFormat,
             ),
+            _TimezoneTile(settings: settings),
+            _SectionHeader(title: l10n.settingsSectionInfo),
             ListTile(
               leading: const Icon(Icons.privacy_tip_outlined),
               title: Text(l10n.privacyPolicy),
@@ -67,6 +73,26 @@ class SettingsScreen extends StatelessWidget {
             ),
             _AboutTile(l10n: l10n),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.primary,
         ),
       ),
     );
@@ -236,6 +262,61 @@ class _FormatTile extends StatelessWidget {
           ),
         );
         if (selected != null && context.mounted) onSelected(selected);
+      },
+    );
+  }
+}
+
+class _TimezoneTile extends StatelessWidget {
+  final SettingsNotifier settings;
+
+  const _TimezoneTile({required this.settings});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final options = [
+      (TimezoneDisplay.off, l10n.settingsTimezoneOff),
+      (TimezoneDisplay.offset, l10n.settingsTimezoneOffset),
+      (TimezoneDisplay.name, l10n.settingsTimezoneName),
+    ];
+    final current =
+        options.firstWhere((e) => e.$1 == settings.timezoneDisplay).$2;
+    final preview = settings.formatDateTime(DateTime.now());
+
+    return ListTile(
+      leading: const Icon(Icons.public_outlined),
+      title: Text(l10n.settingsTimezone),
+      subtitle: Text('$current  ·  $preview'),
+      onTap: () async {
+        final selected = await showDialog<TimezoneDisplay>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: Text(l10n.settingsTimezoneChoose),
+            children: [
+              RadioGroup<TimezoneDisplay>(
+                groupValue: settings.timezoneDisplay,
+                onChanged: (v) {
+                  if (v != null) Navigator.pop(context, v);
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: options
+                      .map(
+                        (e) => RadioListTile<TimezoneDisplay>(
+                          title: Text(e.$2),
+                          value: e.$1,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (selected != null && context.mounted) {
+          settings.setTimezoneDisplay(selected);
+        }
       },
     );
   }

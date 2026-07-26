@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/channel.dart';
 import '../../storage/settings_storage.dart';
@@ -9,13 +10,18 @@ class SettingsNotifier extends ChangeNotifier {
   late ThemeMode _themeMode;
   late String _dateFormat;
   late String _timeFormat;
+  late TimezoneDisplay _timezoneDisplay;
   late int? _startChannelId;
   late String? _startChannelServerUrl;
+
+  DateFormat? _cachedDateFmt;
+  DateFormat? _cachedDateTimeFmt;
 
   SettingsNotifier(this._storage) {
     _themeMode = _storage.themeMode;
     _dateFormat = _storage.dateFormat;
     _timeFormat = _storage.timeFormat;
+    _timezoneDisplay = _storage.timezoneDisplay;
     _startChannelId = _storage.startChannelId;
     _startChannelServerUrl = _storage.startChannelServerUrl;
   }
@@ -23,6 +29,7 @@ class SettingsNotifier extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   String get dateFormat => _dateFormat;
   String get timeFormat => _timeFormat;
+  TimezoneDisplay get timezoneDisplay => _timezoneDisplay;
 
   Future<void> setThemeMode(ThemeMode mode) async {
     final previous = _themeMode;
@@ -39,11 +46,15 @@ class SettingsNotifier extends ChangeNotifier {
   Future<void> setDateFormat(String format) async {
     final previous = _dateFormat;
     _dateFormat = format;
+    _cachedDateFmt = null;
+    _cachedDateTimeFmt = null;
     notifyListeners();
     try {
       await _storage.saveDateFormat(format);
     } catch (_) {
       _dateFormat = previous;
+      _cachedDateFmt = null;
+      _cachedDateTimeFmt = null;
       notifyListeners();
     }
   }
@@ -51,13 +62,58 @@ class SettingsNotifier extends ChangeNotifier {
   Future<void> setTimeFormat(String format) async {
     final previous = _timeFormat;
     _timeFormat = format;
+    _cachedDateTimeFmt = null;
     notifyListeners();
     try {
       await _storage.saveTimeFormat(format);
     } catch (_) {
       _timeFormat = previous;
+      _cachedDateTimeFmt = null;
       notifyListeners();
     }
+  }
+
+  Future<void> setTimezoneDisplay(TimezoneDisplay value) async {
+    final previous = _timezoneDisplay;
+    _timezoneDisplay = value;
+    notifyListeners();
+    try {
+      await _storage.saveTimezoneDisplay(value);
+    } catch (_) {
+      _timezoneDisplay = previous;
+      notifyListeners();
+    }
+  }
+
+  /// Formats [dt] as a date only, never with a timezone suffix.
+  String formatDate(DateTime dt) =>
+      (_cachedDateFmt ??= DateFormat(_dateFormat)).format(dt);
+
+  /// Formats [dt] as date + time, with a timezone suffix per [timezoneDisplay].
+  String formatDateTime(DateTime dt) {
+    final fmt = _cachedDateTimeFmt ??= DateFormat('$_dateFormat $_timeFormat');
+    return '${fmt.format(dt)}${_timezoneSuffix(dt)}';
+  }
+
+  String _timezoneSuffix(DateTime dt) {
+    switch (_timezoneDisplay) {
+      case TimezoneDisplay.off:
+        return '';
+      case TimezoneDisplay.name:
+        final name = dt.timeZoneName.trim();
+        if (name.isNotEmpty) return ' $name';
+        return ' ${_formatOffset(dt.timeZoneOffset)}'; // fallback
+      case TimezoneDisplay.offset:
+        return ' ${_formatOffset(dt.timeZoneOffset)}';
+    }
+  }
+
+  static String _formatOffset(Duration offset) {
+    final sign = offset.isNegative ? '-' : '+';
+    final abs = offset.abs();
+    final hours = abs.inHours.toString().padLeft(2, '0');
+    final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
+    return '$sign$hours:$minutes';
   }
 
   Future<void> setStartChannel(Channel? channel) async {

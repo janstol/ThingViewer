@@ -25,7 +25,7 @@ Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak
 - Supports public and private (API key) channels
 - Custom server URL (self-hosted ThingSpeak instances)
 - Light / dark / system theme
-- Configurable date and time formats
+- Configurable date and time formats, with an optional timezone indicator (offset or name)
 - Responsive layout — master-detail split on tablets
 
 Android is the actively supported and tested target. Web is built and deployed to the [demo](https://janstol.github.io/ThingViewer/) on every push, but isn't covered by automated tests. iOS/macOS/Windows/Linux build but aren't part of CI.

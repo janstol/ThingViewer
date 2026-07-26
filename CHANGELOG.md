@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Website and source-code links (`url` / `github_url`) from ThingSpeak are now shown as buttons on the channel detail screen, when set.
 - A "Start screen" setting lets you open the app directly on a chosen saved channel's detail screen instead of the channel list.
 - Pull-to-refresh on the channel detail screen re-fetches the channel by swiping down, in addition to the existing AppBar refresh button.
+- A "Timezone" setting (off by default) appends the UTC offset or zone name to the "Last entry" readout and chart tooltip.
 
 ### Fixed
 
@@ -18,6 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Settings screen tiles are now grouped under section headers (Appearance, General, Date & time, Info).
 - Bumped the Flutter SDK to 3.44.8, unblocking Dependabot updates for `path_provider`, `package_info_plus`, and `mockito` that require a newer Dart SDK.
 - Enabled optimized resource shrinking for release builds (Android Gradle plugin 8.13.2, Gradle 8.14.5), reducing app bundle size. Removed the deprecated Jetifier flag.
 - macOS Runner now embeds Flutter plugins via Swift Package Manager instead of CocoaPods, following Flutter 3.44.8's default. `Podfile.lock` no longer lists plugin pods.

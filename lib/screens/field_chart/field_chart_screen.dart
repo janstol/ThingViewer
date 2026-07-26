@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
@@ -287,7 +286,6 @@ class _ChartState extends State<_Chart> {
       child: ListenableBuilder(
         listenable: widget.settings,
         builder: (context, _) {
-          final dateFmt = DateFormat(widget.settings.dateFormat);
           return LayoutBuilder(
             builder: (context, constraints) {
               _constraints = constraints;
@@ -335,7 +333,7 @@ class _ChartState extends State<_Chart> {
                               meta: meta,
                               angle: -0.6,
                               child: Text(
-                                dateFmt.format(dt),
+                                widget.settings.formatDate(dt),
                                 style: const TextStyle(fontSize: 10),
                               ),
                             );
@@ -358,9 +356,7 @@ class _ChartState extends State<_Chart> {
                           final dt = DateTime.fromMillisecondsSinceEpoch(
                             s.x.toInt(),
                           );
-                          final dateStr = DateFormat(
-                            '${widget.settings.dateFormat} ${widget.settings.timeFormat}',
-                          ).format(dt);
+                          final dateStr = widget.settings.formatDateTime(dt);
                           return LineTooltipItem(
                             '${formatFieldValue(s.y)}\n',
                             TextStyle(
@@ -415,7 +411,6 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final dateFmt = DateFormat(widget.settings.dateFormat);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -426,11 +421,11 @@ class _FilterSheetState extends State<_FilterSheet> {
           const SizedBox(height: 8),
           ListTile(
             title: Text(l10n.filterFrom),
-            subtitle: Text(dateFmt.format(_range.start)),
+            subtitle: Text(widget.settings.formatDate(_range.start)),
           ),
           ListTile(
             title: Text(l10n.filterTo),
-            subtitle: Text(dateFmt.format(_range.end)),
+            subtitle: Text(widget.settings.formatDate(_range.end)),
           ),
           const SizedBox(height: 8),
           OutlinedButton(

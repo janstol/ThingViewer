@@ -95,6 +95,32 @@ void main() {
     expect(find.text('Other Channel'), findsOneWidget);
   });
 
+  testWidgets('selecting UTC offset calls setTimezoneDisplay', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = SettingsNotifier(
+      SettingsStorage(await SharedPreferences.getInstance()),
+    );
+    expect(settings.timezoneDisplay, TimezoneDisplay.off);
+
+    await tester.pumpWidget(
+      _wrap(SettingsScreen(settings: settings, channels: const [])),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Timezone'),
+      100,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(find.text('Timezone'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose timezone display'), findsOneWidget);
+
+    await tester.tap(find.text('UTC offset'));
+    await tester.pumpAndSettle();
+
+    expect(settings.timezoneDisplay, TimezoneDisplay.offset);
+  });
+
   testWidgets('selecting a channel calls setStartChannel', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final settings = SettingsNotifier(

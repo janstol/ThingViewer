@@ -22,6 +22,7 @@ class _FakeSettingsStorage implements SettingsStorage {
   ThemeMode _themeMode;
   String _dateFormat;
   String _timeFormat;
+  TimezoneDisplay _timezoneDisplay;
   int? _startChannelId;
   String? _startChannelServerUrl;
   bool throwOnSave;
@@ -30,12 +31,14 @@ class _FakeSettingsStorage implements SettingsStorage {
     ThemeMode themeMode = ThemeMode.system,
     String dateFormat = defaultDateFormat,
     String timeFormat = defaultTimeFormat,
+    TimezoneDisplay timezoneDisplay = defaultTimezoneDisplay,
     int? startChannelId,
     String? startChannelServerUrl,
     this.throwOnSave = false,
   })  : _themeMode = themeMode,
         _dateFormat = dateFormat,
         _timeFormat = timeFormat,
+        _timezoneDisplay = timezoneDisplay,
         _startChannelId = startChannelId,
         _startChannelServerUrl = startChannelServerUrl;
 
@@ -64,6 +67,15 @@ class _FakeSettingsStorage implements SettingsStorage {
   Future<void> saveTimeFormat(String format) async {
     if (throwOnSave) throw Exception('storage error');
     _timeFormat = format;
+  }
+
+  @override
+  TimezoneDisplay get timezoneDisplay => _timezoneDisplay;
+
+  @override
+  Future<void> saveTimezoneDisplay(TimezoneDisplay value) async {
+    if (throwOnSave) throw Exception('storage error');
+    _timezoneDisplay = value;
   }
 
   @override
@@ -190,6 +202,106 @@ void main() {
       await notifier.setTimeFormat('hh:mm a');
 
       expect(notifier.timeFormat, original);
+      notifier.dispose();
+    });
+  });
+
+  group('setTimezoneDisplay', () {
+    test('updates and persists', () async {
+      final storage = _FakeSettingsStorage();
+      final notifier = SettingsNotifier(storage);
+
+      await notifier.setTimezoneDisplay(TimezoneDisplay.offset);
+
+      expect(notifier.timezoneDisplay, TimezoneDisplay.offset);
+      expect(storage.timezoneDisplay, TimezoneDisplay.offset);
+      notifier.dispose();
+    });
+
+    test('reverts when storage throws', () async {
+      final storage = _FakeSettingsStorage(throwOnSave: true);
+      final notifier = SettingsNotifier(storage);
+      final original = notifier.timezoneDisplay;
+
+      await notifier.setTimezoneDisplay(TimezoneDisplay.name);
+
+      expect(notifier.timezoneDisplay, original);
+      notifier.dispose();
+    });
+  });
+
+  group('formatDate', () {
+    test('formats using the configured date format, no timezone suffix', () async {
+      final storage = _FakeSettingsStorage(
+        dateFormat: 'yyyy-MM-dd',
+        timezoneDisplay: TimezoneDisplay.offset,
+      );
+      final notifier = SettingsNotifier(storage);
+      final dt = DateTime(2026, 3, 5, 14, 30);
+
+      expect(notifier.formatDate(dt), '2026-03-05');
+      notifier.dispose();
+    });
+  });
+
+  group('formatDateTime', () {
+    test('off mode appends nothing', () async {
+      final storage = _FakeSettingsStorage(
+        dateFormat: 'yyyy-MM-dd',
+        timeFormat: 'HH:mm',
+      );
+      final notifier = SettingsNotifier(storage);
+      final dt = DateTime(2026, 3, 5, 14, 30);
+
+      expect(notifier.formatDateTime(dt), '2026-03-05 14:30');
+      notifier.dispose();
+    });
+
+    test('offset mode appends the UTC offset derived from the DateTime itself',
+        () async {
+      final storage = _FakeSettingsStorage(
+        dateFormat: 'yyyy-MM-dd',
+        timeFormat: 'HH:mm',
+        timezoneDisplay: TimezoneDisplay.offset,
+      );
+      final notifier = SettingsNotifier(storage);
+      final dt = DateTime(2026, 3, 5, 14, 30);
+      final offset = dt.timeZoneOffset;
+      final sign = offset.isNegative ? '-' : '+';
+      final abs = offset.abs();
+      final hours = abs.inHours.toString().padLeft(2, '0');
+      final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
+
+      expect(
+        notifier.formatDateTime(dt),
+        '2026-03-05 14:30 $sign$hours:$minutes',
+      );
+      notifier.dispose();
+    });
+
+    test('name mode appends the timezone name, or the offset as fallback',
+        () async {
+      final storage = _FakeSettingsStorage(
+        dateFormat: 'yyyy-MM-dd',
+        timeFormat: 'HH:mm',
+        timezoneDisplay: TimezoneDisplay.name,
+      );
+      final notifier = SettingsNotifier(storage);
+      final dt = DateTime(2026, 3, 5, 14, 30);
+      final name = dt.timeZoneName.trim();
+      final String suffix;
+      if (name.isNotEmpty) {
+        suffix = name;
+      } else {
+        final offset = dt.timeZoneOffset;
+        final sign = offset.isNegative ? '-' : '+';
+        final abs = offset.abs();
+        final hours = abs.inHours.toString().padLeft(2, '0');
+        final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
+        suffix = '$sign$hours:$minutes';
+      }
+
+      expect(notifier.formatDateTime(dt), '2026-03-05 14:30 $suffix');
       notifier.dispose();
     });
   });

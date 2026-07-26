@@ -286,6 +286,36 @@ abstract class AppLocalizations {
   /// **'Choose time format'**
   String get settingsTimeFormatChoose;
 
+  /// No description provided for @settingsTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Timezone'**
+  String get settingsTimezone;
+
+  /// No description provided for @settingsTimezoneChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose timezone display'**
+  String get settingsTimezoneChoose;
+
+  /// No description provided for @settingsTimezoneOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsTimezoneOff;
+
+  /// No description provided for @settingsTimezoneOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'UTC offset'**
+  String get settingsTimezoneOffset;
+
+  /// No description provided for @settingsTimezoneName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get settingsTimezoneName;
+
   /// No description provided for @settingsStartScreen.
   ///
   /// In en, this message translates to:
@@ -303,6 +333,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Channel list'**
   String get settingsStartScreenChannelList;
+
+  /// No description provided for @settingsSectionAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsSectionAppearance;
+
+  /// No description provided for @settingsSectionGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsSectionGeneral;
+
+  /// No description provided for @settingsSectionDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & time'**
+  String get settingsSectionDateTime;
+
+  /// No description provided for @settingsSectionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get settingsSectionInfo;
 
   /// No description provided for @privacyPolicy.
   ///

@@ -8,9 +8,14 @@ const _kDateFormatKey = 'dateFormat';
 const _kTimeFormatKey = 'timeFormat';
 const _kStartChannelIdKey = 'startChannelId';
 const _kStartChannelServerUrlKey = 'startChannelServerUrl';
+const _kTimezoneDisplayKey = 'timezoneDisplay';
 
 const defaultDateFormat = 'dd.MM.yyyy';
 const defaultTimeFormat = 'HH:mm';
+
+enum TimezoneDisplay { off, offset, name }
+
+const defaultTimezoneDisplay = TimezoneDisplay.off;
 
 /// Persists user preferences using SharedPreferences.
 class SettingsStorage {
@@ -39,6 +44,16 @@ class SettingsStorage {
 
   Future<void> saveTimeFormat(String format) async {
     await _prefs.setString(_kTimeFormatKey, format);
+  }
+
+  TimezoneDisplay get timezoneDisplay =>
+      TimezoneDisplay.values.elementAtOrNull(
+        _prefs.getInt(_kTimezoneDisplayKey) ?? 0,
+      ) ??
+      defaultTimezoneDisplay;
+
+  Future<void> saveTimezoneDisplay(TimezoneDisplay value) async {
+    await _prefs.setInt(_kTimezoneDisplayKey, value.index);
   }
 
   int? get startChannelId => _prefs.getInt(_kStartChannelIdKey);

@@ -113,6 +113,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTimeFormatChoose => 'Choose time format';
 
   @override
+  String get settingsTimezone => 'Timezone';
+
+  @override
+  String get settingsTimezoneChoose => 'Choose timezone display';
+
+  @override
+  String get settingsTimezoneOff => 'Off';
+
+  @override
+  String get settingsTimezoneOffset => 'UTC offset';
+
+  @override
+  String get settingsTimezoneName => 'Name';
+
+  @override
   String get settingsStartScreen => 'Start screen';
 
   @override
@@ -120,6 +135,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsStartScreenChannelList => 'Channel list';
+
+  @override
+  String get settingsSectionAppearance => 'Appearance';
+
+  @override
+  String get settingsSectionGeneral => 'General';
+
+  @override
+  String get settingsSectionDateTime => 'Date & time';
+
+  @override
+  String get settingsSectionInfo => 'Info';
 
   @override
   String get privacyPolicy => 'Privacy Policy';
