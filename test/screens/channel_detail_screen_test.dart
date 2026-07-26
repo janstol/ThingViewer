@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
@@ -241,5 +242,81 @@ void main() {
 
     expect(find.text('Website'), findsNothing);
     expect(find.text('Source code'), findsNothing);
+  });
+
+  testWidgets('pull-to-refresh on the field list re-fetches the channel',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    verify(mockApi.readChannel(any)).called(2);
+  });
+
+  testWidgets('field list stays on screen while a pull-to-refresh is in flight',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
+    var callCount = 0;
+    when(mockApi.readChannel(any)).thenAnswer((_) async {
+      callCount++;
+      if (callCount > 1) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      return enrichedChannel;
+    });
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Temp'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('pulling to refresh on the error state recovers to loaded',
+      (tester) async {
+    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
+    var callCount = 0;
+    when(mockApi.readChannel(any)).thenAnswer((_) async {
+      callCount++;
+      if (callCount == 1) {
+        throw const ApiException(ApiErrorCode.network);
+      }
+      return enrichedChannel;
+    });
+
+    await tester.pumpWidget(_wrap(ChannelDetailScreen(
+      channel: _channel,
+      api: mockApi,
+      settings: await _settings(),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Network error. Please check your connection.'),
+        findsOneWidget);
+
+    await tester.fling(
+        find.byType(SingleChildScrollView), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Temp'), findsOneWidget);
   });
 }

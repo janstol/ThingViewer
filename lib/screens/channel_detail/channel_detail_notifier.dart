@@ -48,7 +48,14 @@ class ChannelDetailNotifier extends ChangeNotifier {
   Future<void> load() async {
     _state = ChannelDetailLoading();
     notifyListeners();
+    await _fetch();
+  }
 
+  /// Re-fetches without setting [ChannelDetailLoading] first, since the
+  /// caller (a pull-to-refresh gesture) renders its own progress indicator.
+  Future<void> refresh() => _fetch();
+
+  Future<void> _fetch() async {
     try {
       final params = ApiParameters(
         apiKey: _channel.apiKey,

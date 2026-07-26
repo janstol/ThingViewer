@@ -149,41 +149,46 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
           ),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: _notifier,
-        builder: (context, _) => switch (_notifier.state) {
-          ChannelDetailLoading() =>
-            const Center(child: CircularProgressIndicator()),
-          ChannelDetailEmpty(:final channel) => _EmptyState(
-              channel: channel,
-              message: l10n.channelDetailNoFields,
-            ),
-          ChannelDetailError(:final errorCode, :final serverMessage) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(switch (errorCode) {
-                    ApiErrorCode.network => l10n.errorNetwork,
-                    ApiErrorCode.credentials => l10n.errorApiCredentials,
-                    ApiErrorCode.general =>
-                      serverMessage ?? l10n.errorGeneral,
-                  }),
-                  const SizedBox(height: 16),
-                  FilledButton.tonal(
-                    onPressed: _notifier.load,
-                    child: Text(l10n.channelDetailRefresh),
-                  ),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _notifier.refresh,
+        semanticsLabel: l10n.channelDetailRefresh,
+        child: ListenableBuilder(
+          listenable: _notifier,
+          builder: (context, _) => switch (_notifier.state) {
+            ChannelDetailLoading() =>
+              const Center(child: CircularProgressIndicator()),
+            ChannelDetailEmpty(:final channel) => _EmptyState(
+                channel: channel,
+                message: l10n.channelDetailNoFields,
               ),
-            ),
-          ChannelDetailLoaded(:final channel, :final fields) =>
-            _FieldList(
-              channel: channel,
-              fields: fields,
-              api: widget.api,
-              settings: widget.settings,
-            ),
-        },
+            ChannelDetailError(:final errorCode, :final serverMessage) =>
+              _ScrollableCenter(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(switch (errorCode) {
+                      ApiErrorCode.network => l10n.errorNetwork,
+                      ApiErrorCode.credentials => l10n.errorApiCredentials,
+                      ApiErrorCode.general =>
+                        serverMessage ?? l10n.errorGeneral,
+                    }),
+                    const SizedBox(height: 16),
+                    FilledButton.tonal(
+                      onPressed: _notifier.load,
+                      child: Text(l10n.channelDetailRefresh),
+                    ),
+                  ],
+                ),
+              ),
+            ChannelDetailLoaded(:final channel, :final fields) =>
+              _FieldList(
+                channel: channel,
+                fields: fields,
+                api: widget.api,
+                settings: widget.settings,
+              ),
+          },
+        ),
       ),
     );
   }
@@ -214,6 +219,7 @@ class _FieldList extends StatelessWidget {
         final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
         final hasHeader = _hasHeader(channel);
         return ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: fields.length + (hasHeader ? 1 : 0),
           itemBuilder: (context, i) {
             if (hasHeader && i == 0) {
@@ -271,7 +277,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasHeader = _hasHeader(channel);
-    return Center(
+    return _ScrollableCenter(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -287,4 +293,22 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Centres [child] but stays scrollable, so a pull-to-refresh gesture still
+/// reaches the enclosing RefreshIndicator on states that have no list.
+class _ScrollableCenter extends StatelessWidget {
+  final Widget child;
+  const _ScrollableCenter({required this.child});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        ),
+      );
 }
