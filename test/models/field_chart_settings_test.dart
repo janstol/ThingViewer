@@ -78,6 +78,20 @@ void main() {
 
       expect(roundTripped, FieldChartSettings.defaults);
     });
+
+    test('round-trips column', () {
+      const settings = FieldChartSettings(type: ChartType.column);
+      final roundTripped = FieldChartSettings.fromJson(settings.toJson());
+
+      expect(roundTripped, settings);
+    });
+
+    test('round-trips scatter', () {
+      const settings = FieldChartSettings(type: ChartType.scatter);
+      final roundTripped = FieldChartSettings.fromJson(settings.toJson());
+
+      expect(roundTripped, settings);
+    });
   });
 
   group('fromJson tolerance', () {

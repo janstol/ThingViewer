@@ -87,4 +87,57 @@ void main() {
       expect(result[0].value, -8);
     });
   });
+
+  group('bucketAverage', () {
+    List<FieldValue> series(int length) => [
+      for (var i = 0; i < length; i++)
+        FieldValue(createdAt: DateTime(2024, 1, 1 + i), value: i.toDouble()),
+    ];
+
+    test('returns input unchanged when already within the limit', () {
+      final values = series(5);
+      expect(bucketAverage(values, 10), same(values));
+      expect(bucketAverage(values, 5), same(values));
+    });
+
+    test('empty input returns empty output', () {
+      expect(bucketAverage([], 10), isEmpty);
+    });
+
+    test('averages values within a bucket', () {
+      final values = series(4);
+      final result = bucketAverage(values, 2);
+
+      expect(result, hasLength(2));
+      expect(result[0].value, 0.5); // mean of 0, 1
+      expect(result[1].value, 2.5); // mean of 2, 3
+    });
+
+    test('timestamp is the midpoint of the bucket', () {
+      final values = series(4);
+      final result = bucketAverage(values, 2);
+
+      expect(result[0].createdAt, DateTime(2024, 1, 1, 12));
+      expect(result[1].createdAt, DateTime(2024, 1, 3, 12));
+    });
+
+    test('maxPoints of 1 collapses to a single point', () {
+      final values = series(4);
+      final result = bucketAverage(values, 1);
+
+      expect(result, hasLength(1));
+      expect(result[0].value, 1.5); // mean of 0..3
+    });
+
+    test('a length not evenly divisible by maxPoints still covers all input', () {
+      final values = series(7);
+      final result = bucketAverage(values, 3);
+
+      expect(result, hasLength(3));
+      // buckets: [0,1], [2,3], [4,5,6]
+      expect(result[0].value, 0.5);
+      expect(result[1].value, 2.5);
+      expect(result[2].value, 5.0);
+    });
+  });
 }

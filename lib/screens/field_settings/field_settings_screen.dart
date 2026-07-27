@@ -163,12 +163,21 @@ class _TypeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Scatter is implemented (see field_chart_screen.dart) but hidden from
+    // this picker — janky on larger datasets and no real use case yet.
+    // orElse covers a field already set to it before this change shipped.
     final options = [
       (ChartType.line, l10n.fieldSettingsTypeLine),
       (ChartType.spline, l10n.fieldSettingsTypeSpline),
       (ChartType.step, l10n.fieldSettingsTypeStep),
+      (ChartType.column, l10n.fieldSettingsTypeColumn),
     ];
-    final label = options.firstWhere((e) => e.$1 == current).$2;
+    final label = options
+        .firstWhere(
+          (e) => e.$1 == current,
+          orElse: () => (current, l10n.fieldSettingsTypeScatter),
+        )
+        .$2;
 
     return ListTile(
       leading: const Icon(Icons.show_chart),

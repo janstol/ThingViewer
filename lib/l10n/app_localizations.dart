@@ -196,6 +196,12 @@ abstract class AppLocalizations {
   /// **'No values for the selected date range.'**
   String get fieldChartNoValues;
 
+  /// No description provided for @fieldChartNoValuesInZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'No data at this zoom level.'**
+  String get fieldChartNoValuesInZoom;
+
   /// No description provided for @fieldChartShowingValues.
   ///
   /// In en, this message translates to:
@@ -537,6 +543,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Step'**
   String get fieldSettingsTypeStep;
+
+  /// No description provided for @fieldSettingsTypeColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Column'**
+  String get fieldSettingsTypeColumn;
+
+  /// No description provided for @fieldSettingsTypeScatter.
+  ///
+  /// In en, this message translates to:
+  /// **'Scatter'**
+  String get fieldSettingsTypeScatter;
 
   /// No description provided for @fieldSettingsChartTitle.
   ///

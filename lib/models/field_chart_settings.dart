@@ -1,4 +1,4 @@
-enum ChartType { line, spline, step }
+enum ChartType { line, spline, step, column, scatter }
 
 ChartType _parseType(dynamic value) {
   for (final t in ChartType.values) {

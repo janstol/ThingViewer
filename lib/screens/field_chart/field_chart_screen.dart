@@ -16,6 +16,10 @@ import 'field_chart_notifier.dart';
 /// a zero-width x-range (minX == maxX).
 const _singlePointPadding = Duration(hours: 1);
 
+/// Maximum number of bars rendered by the column chart at once — the visible
+/// window is bucket-averaged down to this before rendering.
+const _maxBars = 300;
+
 class FieldChartScreen extends StatefulWidget {
   final Channel channel;
   final Field field;
@@ -340,16 +344,33 @@ class _ChartState extends State<_Chart> {
     _lastPinchMid = null;
   }
 
+  Widget? _axisName(String? label) => label != null ? Text(label) : null;
+
+  String _valueText(double value, FieldChartSettings chartSettings) =>
+      formatFieldValue(value, decimals: chartSettings.decimals);
+
+  String _dateText(DateTime dt) => widget.settings.formatDateTime(dt);
+
+  AxisTitles _leftTitles(FieldChartSettings chartSettings) => AxisTitles(
+    axisNameWidget: _axisName(chartSettings.yAxisLabel),
+    sideTitles: SideTitles(
+      showTitles: true,
+      reservedSize: 48,
+      getTitlesWidget: (value, meta) => SideTitleWidget(
+        meta: meta,
+        child: Text(
+          _valueText(value, chartSettings),
+          style: const TextStyle(fontSize: 10),
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = Theme.of(context).extension<BrandColors>()!.dataAccent;
     final chartSettings = widget.chartSettings;
-    final spots = _displayValues
-        .map(
-          (v) => FlSpot(v.createdAt.millisecondsSinceEpoch.toDouble(), v.value),
-        )
-        .toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 24, 24, 8),
@@ -364,118 +385,236 @@ class _ChartState extends State<_Chart> {
                 onPointerMove: _pointerMove,
                 onPointerUp: _pointerUp,
                 onPointerCancel: _pointerCancel,
-                child: LineChart(
-                  LineChartData(
-                    minX: _minX,
-                    maxX: _maxX,
-                    minY: chartSettings.yMin,
-                    maxY: chartSettings.yMax,
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: spots,
-                        isCurved: chartSettings.type == ChartType.spline,
-                        isStepLineChart: chartSettings.type == ChartType.step,
-                        color: color,
-                        dotData: const FlDotData(show: false),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              color.withValues(alpha: 0.2),
-                              color.withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    titlesData: FlTitlesData(
-                      leftTitles: AxisTitles(
-                        axisNameWidget: chartSettings.yAxisLabel != null
-                            ? Text(chartSettings.yAxisLabel!)
-                            : null,
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 48,
-                          getTitlesWidget: (value, meta) => SideTitleWidget(
-                            meta: meta,
-                            child: Text(
-                              formatFieldValue(
-                                value,
-                                decimals: chartSettings.decimals,
-                              ),
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                          ),
-                        ),
-                      ),
-                      bottomTitles: AxisTitles(
-                        axisNameWidget: chartSettings.xAxisLabel != null
-                            ? Text(chartSettings.xAxisLabel!)
-                            : null,
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 52,
-                          getTitlesWidget: (value, meta) {
-                            final dt = DateTime.fromMillisecondsSinceEpoch(
-                              value.toInt(),
-                            );
-                            return SideTitleWidget(
-                              meta: meta,
-                              angle: -0.6,
-                              child: Text(
-                                widget.settings.formatDate(dt),
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    gridData: const FlGridData(show: true),
-                    borderData: FlBorderData(show: false),
-                    lineTouchData: LineTouchData(
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (_) => colorScheme.inverseSurface,
-                        getTooltipItems: (spots) => spots.map((s) {
-                          final dt = DateTime.fromMillisecondsSinceEpoch(
-                            s.x.toInt(),
-                          );
-                          final dateStr = widget.settings.formatDateTime(dt);
-                          return LineTooltipItem(
-                            '${formatFieldValue(s.y, decimals: chartSettings.decimals)}\n',
-                            TextStyle(
-                              color: colorScheme.onInverseSurface,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: dateStr,
-                                style: TextStyle(
-                                  color: colorScheme.onInverseSurface
-                                      .withValues(alpha: 0.7),
-                                  fontWeight: FontWeight.normal,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ),
+                child: chartSettings.type == ChartType.column
+                    ? _buildBarChart(colorScheme, color, chartSettings)
+                    : _buildLineChart(colorScheme, color, chartSettings),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLineChart(
+    ColorScheme colorScheme,
+    Color color,
+    FieldChartSettings chartSettings,
+  ) {
+    final isScatter = chartSettings.type == ChartType.scatter;
+    final spots = _displayValues
+        .map(
+          (v) => FlSpot(v.createdAt.millisecondsSinceEpoch.toDouble(), v.value),
+        )
+        .toList();
+
+    return LineChart(
+      LineChartData(
+        minX: _minX,
+        maxX: _maxX,
+        minY: chartSettings.yMin,
+        maxY: chartSettings.yMax,
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: chartSettings.type == ChartType.spline,
+            isStepLineChart: chartSettings.type == ChartType.step,
+            color: color,
+            barWidth: isScatter ? 0 : 2,
+            dotData: FlDotData(
+              show: isScatter,
+              getDotPainter: (_, _, _, _) =>
+                  FlDotCirclePainter(radius: 2.5, color: color),
+            ),
+            belowBarData: BarAreaData(
+              show: !isScatter,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  color.withValues(alpha: 0.2),
+                  color.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ],
+        titlesData: FlTitlesData(
+          leftTitles: _leftTitles(chartSettings),
+          bottomTitles: AxisTitles(
+            axisNameWidget: _axisName(chartSettings.xAxisLabel),
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 52,
+              getTitlesWidget: (value, meta) {
+                final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                return SideTitleWidget(
+                  meta: meta,
+                  angle: -0.6,
+                  child: Text(
+                    widget.settings.formatDate(dt),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        gridData: const FlGridData(show: true),
+        borderData: FlBorderData(show: false),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => colorScheme.inverseSurface,
+            getTooltipItems: (spots) => spots.map((s) {
+              final dt = DateTime.fromMillisecondsSinceEpoch(s.x.toInt());
+              return LineTooltipItem(
+                '${_valueText(s.y, chartSettings)}\n',
+                TextStyle(
+                  color: colorScheme.onInverseSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                children: [
+                  TextSpan(
+                    text: _dateText(dt),
+                    style: TextStyle(
+                      color: colorScheme.onInverseSurface.withValues(
+                        alpha: 0.7,
+                      ),
+                      fontWeight: FontWeight.normal,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBarChart(
+    ColorScheme colorScheme,
+    Color color,
+    FieldChartSettings chartSettings,
+  ) {
+    final slice = _displayValues.where((v) {
+      final ms = v.createdAt.millisecondsSinceEpoch;
+      return ms >= _minX && ms <= _maxX;
+    }).toList();
+    final bars = bucketAverage(slice, _maxBars);
+
+    final barWidth = bars.isEmpty || _constraints == null
+        ? 8.0
+        : ((_constraints!.maxWidth / bars.length) * 0.7).clamp(1.0, 16.0);
+    final labelStep = bars.isEmpty ? 1 : (bars.length / 5).ceil();
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _barChart(colorScheme, color, chartSettings, bars, barWidth, labelStep),
+        if (bars.isEmpty)
+          Text(AppLocalizations.of(context)!.fieldChartNoValuesInZoom),
+      ],
+    );
+  }
+
+  Widget _barChart(
+    ColorScheme colorScheme,
+    Color color,
+    FieldChartSettings chartSettings,
+    List<FieldValue> bars,
+    double barWidth,
+    int labelStep,
+  ) {
+    return BarChart(
+      // The bar count changes on every frame during pinch-zoom/pan (each
+      // rebuild re-buckets the visible window). fl_chart's default 150ms
+      // implicit animation lerps between old/new BarChartData, and its
+      // internal touch handler can read a bar-position cache built from a
+      // still-animating group count against the newer (shorter) target
+      // list, throwing RangeError mid-gesture. Disabling the animation
+      // keeps data and touch cache in sync.
+      duration: Duration.zero,
+      BarChartData(
+        minY: chartSettings.yMin,
+        maxY: chartSettings.yMax,
+        barGroups: [
+          for (var i = 0; i < bars.length; i++)
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(toY: bars[i].value, color: color, width: barWidth),
+              ],
+            ),
+        ],
+        titlesData: FlTitlesData(
+          leftTitles: _leftTitles(chartSettings),
+          bottomTitles: AxisTitles(
+            axisNameWidget: _axisName(chartSettings.xAxisLabel),
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 52,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index < 0 ||
+                    index >= bars.length ||
+                    index % labelStep != 0) {
+                  return const SizedBox.shrink();
+                }
+                return SideTitleWidget(
+                  meta: meta,
+                  angle: -0.6,
+                  child: Text(
+                    widget.settings.formatDate(bars[index].createdAt),
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        gridData: const FlGridData(show: true),
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => colorScheme.inverseSurface,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              if (groupIndex < 0 || groupIndex >= bars.length) return null;
+              return BarTooltipItem(
+                '${_valueText(rod.toY, chartSettings)}\n',
+                TextStyle(
+                  color: colorScheme.onInverseSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                children: [
+                  TextSpan(
+                    text: _dateText(bars[groupIndex].createdAt),
+                    style: TextStyle(
+                      color: colorScheme.onInverseSurface.withValues(
+                        alpha: 0.7,
+                      ),
+                      fontWeight: FontWeight.normal,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

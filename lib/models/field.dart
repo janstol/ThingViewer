@@ -45,6 +45,37 @@ List<FieldValue> deltaValues(List<FieldValue> values) {
   ];
 }
 
+/// Downsamples [values] to at most [maxPoints] points by averaging
+/// contiguous index-based buckets.
+///
+/// Returns [values] unchanged when it already fits within [maxPoints] (or
+/// [maxPoints] is less than 1). Each emitted point's timestamp is the
+/// midpoint between its bucket's first and last timestamp — index-based
+/// rather than time-based, since this is a display-only "N points → M
+/// points" reduction, not real aggregation.
+List<FieldValue> bucketAverage(List<FieldValue> values, int maxPoints) {
+  if (maxPoints < 1 || values.length <= maxPoints) return values;
+
+  final result = <FieldValue>[];
+  for (var i = 0; i < maxPoints; i++) {
+    final start = i * values.length ~/ maxPoints;
+    final end = (i + 1) * values.length ~/ maxPoints;
+    final bucket = values.sublist(start, end);
+    final sum = bucket.fold<double>(0, (acc, v) => acc + v.value);
+    final firstMs = bucket.first.createdAt.millisecondsSinceEpoch;
+    final lastMs = bucket.last.createdAt.millisecondsSinceEpoch;
+    result.add(
+      FieldValue(
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          (firstMs + lastMs) ~/ 2,
+        ),
+        value: sum / bucket.length,
+      ),
+    );
+  }
+  return result;
+}
+
 class Field {
   final int id;
   final String? label;

@@ -50,6 +50,31 @@ void main() {
     expect(changed!.type, ChartType.step);
   });
 
+  testWidgets('selecting Column fires onChanged with it', (tester) async {
+    FieldChartSettings? changed;
+
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: FieldChartSettings.defaults,
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Type'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Column'));
+    await tester.pumpAndSettle();
+
+    expect(changed, isNotNull);
+    expect(changed!.type, ChartType.column);
+  });
+
   testWidgets('reset restores defaults after changes', (tester) async {
     FieldChartSettings? changed;
 

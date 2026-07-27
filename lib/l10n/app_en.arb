@@ -17,6 +17,7 @@
   "channelDetailWebsite": "Website",
   "channelDetailSource": "Source code",
   "fieldChartNoValues": "No values for the selected date range.",
+  "fieldChartNoValuesInZoom": "No data at this zoom level.",
   "fieldChartShowingValues": "{count, plural, =1{Showing 1 value} other{Showing {count} values}}",
   "@fieldChartShowingValues": {
     "placeholders": {
@@ -84,6 +85,8 @@
   "fieldSettingsTypeLine": "Line",
   "fieldSettingsTypeSpline": "Spline",
   "fieldSettingsTypeStep": "Step",
+  "fieldSettingsTypeColumn": "Column",
+  "fieldSettingsTypeScatter": "Scatter",
   "fieldSettingsChartTitle": "Title",
   "fieldSettingsXAxisLabel": "X-axis label",
   "fieldSettingsYAxisLabel": "Y-axis label",

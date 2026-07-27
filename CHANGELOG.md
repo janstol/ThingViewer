@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pull-to-refresh on the channel detail screen re-fetches the channel by swiping down, in addition to the existing AppBar refresh button.
 - A "Timezone" setting (off by default) appends the UTC offset or zone name to the "Last entry" readout and chart tooltip.
 - Per-field chart settings, reachable via a new AppBar button on the field chart screen: chart type (line, spline, or step), a custom title, X/Y axis labels, Y-axis min/max, fixed decimal rounding, and a "show change between readings" toggle for turning a monotonically increasing counter into a per-reading rate. Settings are local to the app and persist per field.
+- A Column chart type, added to the per-field chart type picker above. Bars support the same pinch-zoom and pan as the other chart types, and dense windows are automatically downsampled for display.
 
 ### Fixed
 

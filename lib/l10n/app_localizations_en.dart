@@ -60,6 +60,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldChartNoValues => 'No values for the selected date range.';
 
   @override
+  String get fieldChartNoValuesInZoom => 'No data at this zoom level.';
+
+  @override
   String fieldChartShowingValues(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -240,6 +243,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fieldSettingsTypeStep => 'Step';
+
+  @override
+  String get fieldSettingsTypeColumn => 'Column';
+
+  @override
+  String get fieldSettingsTypeScatter => 'Scatter';
 
   @override
   String get fieldSettingsChartTitle => 'Title';
