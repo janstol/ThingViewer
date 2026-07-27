@@ -86,7 +86,7 @@ class _ChannelHeader extends StatelessWidget {
               16,
               12,
             ),
-            child: Text(
+            child: SelectableText(
               description,
               textAlign: centered ? TextAlign.center : null,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(

@@ -79,6 +79,7 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.fieldApiKey,
                   helperText: l10n.fieldApiKeyHelper,
+                  helperMaxLines: 2,
                 ),
                 validator: (v) => _validateApiKey(v, l10n),
               ),

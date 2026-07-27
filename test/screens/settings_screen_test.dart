@@ -131,6 +131,24 @@ void main() {
     expect(settings.timezoneDisplay, TimezoneDisplay.offset);
   });
 
+  testWidgets('shows a Source code tile in the Info section', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = SettingsNotifier(
+      SettingsStorage(await SharedPreferences.getInstance()),
+    );
+
+    await tester.pumpWidget(
+      _wrap(SettingsScreen(settings: settings, channels: const [])),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Source code'),
+      100,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.text('Source code'), findsOneWidget);
+  });
+
   testWidgets('selecting a channel calls setStartChannel', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final settings = SettingsNotifier(

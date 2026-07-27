@@ -64,6 +64,14 @@ class SettingsScreen extends StatelessWidget {
                 mode: LaunchMode.externalApplication,
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.code),
+              title: Text(l10n.settingsSourceCode),
+              onTap: () => launchUrl(
+                Uri.parse('https://github.com/janstol/ThingViewer'),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
             _AboutTile(l10n: l10n),
           ],
         ),

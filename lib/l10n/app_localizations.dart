@@ -151,13 +151,13 @@ abstract class AppLocalizations {
   /// No description provided for @fieldApiKey.
   ///
   /// In en, this message translates to:
-  /// **'API Key'**
+  /// **'Read API Key'**
   String get fieldApiKey;
 
   /// No description provided for @fieldApiKeyHelper.
   ///
   /// In en, this message translates to:
-  /// **'Required for private channels'**
+  /// **'Required for private channels. Find it on the channel\'s API Keys tab on ThingSpeak.'**
   String get fieldApiKeyHelper;
 
   /// No description provided for @channelDetailRefresh.
@@ -375,6 +375,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Privacy Policy'**
   String get privacyPolicy;
+
+  /// No description provided for @settingsSourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get settingsSourceCode;
 
   /// No description provided for @aboutTitle.
   ///

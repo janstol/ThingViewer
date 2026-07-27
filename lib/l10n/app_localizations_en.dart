@@ -36,10 +36,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldPrivate => 'Private';
 
   @override
-  String get fieldApiKey => 'API Key';
+  String get fieldApiKey => 'Read API Key';
 
   @override
-  String get fieldApiKeyHelper => 'Required for private channels';
+  String get fieldApiKeyHelper =>
+      'Required for private channels. Find it on the channel\'s API Keys tab on ThingSpeak.';
 
   @override
   String get channelDetailRefresh => 'Refresh';
@@ -157,6 +158,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get settingsSourceCode => 'Source code';
 
   @override
   String get aboutTitle => 'About';

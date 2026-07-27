@@ -14,6 +14,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A "Timezone" setting (off by default) appends the UTC offset or zone name to the "Last entry" readout and chart tooltip.
 - Per-field chart settings, reachable via a new AppBar button on the field chart screen: chart type (line, spline, or step), a custom title, X/Y axis labels, Y-axis min/max, fixed decimal rounding, and a "show change between readings" toggle for turning a monotonically increasing counter into a per-reading rate. Settings are local to the app and persist per field.
 - A Column chart type, added to the per-field chart type picker above. Bars support the same pinch-zoom and pan as the other chart types, and dense windows are automatically downsampled for display.
+- A "Source code" link to the app's GitHub repo, added to the Settings → Info section.
+- The channel description on the channel detail screen is now selectable, so it can be copied.
 
 ### Fixed
 
@@ -31,6 +33,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Bumped the Flutter SDK to 3.44.8, unblocking Dependabot updates for `path_provider`, `package_info_plus`, and `mockito` that require a newer Dart SDK.
 - Enabled optimized resource shrinking for release builds (Android Gradle plugin 8.13.2, Gradle 8.14.5), reducing app bundle size. Removed the deprecated Jetifier flag.
 - macOS Runner now embeds Flutter plugins via Swift Package Manager instead of CocoaPods, following Flutter 3.44.8's default. `Podfile.lock` no longer lists plugin pods.
+- The Add Channel form's API key field now names the exact key to paste: the channel's Read API Key, not the Write or account User API Key.
 
 ## [0.9.0] - 2026-07-25
 

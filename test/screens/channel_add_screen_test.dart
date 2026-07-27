@@ -73,6 +73,22 @@ void main() {
     expect(find.text('Enter a valid channel ID'), findsOneWidget);
   });
 
+  testWidgets('shows the Read API Key label and helper for private channels', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(ChannelAddScreen(api: mockApi)));
+    await tester.tap(find.text('Private'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Read API Key'), findsOneWidget);
+    expect(
+      find.text(
+        "Required for private channels. Find it on the channel's API Keys tab on ThingSpeak.",
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'shows a duplicate-channel error when the api returns an existing channel',
     (tester) async {

@@ -76,7 +76,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('A description of the channel'), findsOneWidget);
+    expect(
+      find.widgetWithText(SelectableText, 'A description of the channel'),
+      findsOneWidget,
+    );
     expect(find.text('Temp'), findsOneWidget);
   });
 
