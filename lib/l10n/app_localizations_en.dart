@@ -130,7 +130,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTimeFormatChoose => 'Choose time format';
 
   @override
-  String get settingsTimezone => 'Timezone';
+  String get settingsTimezone => 'Timezone display';
 
   @override
   String get settingsTimezoneChoose => 'Choose timezone display';
@@ -163,7 +163,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionDateTime => 'Date & time';
 
   @override
+  String get settingsSectionBackup => 'Backup';
+
+  @override
   String get settingsSectionInfo => 'Info';
+
+  @override
+  String get settingsExport => 'Export';
+
+  @override
+  String get settingsExportSubtitle =>
+      'Includes API keys for private channels. Store the file securely!';
+
+  @override
+  String get settingsImport => 'Import';
+
+  @override
+  String get backupImportTitle => 'Import backup';
+
+  @override
+  String backupImportSummary(String summary) {
+    return 'This backup contains $summary.';
+  }
+
+  @override
+  String backupSummaryChannels(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count channels',
+      one: '1 channel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupSummarySettings => 'app settings';
+
+  @override
+  String backupSummaryFieldSettings(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chart settings',
+      one: '1 chart setting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupSummaryEmpty => 'nothing to import';
+
+  @override
+  String get backupModeReplace => 'Replace everything';
+
+  @override
+  String get backupModeReplaceDescription =>
+      'Overwrites all saved channels, app settings, and chart overrides with this backup\'s contents.';
+
+  @override
+  String get backupModeAddChannels => 'Add channels only';
+
+  @override
+  String get backupModeAddChannelsDescription =>
+      'Adds channels from the backup that aren\'t already saved. Existing channels, app settings, and chart overrides are left unchanged.';
+
+  @override
+  String get backupImportConfirm => 'Import';
+
+  @override
+  String get backupErrorNotABackup => 'This file isn\'t a ThingViewer backup.';
+
+  @override
+  String get backupErrorNewerVersion =>
+      'This backup was created by a newer version of the app.';
+
+  @override
+  String get backupErrorMalformed =>
+      'This backup file is corrupted or unreadable.';
+
+  @override
+  String get backupExportSuccess => 'Backup saved';
+
+  @override
+  String get backupImportSuccess => 'Backup imported';
 
   @override
   String get privacyPolicy => 'Privacy Policy';

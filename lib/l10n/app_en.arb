@@ -42,7 +42,7 @@
   "settingsDateFormatChoose": "Choose date format",
   "settingsTimeFormat": "Time format",
   "settingsTimeFormatChoose": "Choose time format",
-  "settingsTimezone": "Timezone",
+  "settingsTimezone": "Timezone display",
   "settingsTimezoneChoose": "Choose timezone display",
   "settingsTimezoneOff": "Off",
   "settingsTimezoneOffset": "UTC offset",
@@ -53,7 +53,42 @@
   "settingsSectionAppearance": "Appearance",
   "settingsSectionGeneral": "General",
   "settingsSectionDateTime": "Date & time",
+  "settingsSectionBackup": "Backup",
   "settingsSectionInfo": "Info",
+  "settingsExport": "Export",
+  "settingsExportSubtitle": "Includes API keys for private channels. Store the file securely!",
+  "settingsImport": "Import",
+  "backupImportTitle": "Import backup",
+  "backupImportSummary": "This backup contains {summary}.",
+  "@backupImportSummary": {
+    "placeholders": {
+      "summary": { "type": "String" }
+    }
+  },
+  "backupSummaryChannels": "{count, plural, =1{1 channel} other{{count} channels}}",
+  "@backupSummaryChannels": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "backupSummarySettings": "app settings",
+  "backupSummaryFieldSettings": "{count, plural, =1{1 chart setting} other{{count} chart settings}}",
+  "@backupSummaryFieldSettings": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "backupSummaryEmpty": "nothing to import",
+  "backupModeReplace": "Replace everything",
+  "backupModeReplaceDescription": "Overwrites all saved channels, app settings, and chart overrides with this backup's contents.",
+  "backupModeAddChannels": "Add channels only",
+  "backupModeAddChannelsDescription": "Adds channels from the backup that aren't already saved. Existing channels, app settings, and chart overrides are left unchanged.",
+  "backupImportConfirm": "Import",
+  "backupErrorNotABackup": "This file isn't a ThingViewer backup.",
+  "backupErrorNewerVersion": "This backup was created by a newer version of the app.",
+  "backupErrorMalformed": "This backup file is corrupted or unreadable.",
+  "backupExportSuccess": "Backup saved",
+  "backupImportSuccess": "Backup imported",
   "privacyPolicy": "Privacy Policy",
   "settingsSourceCode": "Source code",
   "aboutTitle": "About",

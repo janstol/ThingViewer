@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/thingspeak_api.dart';
 import 'app.dart';
+import 'backup/backup_service.dart';
 import 'migration/migration_service.dart';
 import 'storage/channel_storage.dart';
 import 'storage/field_settings_storage.dart';
@@ -18,6 +20,13 @@ void main() async {
   final channelStorage = ChannelStorage(prefs);
   final settingsStorage = SettingsStorage(prefs);
   final fieldSettingsStorage = FieldSettingsStorage(prefs);
+  final packageInfo = await PackageInfo.fromPlatform();
+  final backupService = BackupService(
+    channelStorage,
+    settingsStorage,
+    fieldSettingsStorage,
+    appVersion: packageInfo.version,
+  );
 
   runApp(
     App(
@@ -25,6 +34,7 @@ void main() async {
       channelStorage: channelStorage,
       settingsStorage: settingsStorage,
       fieldSettingsStorage: fieldSettingsStorage,
+      backupService: backupService,
     ),
   );
 }

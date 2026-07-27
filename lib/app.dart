@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'api/thingspeak_api.dart';
+import 'backup/backup_service.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/channel_list/channel_list_screen.dart';
 import 'screens/settings/settings_notifier.dart';
@@ -15,6 +16,7 @@ class App extends StatefulWidget {
   final ChannelStorage channelStorage;
   final SettingsStorage settingsStorage;
   final FieldSettingsStorage fieldSettingsStorage;
+  final BackupService backupService;
 
   const App({
     super.key,
@@ -22,6 +24,7 @@ class App extends StatefulWidget {
     required this.channelStorage,
     required this.settingsStorage,
     required this.fieldSettingsStorage,
+    required this.backupService,
   });
 
   @override
@@ -64,6 +67,7 @@ class _AppState extends State<App> {
           channelStorage: widget.channelStorage,
           settings: _settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
+          backupService: widget.backupService,
         ),
       ),
     );

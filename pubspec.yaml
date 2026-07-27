@@ -22,9 +22,10 @@ dependencies:
   path_provider: ^2.1.6
 
   fl_chart: ^1.2.0
+  file_picker: ^11.0.2
   intl: ^0.20.0
   http: ^1.2.2
-  package_info_plus: ^10.2.1
+  package_info_plus: ^9.0.1
   shared_preferences: ^2.3.2
   url_launcher: ^6.3.0
 

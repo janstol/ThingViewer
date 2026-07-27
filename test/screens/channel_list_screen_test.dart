@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
+import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
@@ -53,6 +54,15 @@ Future<FieldSettingsStorage> _fieldSettingsStorage() async {
   return FieldSettingsStorage(prefs);
 }
 
+Future<BackupService> _backupService() async {
+  final prefs = await SharedPreferences.getInstance();
+  return BackupService(
+    ChannelStorage(prefs),
+    SettingsStorage(prefs),
+    FieldSettingsStorage(prefs),
+  );
+}
+
 void main() {
   late MockThingSpeakApi mockApi;
 
@@ -73,6 +83,7 @@ void main() {
           channelStorage: storage,
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
+          backupService: await _backupService(),
         ),
       ),
     );
@@ -94,6 +105,7 @@ void main() {
           channelStorage: storage,
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
+          backupService: await _backupService(),
         ),
       ),
     );
@@ -117,6 +129,7 @@ void main() {
           channelStorage: storage,
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
+          backupService: await _backupService(),
         ),
       ),
     );
@@ -163,6 +176,7 @@ void main() {
               channelStorage: storage,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              backupService: await _backupService(),
             ),
           ),
         );
@@ -191,6 +205,7 @@ void main() {
             channelStorage: storage,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            backupService: await _backupService(),
           ),
         ),
       );
@@ -217,6 +232,7 @@ void main() {
             channelStorage: storage,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            backupService: await _backupService(),
           ),
         ),
       );

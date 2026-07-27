@@ -90,6 +90,44 @@ class _FakeSettingsStorage implements SettingsStorage {
     _startChannelId = channel?.id;
     _startChannelServerUrl = channel?.serverUrl;
   }
+
+  @override
+  Map<String, dynamic> exportJson() => {
+    'themeMode': _themeMode.index,
+    'dateFormat': _dateFormat,
+    'timeFormat': _timeFormat,
+    'timezoneDisplay': _timezoneDisplay.index,
+    if (_startChannelId != null) 'startChannelId': _startChannelId,
+    if (_startChannelServerUrl != null)
+      'startChannelServerUrl': _startChannelServerUrl,
+  };
+
+  @override
+  Future<void> importJson(Map<String, dynamic> json) async {
+    if (throwOnSave) throw Exception('storage error');
+    final themeModeValue = json['themeMode'];
+    if (themeModeValue is int) {
+      _themeMode = ThemeMode.values[themeModeValue.clamp(0, 2)];
+    }
+    final dateFormatValue = json['dateFormat'];
+    if (dateFormatValue is String) _dateFormat = dateFormatValue;
+    final timeFormatValue = json['timeFormat'];
+    if (timeFormatValue is String) _timeFormat = timeFormatValue;
+    final timezoneDisplayValue = json['timezoneDisplay'];
+    if (timezoneDisplayValue is int) {
+      _timezoneDisplay =
+          TimezoneDisplay.values[timezoneDisplayValue.clamp(
+            0,
+            TimezoneDisplay.values.length - 1,
+          )];
+    }
+    final startChannelIdValue = json['startChannelId'];
+    if (startChannelIdValue is int) _startChannelId = startChannelIdValue;
+    final startChannelServerUrlValue = json['startChannelServerUrl'];
+    if (startChannelServerUrlValue is String) {
+      _startChannelServerUrl = startChannelServerUrlValue;
+    }
+  }
 }
 
 void main() {
@@ -393,5 +431,44 @@ void main() {
         notifier.dispose();
       },
     );
+  });
+
+  group('reload', () {
+    test('re-reads every field from storage', () async {
+      final storage = _FakeSettingsStorage();
+      final notifier = SettingsNotifier(storage);
+      expect(notifier.themeMode, ThemeMode.system);
+
+      // Simulate an external write to storage, e.g. a backup restore, that
+      // the notifier's cached fields wouldn't otherwise pick up.
+      await storage.importJson({
+        'themeMode': ThemeMode.dark.index,
+        'dateFormat': 'yyyy-MM-dd',
+        'timeFormat': 'hh:mm a',
+        'timezoneDisplay': TimezoneDisplay.offset.index,
+        'startChannelId': _channel.id,
+        'startChannelServerUrl': _channel.serverUrl,
+      });
+      notifier.reload();
+
+      expect(notifier.themeMode, ThemeMode.dark);
+      expect(notifier.dateFormat, 'yyyy-MM-dd');
+      expect(notifier.timeFormat, 'hh:mm a');
+      expect(notifier.timezoneDisplay, TimezoneDisplay.offset);
+      expect(notifier.startChannel([_channel]), _channel);
+      notifier.dispose();
+    });
+
+    test('notifies listeners', () async {
+      final storage = _FakeSettingsStorage();
+      final notifier = SettingsNotifier(storage);
+      int notifyCount = 0;
+      notifier.addListener(() => notifyCount++);
+
+      notifier.reload();
+
+      expect(notifyCount, 1);
+      notifier.dispose();
+    });
   });
 }

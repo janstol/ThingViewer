@@ -160,4 +160,71 @@ void main() {
 
     expect(second.settingsFor(_channel, 1), settings);
   });
+
+  group('exportJson / importJson', () {
+    test('round trips settings for multiple fields', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      const forField1 = FieldChartSettings(type: ChartType.step);
+      const forField2 = FieldChartSettings(type: ChartType.spline, decimals: 2);
+      await storage.save(_channel, 1, forField1);
+      await storage.save(_otherChannel, 2, forField2);
+
+      final exported = storage.exportJson();
+
+      SharedPreferences.setMockInitialValues({});
+      final target = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      await target.importJson(exported);
+
+      expect(target.settingsFor(_channel, 1), forField1);
+      expect(target.settingsFor(_otherChannel, 2), forField2);
+    });
+
+    test('importJson replaces any existing entries', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      await storage.save(_channel, 1, const FieldChartSettings(decimals: 5));
+
+      await storage.importJson({
+        '${_otherChannel.serverUrl}|${_otherChannel.id}|1':
+            const FieldChartSettings(type: ChartType.column).toJson(),
+      });
+
+      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+      expect(storage.settingsFor(_otherChannel, 1).type, ChartType.column);
+    });
+
+    test('importJson skips entries whose value is not a map', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.importJson({'bad-key': 'not a map'});
+
+      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+    });
+  });
+
+  group('reload', () {
+    test('picks up changes written directly to prefs', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final storage = FieldSettingsStorage(prefs);
+      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+
+      final other = FieldSettingsStorage(prefs);
+      await other.save(_channel, 1, const FieldChartSettings(decimals: 7));
+
+      storage.reload();
+
+      expect(storage.settingsFor(_channel, 1).decimals, 7);
+    });
+  });
 }

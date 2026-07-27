@@ -26,6 +26,19 @@ class SettingsNotifier extends ChangeNotifier {
     _startChannelServerUrl = _storage.startChannelServerUrl;
   }
 
+  /// Re-reads every field from storage, e.g. after a backup restore.
+  void reload() {
+    _themeMode = _storage.themeMode;
+    _dateFormat = _storage.dateFormat;
+    _timeFormat = _storage.timeFormat;
+    _timezoneDisplay = _storage.timezoneDisplay;
+    _startChannelId = _storage.startChannelId;
+    _startChannelServerUrl = _storage.startChannelServerUrl;
+    _cachedDateFmt = null;
+    _cachedDateTimeFmt = null;
+    notifyListeners();
+  }
+
   ThemeMode get themeMode => _themeMode;
   String get dateFormat => _dateFormat;
   String get timeFormat => _timeFormat;

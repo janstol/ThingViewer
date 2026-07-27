@@ -70,4 +70,50 @@ class SettingsStorage {
       await _prefs.setString(_kStartChannelServerUrlKey, channel.serverUrl);
     }
   }
+
+  Map<String, dynamic> exportJson() => {
+    _kThemeModeKey: themeMode.index,
+    _kDateFormatKey: dateFormat,
+    _kTimeFormatKey: timeFormat,
+    _kTimezoneDisplayKey: timezoneDisplay.index,
+    if (startChannelId != null) _kStartChannelIdKey: startChannelId,
+    if (startChannelServerUrl != null)
+      _kStartChannelServerUrlKey: startChannelServerUrl,
+  };
+
+  /// Writes each key defensively: absent or wrong-typed values are skipped
+  /// rather than throwing, and enum-backed values are clamped to their valid
+  /// range, mirroring [MigrationService._migrateSettings].
+  Future<void> importJson(Map<String, dynamic> json) async {
+    final themeModeValue = json[_kThemeModeKey];
+    if (themeModeValue is int) {
+      await _prefs.setInt(_kThemeModeKey, themeModeValue.clamp(0, 2));
+    }
+    final dateFormatValue = json[_kDateFormatKey];
+    if (dateFormatValue is String) {
+      await _prefs.setString(_kDateFormatKey, dateFormatValue);
+    }
+    final timeFormatValue = json[_kTimeFormatKey];
+    if (timeFormatValue is String) {
+      await _prefs.setString(_kTimeFormatKey, timeFormatValue);
+    }
+    final timezoneDisplayValue = json[_kTimezoneDisplayKey];
+    if (timezoneDisplayValue is int) {
+      await _prefs.setInt(
+        _kTimezoneDisplayKey,
+        timezoneDisplayValue.clamp(0, TimezoneDisplay.values.length - 1),
+      );
+    }
+    final startChannelIdValue = json[_kStartChannelIdKey];
+    if (startChannelIdValue is int) {
+      await _prefs.setInt(_kStartChannelIdKey, startChannelIdValue);
+    }
+    final startChannelServerUrlValue = json[_kStartChannelServerUrlKey];
+    if (startChannelServerUrlValue is String) {
+      await _prefs.setString(
+        _kStartChannelServerUrlKey,
+        startChannelServerUrlValue,
+      );
+    }
+  }
 }

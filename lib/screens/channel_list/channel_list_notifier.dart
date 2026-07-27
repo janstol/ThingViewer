@@ -29,6 +29,9 @@ class ChannelListNotifier extends ChangeNotifier {
     _loadChannels();
   }
 
+  /// Re-reads the channel list from storage, e.g. after a backup restore.
+  void reload() => _loadChannels();
+
   void _loadChannels() {
     try {
       _channels = _storage.loadChannels();

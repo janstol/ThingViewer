@@ -73,4 +73,28 @@ class FieldSettingsStorage {
     _kFieldChartSettingsKey,
     jsonEncode(_settings.map((k, v) => MapEntry(k, v.toJson()))),
   );
+
+  Map<String, dynamic> exportJson() =>
+      _settings.map((k, v) => MapEntry(k, v.toJson()));
+
+  Future<void> importJson(Map<String, dynamic> json) async {
+    _settings
+      ..clear()
+      ..addAll({
+        for (final entry in json.entries)
+          if (entry.value is Map<String, dynamic>)
+            entry.key: FieldChartSettings.fromJson(
+              entry.value as Map<String, dynamic>,
+            ),
+      });
+    await _persist();
+  }
+
+  /// Re-reads the in-memory cache from [_prefs], picking up any changes
+  /// written directly to storage (e.g. by a backup restore) since construction.
+  void reload() {
+    _settings
+      ..clear()
+      ..addAll(_load(_prefs));
+  }
 }

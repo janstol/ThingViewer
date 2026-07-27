@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api/thingspeak_api.dart';
+import '../../backup/backup_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../storage/channel_storage.dart';
@@ -18,6 +19,7 @@ class ChannelListScreen extends StatefulWidget {
   final ChannelStorage channelStorage;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final BackupService backupService;
 
   const ChannelListScreen({
     super.key,
@@ -25,6 +27,7 @@ class ChannelListScreen extends StatefulWidget {
     required this.channelStorage,
     required this.settings,
     required this.fieldSettingsStorage,
+    required this.backupService,
   });
 
   @override
@@ -79,6 +82,8 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                 api: widget.api,
                 settings: widget.settings,
                 fieldSettingsStorage: widget.fieldSettingsStorage,
+                backupService: widget.backupService,
+                onImported: _onImported,
                 selectedChannel: _selectedChannel,
                 onChannelSelected: (c) => setState(() => _selectedChannel = c),
                 onChannelRemoved: (c) {
@@ -95,6 +100,8 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                 notifier: _notifier,
                 api: widget.api,
                 settings: widget.settings,
+                backupService: widget.backupService,
+                onImported: _onImported,
                 onOpenChannel: _openChannel,
                 onAddChannel: _openAddChannel,
                 l10n: l10n,
@@ -151,6 +158,17 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     );
     if (channel != null && mounted) _notifier.addChannel(channel);
   }
+
+  void _onImported() {
+    _notifier.reload();
+    widget.settings.reload();
+    widget.fieldSettingsStorage.reload();
+    final channels = switch (_notifier.state) {
+      ChannelListLoaded(:final channels) => channels,
+      _ => const <Channel>[],
+    };
+    setState(() => _selectedChannel = widget.settings.startChannel(channels));
+  }
 }
 
 // ── Narrow (phone) layout ────────────────────────────────────────────────────
@@ -159,6 +177,8 @@ class _NarrowLayout extends StatelessWidget {
   final ChannelListNotifier notifier;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final BackupService backupService;
+  final VoidCallback onImported;
   final ValueChanged<Channel> onOpenChannel;
   final VoidCallback onAddChannel;
   final AppLocalizations l10n;
@@ -167,6 +187,8 @@ class _NarrowLayout extends StatelessWidget {
     required this.notifier,
     required this.api,
     required this.settings,
+    required this.backupService,
+    required this.onImported,
     required this.onOpenChannel,
     required this.onAddChannel,
     required this.l10n,
@@ -177,7 +199,14 @@ class _NarrowLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ThingViewer'),
-        actions: [_SettingsButton(settings: settings, notifier: notifier)],
+        actions: [
+          _SettingsButton(
+            settings: settings,
+            notifier: notifier,
+            backupService: backupService,
+            onImported: onImported,
+          ),
+        ],
       ),
       body: _ChannelListBody(
         notifier: notifier,
@@ -201,6 +230,8 @@ class _WideLayout extends StatelessWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final BackupService backupService;
+  final VoidCallback onImported;
   final Channel? selectedChannel;
   final ValueChanged<Channel> onChannelSelected;
   final ValueChanged<Channel> onChannelRemoved;
@@ -214,6 +245,8 @@ class _WideLayout extends StatelessWidget {
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
+    required this.backupService,
+    required this.onImported,
     required this.selectedChannel,
     required this.onChannelSelected,
     required this.onChannelRemoved,
@@ -227,7 +260,14 @@ class _WideLayout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ThingViewer'),
-        actions: [_SettingsButton(settings: settings, notifier: notifier)],
+        actions: [
+          _SettingsButton(
+            settings: settings,
+            notifier: notifier,
+            backupService: backupService,
+            onImported: onImported,
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: l10n.addChannelTooltip,
@@ -282,8 +322,15 @@ class _WideLayout extends StatelessWidget {
 class _SettingsButton extends StatelessWidget {
   final SettingsNotifier settings;
   final ChannelListNotifier notifier;
+  final BackupService backupService;
+  final VoidCallback onImported;
 
-  const _SettingsButton({required this.settings, required this.notifier});
+  const _SettingsButton({
+    required this.settings,
+    required this.notifier,
+    required this.backupService,
+    required this.onImported,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -299,8 +346,12 @@ class _SettingsButton extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                SettingsScreen(settings: settings, channels: channels),
+            builder: (_) => SettingsScreen(
+              settings: settings,
+              channels: channels,
+              backupService: backupService,
+              onImported: onImported,
+            ),
           ),
         );
       },

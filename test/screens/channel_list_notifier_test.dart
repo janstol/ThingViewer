@@ -6,7 +6,7 @@ import 'package:thingviewer/storage/channel_storage.dart';
 // In-memory fake — no SharedPreferences needed.
 class _FakeChannelStorage implements ChannelStorage {
   List<Channel> _channels;
-  final bool throwOnLoad;
+  bool throwOnLoad;
 
   _FakeChannelStorage({
     List<Channel> initial = const [],
@@ -195,6 +195,31 @@ void main() {
       await notifier.reorderChannels(0, 2); // A → end
 
       expect(storage.loadChannels(), [_b, _c, _a]);
+      notifier.dispose();
+    });
+  });
+
+  group('reload', () {
+    test('picks up channels written to storage since construction', () async {
+      final storage = _FakeChannelStorage(initial: [_a]);
+      final notifier = ChannelListNotifier(storage);
+      expect((notifier.state as ChannelListLoaded).channels, [_a]);
+
+      await storage.saveChannels([_a, _b, _c]);
+      notifier.reload();
+
+      expect((notifier.state as ChannelListLoaded).channels, [_a, _b, _c]);
+      notifier.dispose();
+    });
+
+    test('surfaces a ChannelListError if storage now throws', () {
+      final storage = _FakeChannelStorage(initial: [_a]);
+      final notifier = ChannelListNotifier(storage);
+      storage.throwOnLoad = true;
+
+      notifier.reload();
+
+      expect(notifier.state, isA<ChannelListError>());
       notifier.dispose();
     });
   });

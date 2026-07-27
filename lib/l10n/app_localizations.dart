@@ -319,7 +319,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTimezone.
   ///
   /// In en, this message translates to:
-  /// **'Timezone'**
+  /// **'Timezone display'**
   String get settingsTimezone;
 
   /// No description provided for @settingsTimezoneChoose.
@@ -382,11 +382,131 @@ abstract class AppLocalizations {
   /// **'Date & time'**
   String get settingsSectionDateTime;
 
+  /// No description provided for @settingsSectionBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get settingsSectionBackup;
+
   /// No description provided for @settingsSectionInfo.
   ///
   /// In en, this message translates to:
   /// **'Info'**
   String get settingsSectionInfo;
+
+  /// No description provided for @settingsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get settingsExport;
+
+  /// No description provided for @settingsExportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes API keys for private channels. Store the file securely!'**
+  String get settingsExportSubtitle;
+
+  /// No description provided for @settingsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get settingsImport;
+
+  /// No description provided for @backupImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get backupImportTitle;
+
+  /// No description provided for @backupImportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup contains {summary}.'**
+  String backupImportSummary(String summary);
+
+  /// No description provided for @backupSummaryChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 channel} other{{count} channels}}'**
+  String backupSummaryChannels(num count);
+
+  /// No description provided for @backupSummarySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'app settings'**
+  String get backupSummarySettings;
+
+  /// No description provided for @backupSummaryFieldSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chart setting} other{{count} chart settings}}'**
+  String backupSummaryFieldSettings(num count);
+
+  /// No description provided for @backupSummaryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'nothing to import'**
+  String get backupSummaryEmpty;
+
+  /// No description provided for @backupModeReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace everything'**
+  String get backupModeReplace;
+
+  /// No description provided for @backupModeReplaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrites all saved channels, app settings, and chart overrides with this backup\'s contents.'**
+  String get backupModeReplaceDescription;
+
+  /// No description provided for @backupModeAddChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Add channels only'**
+  String get backupModeAddChannels;
+
+  /// No description provided for @backupModeAddChannelsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds channels from the backup that aren\'t already saved. Existing channels, app settings, and chart overrides are left unchanged.'**
+  String get backupModeAddChannelsDescription;
+
+  /// No description provided for @backupImportConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get backupImportConfirm;
+
+  /// No description provided for @backupErrorNotABackup.
+  ///
+  /// In en, this message translates to:
+  /// **'This file isn\'t a ThingViewer backup.'**
+  String get backupErrorNotABackup;
+
+  /// No description provided for @backupErrorNewerVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup was created by a newer version of the app.'**
+  String get backupErrorNewerVersion;
+
+  /// No description provided for @backupErrorMalformed.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup file is corrupted or unreadable.'**
+  String get backupErrorMalformed;
+
+  /// No description provided for @backupExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved'**
+  String get backupExportSuccess;
+
+  /// No description provided for @backupImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup imported'**
+  String get backupImportSuccess;
 
   /// No description provided for @privacyPolicy.
   ///

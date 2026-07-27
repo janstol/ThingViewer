@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/screens/settings/settings_screen.dart';
+import 'package:thingviewer/storage/channel_storage.dart';
+import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 
 const _channel = Channel(
@@ -27,6 +30,15 @@ Widget _wrap(Widget child) => MaterialApp(
   home: child,
 );
 
+Future<BackupService> _backupService() async {
+  final prefs = await SharedPreferences.getInstance();
+  return BackupService(
+    ChannelStorage(prefs),
+    SettingsStorage(prefs),
+    FieldSettingsStorage(prefs),
+  );
+}
+
 void main() {
   testWidgets('tapping Theme opens the theme dialog', (tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -35,7 +47,14 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _wrap(SettingsScreen(settings: settings, channels: const [])),
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [],
+          backupService: await _backupService(),
+          onImported: () {},
+        ),
+      ),
     );
     await tester.tap(find.text('Theme'));
     await tester.pumpAndSettle();
@@ -51,7 +70,14 @@ void main() {
     expect(settings.themeMode, ThemeMode.system);
 
     await tester.pumpWidget(
-      _wrap(SettingsScreen(settings: settings, channels: const [])),
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [],
+          backupService: await _backupService(),
+          onImported: () {},
+        ),
+      ),
     );
     await tester.tap(find.text('Theme'));
     await tester.pumpAndSettle();
@@ -75,6 +101,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [_channel, _otherChannel],
+          backupService: await _backupService(),
+          onImported: () {},
         ),
       ),
     );
@@ -94,6 +122,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [_channel, _otherChannel],
+          backupService: await _backupService(),
+          onImported: () {},
         ),
       ),
     );
@@ -113,14 +143,21 @@ void main() {
     expect(settings.timezoneDisplay, TimezoneDisplay.off);
 
     await tester.pumpWidget(
-      _wrap(SettingsScreen(settings: settings, channels: const [])),
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [],
+          backupService: await _backupService(),
+          onImported: () {},
+        ),
+      ),
     );
     await tester.scrollUntilVisible(
-      find.text('Timezone'),
+      find.text('Timezone display'),
       100,
       scrollable: find.byType(Scrollable),
     );
-    await tester.tap(find.text('Timezone'));
+    await tester.tap(find.text('Timezone display'));
     await tester.pumpAndSettle();
 
     expect(find.text('Choose timezone display'), findsOneWidget);
@@ -138,7 +175,14 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _wrap(SettingsScreen(settings: settings, channels: const [])),
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [],
+          backupService: await _backupService(),
+          onImported: () {},
+        ),
+      ),
     );
     await tester.scrollUntilVisible(
       find.text('Source code'),
@@ -160,6 +204,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [_channel, _otherChannel],
+          backupService: await _backupService(),
+          onImported: () {},
         ),
       ),
     );
@@ -170,5 +216,69 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(settings.startChannel([_channel, _otherChannel]), _channel);
+  });
+
+  group('Backup section', () {
+    testWidgets('renders a section header and both tiles', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Backup'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Backup'), findsOneWidget);
+      expect(find.text('Export'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Import'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Import'), findsOneWidget);
+    });
+
+    testWidgets('Export tile warns that API keys are included', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+
+      expect(
+        find.text(
+          'Includes API keys for private channels. Store the file securely!',
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

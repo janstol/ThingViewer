@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The channel description on the channel detail screen is now selectable, so it can be copied.
 - Saved channels can now be edited (server URL, channel ID, public/private, API key) via a new edit button on the channel detail screen, instead of requiring delete-and-re-add.
 - The channel list now shows an "Authentication failed" indicator on any saved channel whose last refresh failed due to invalid credentials.
+- A Settings → Backup section lets you export saved channels, app settings, and per-field chart overrides to a single JSON file (including API keys, so private channels restore without needing to be re-authenticated), and import that file back in with a choice of replacing everything or only adding channels not already saved.
 
 ### Fixed
 
