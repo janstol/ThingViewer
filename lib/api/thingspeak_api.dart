@@ -20,8 +20,9 @@ class ApiException implements Exception {
   const ApiException(this.code, [this.serverMessage]);
 
   @override
-  String toString() =>
-      serverMessage != null ? 'ApiException($code): $serverMessage' : 'ApiException($code)';
+  String toString() => serverMessage != null
+      ? 'ApiException($code): $serverMessage'
+      : 'ApiException($code)';
 }
 
 /// Parameters for ThingSpeak API requests.
@@ -202,7 +203,8 @@ class ThingSpeakApi {
     String? githubUrl;
     if (args.settingsRaw != null) {
       try {
-        final settingsJson = jsonDecode(args.settingsRaw!) as Map<String, dynamic>;
+        final settingsJson =
+            jsonDecode(args.settingsRaw!) as Map<String, dynamic>;
         url = settingsJson['url'] as String?;
         githubUrl = settingsJson['github_url'] as String?;
       } catch (_) {
@@ -236,8 +238,9 @@ class ThingSpeakApi {
 
     for (final entry in feeds) {
       final feed = entry as Map<String, dynamic>;
-      final createdAt =
-          DateTime.tryParse(feed['created_at'] as String? ?? '')?.toLocal();
+      final createdAt = DateTime.tryParse(
+        feed['created_at'] as String? ?? '',
+      )?.toLocal();
       if (createdAt == null) continue;
 
       for (final id in fields.keys) {
@@ -250,7 +253,9 @@ class ThingSpeakApi {
     }
 
     return fields.entries
-        .map((e) => Field(id: e.key, label: e.value.label, values: e.value.values))
+        .map(
+          (e) => Field(id: e.key, label: e.value.label, values: e.value.values),
+        )
         .toList();
   }
 
@@ -264,8 +269,9 @@ class ThingSpeakApi {
 
     for (final entry in feeds) {
       final feed = entry as Map<String, dynamic>;
-      final createdAt =
-          DateTime.tryParse(feed['created_at'] as String? ?? '')?.toLocal();
+      final createdAt = DateTime.tryParse(
+        feed['created_at'] as String? ?? '',
+      )?.toLocal();
       final rawValue = feed['field${args.fieldId}'] as String?;
       if (createdAt == null || rawValue == null) continue;
       final value = double.tryParse(rawValue);

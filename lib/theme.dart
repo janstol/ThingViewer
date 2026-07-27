@@ -71,12 +71,15 @@ class AppTheme {
     final isDark = brightness == Brightness.dark;
 
     final surface = isDark ? const Color(0xFF121212) : Colors.white;
-    final surfaceContainerLow =
-        isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF7F7F7);
-    final surfaceContainer =
-        isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF2F2F2);
-    final surfaceContainerHigh =
-        isDark ? const Color(0xFF242424) : const Color(0xFFEBEBEB);
+    final surfaceContainerLow = isDark
+        ? const Color(0xFF1A1A1A)
+        : const Color(0xFFF7F7F7);
+    final surfaceContainer = isDark
+        ? const Color(0xFF1E1E1E)
+        : const Color(0xFFF2F2F2);
+    final surfaceContainerHigh = isDark
+        ? const Color(0xFF242424)
+        : const Color(0xFFEBEBEB);
 
     // Container tones for the green cluster must come from a green-seeded
     // palette, not the blue base seed below — otherwise primaryContainer

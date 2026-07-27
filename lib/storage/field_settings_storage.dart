@@ -25,8 +25,9 @@ class FieldSettingsStorage {
       final map = jsonDecode(raw) as Map<String, dynamic>;
       return {
         for (final entry in map.entries)
-          entry.key:
-              FieldChartSettings.fromJson(entry.value as Map<String, dynamic>),
+          entry.key: FieldChartSettings.fromJson(
+            entry.value as Map<String, dynamic>,
+          ),
       };
     } catch (_) {
       return {};

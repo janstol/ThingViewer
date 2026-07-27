@@ -28,17 +28,16 @@ void main() {
     // Default stub for the constructor-time auto-fetch. Returns an empty field
     // so the fixture cache is not clobbered. Tests that need specific return
     // values override this stub after calling settleNotifier().
-    when(mockApi.readField(any, any, any))
-        .thenAnswer((_) async => const Field(id: 1, label: 'Temp'));
+    when(
+      mockApi.readField(any, any, any),
+    ).thenAnswer((_) async => const Field(id: 1, label: 'Temp'));
   });
 
   Field fieldWithValues(List<DateTime> times) => Field(
-        id: 1,
-        label: 'Temp',
-        values: times
-            .map((t) => FieldValue(createdAt: t, value: 42.0))
-            .toList(),
-      );
+    id: 1,
+    label: 'Temp',
+    values: times.map((t) => FieldValue(createdAt: t, value: 42.0)).toList(),
+  );
 
   /// Constructs a [FieldChartNotifier], waits for the constructor-time
   /// auto-fetch to complete, then clears mock interaction counts so that
@@ -61,8 +60,9 @@ void main() {
         DateTime.now().subtract(const Duration(days: 2)),
         DateTime.now().subtract(const Duration(days: 1)),
       ];
-      when(mockApi.readField(any, any, any))
-          .thenAnswer((_) async => fieldWithValues(recentValues));
+      when(
+        mockApi.readField(any, any, any),
+      ).thenAnswer((_) async => fieldWithValues(recentValues));
 
       final notifier = FieldChartNotifier(
         mockApi,
@@ -112,11 +112,11 @@ void main() {
 
       final extendedStart = DateTime(2024, 1, 10);
       final fetchedField = fieldWithValues([extendedStart, yesterday, now]);
-      when(mockApi.readField(any, 1, any)).thenAnswer((_) async => fetchedField);
+      when(
+        mockApi.readField(any, 1, any),
+      ).thenAnswer((_) async => fetchedField);
 
-      await notifier.applyFilter(
-        DateTimeRange(start: extendedStart, end: now),
-      );
+      await notifier.applyFilter(DateTimeRange(start: extendedStart, end: now));
 
       verify(mockApi.readField(any, 1, any)).called(1);
       expect(notifier.state, isA<FieldChartLoaded>());
@@ -128,13 +128,11 @@ void main() {
       final notifier = await settleNotifier(field);
 
       final extendedStart = DateTime(2024, 1, 10);
-      when(mockApi.readField(any, 1, any)).thenThrow(
-        const ApiException(ApiErrorCode.network),
-      );
+      when(
+        mockApi.readField(any, 1, any),
+      ).thenThrow(const ApiException(ApiErrorCode.network));
 
-      await notifier.applyFilter(
-        DateTimeRange(start: extendedStart, end: now),
-      );
+      await notifier.applyFilter(DateTimeRange(start: extendedStart, end: now));
 
       expect(notifier.state, isA<FieldChartError>());
       final error = notifier.state as FieldChartError;
@@ -147,8 +145,9 @@ void main() {
       final notifier = await settleNotifier(field);
 
       final farFuture = DateTime(2030);
-      when(mockApi.readField(any, 1, any))
-          .thenAnswer((_) async => const Field(id: 1, label: 'Temp'));
+      when(
+        mockApi.readField(any, 1, any),
+      ).thenAnswer((_) async => const Field(id: 1, label: 'Temp'));
 
       await notifier.applyFilter(
         DateTimeRange(

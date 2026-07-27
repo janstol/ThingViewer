@@ -46,8 +46,9 @@ class _ChannelHeader extends StatelessWidget {
     final sourceUrl = _safeUrl(channel.githubUrl);
 
     return Column(
-      crossAxisAlignment:
-          centered ? CrossAxisAlignment.center : CrossAxisAlignment.stretch,
+      crossAxisAlignment: centered
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (websiteUrl != null || sourceUrl != null)
@@ -89,8 +90,8 @@ class _ChannelHeader extends StatelessWidget {
               description,
               textAlign: centered ? TextAlign.center : null,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
       ],
@@ -157,12 +158,13 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
         child: ListenableBuilder(
           listenable: _notifier,
           builder: (context, _) => switch (_notifier.state) {
-            ChannelDetailLoading() =>
-              const Center(child: CircularProgressIndicator()),
+            ChannelDetailLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
             ChannelDetailEmpty(:final channel) => _EmptyState(
-                channel: channel,
-                message: l10n.channelDetailNoFields,
-              ),
+              channel: channel,
+              message: l10n.channelDetailNoFields,
+            ),
             ChannelDetailError(:final errorCode, :final serverMessage) =>
               _ScrollableCenter(
                 child: Column(
@@ -182,14 +184,13 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                   ],
                 ),
               ),
-            ChannelDetailLoaded(:final channel, :final fields) =>
-              _FieldList(
-                channel: channel,
-                fields: fields,
-                api: widget.api,
-                settings: widget.settings,
-                fieldSettingsStorage: widget.fieldSettingsStorage,
-              ),
+            ChannelDetailLoaded(:final channel, :final fields) => _FieldList(
+              channel: channel,
+              fields: fields,
+              api: widget.api,
+              settings: widget.settings,
+              fieldSettingsStorage: widget.fieldSettingsStorage,
+            ),
           },
         ),
       ),
@@ -218,7 +219,9 @@ class _FieldList extends StatelessWidget {
     return ListenableBuilder(
       listenable: settings,
       builder: (context, _) {
-        final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
+        final dataAccent = Theme.of(
+          context,
+        ).extension<BrandColors>()!.dataAccent;
         final hasHeader = _hasHeader(channel);
         return ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -235,8 +238,9 @@ class _FieldList extends StatelessWidget {
             }
             final field = fields[hasHeader ? i - 1 : i];
             final lastUpdated = field.lastUpdated;
-            final decimals =
-                fieldSettingsStorage.settingsFor(channel, field.id).decimals;
+            final decimals = fieldSettingsStorage
+                .settingsFor(channel, field.id)
+                .decimals;
             return ListTile(
               title: Text(field.displayLabel),
               subtitle: lastUpdated != null
@@ -248,9 +252,9 @@ class _FieldList extends StatelessWidget {
                   ? Text(
                       formatFieldValue(field.lastValue!, decimals: decimals),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: dataAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: dataAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
                     )
                   : const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(
@@ -308,12 +312,12 @@ class _ScrollableCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(child: child),
-          ),
-        ),
-      );
+    builder: (context, constraints) => SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+        child: Center(child: child),
+      ),
+    ),
+  );
 }

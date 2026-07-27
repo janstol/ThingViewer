@@ -8,9 +8,18 @@ void main() {
     });
 
     test('any non-default field makes it non-default', () {
-      expect(FieldChartSettings.defaults.copyWith(showDelta: true).isDefault, isFalse);
-      expect(FieldChartSettings.defaults.copyWith(type: ChartType.step).isDefault, isFalse);
-      expect(FieldChartSettings.defaults.copyWith(decimals: 2).isDefault, isFalse);
+      expect(
+        FieldChartSettings.defaults.copyWith(showDelta: true).isDefault,
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.copyWith(type: ChartType.step).isDefault,
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.copyWith(decimals: 2).isDefault,
+        isFalse,
+      );
     });
   });
 
@@ -63,7 +72,9 @@ void main() {
     });
 
     test('round-trips defaults', () {
-      final roundTripped = FieldChartSettings.fromJson(FieldChartSettings.defaults.toJson());
+      final roundTripped = FieldChartSettings.fromJson(
+        FieldChartSettings.defaults.toJson(),
+      );
 
       expect(roundTripped, FieldChartSettings.defaults);
     });

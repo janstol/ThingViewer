@@ -43,10 +43,11 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
   @override
   void initState() {
     super.initState();
-    _notifier =
-        FieldChartNotifier(widget.api, widget.channel, widget.field);
-    _chartSettings =
-        widget.fieldSettingsStorage.settingsFor(widget.channel, widget.field.id);
+    _notifier = FieldChartNotifier(widget.api, widget.channel, widget.field);
+    _chartSettings = widget.fieldSettingsStorage.settingsFor(
+      widget.channel,
+      widget.field.id,
+    );
   }
 
   @override
@@ -64,7 +65,11 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
           field: widget.field,
           settings: _chartSettings,
           onChanged: (next) {
-            widget.fieldSettingsStorage.save(widget.channel, widget.field.id, next);
+            widget.fieldSettingsStorage.save(
+              widget.channel,
+              widget.field.id,
+              next,
+            );
             setState(() => _chartSettings = next);
           },
         ),
@@ -89,32 +94,35 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       body: ListenableBuilder(
         listenable: _notifier,
         builder: (context, _) => switch (_notifier.state) {
-          FieldChartLoading() =>
-            const Center(child: CircularProgressIndicator()),
+          FieldChartLoading() => const Center(
+            child: CircularProgressIndicator(),
+          ),
           FieldChartEmpty() => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(l10n.fieldChartNoValues),
-                  const SizedBox(height: 8),
-                  FilledButton.icon(
-                    onPressed: () => _showFilterSheet(context),
-                    icon: const Icon(Icons.filter_list),
-                    label: Text(l10n.filterTitle),
-                  ),
-                ],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.fieldChartNoValues),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () => _showFilterSheet(context),
+                  icon: const Icon(Icons.filter_list),
+                  label: Text(l10n.filterTitle),
+                ),
+              ],
             ),
-          FieldChartError(:final cachedValues, :final errorCode,
-                  :final serverMessage) =>
+          ),
+          FieldChartError(
+            :final cachedValues,
+            :final errorCode,
+            :final serverMessage,
+          ) =>
             Builder(
               builder: (context) {
                 final l10n = AppLocalizations.of(context)!;
                 final message = switch (errorCode) {
                   ApiErrorCode.network => l10n.errorNetwork,
                   ApiErrorCode.credentials => l10n.errorApiCredentials,
-                  ApiErrorCode.general =>
-                    serverMessage ?? l10n.errorGeneral,
+                  ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
                 };
                 return Column(
                   children: [
@@ -136,30 +144,36 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                         ),
                       ),
                     ),
-                    _FilterButton(onPressed: () => _showFilterSheet(context), l10n: l10n),
+                    _FilterButton(
+                      onPressed: () => _showFilterSheet(context),
+                      l10n: l10n,
+                    ),
                   ],
                 );
               },
             ),
           FieldChartLoaded(:final values) => Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    l10n.fieldChartShowingValues(values.length),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  l10n.fieldChartShowingValues(values.length),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                Expanded(
-                  child: _Chart(
-                    values: values,
-                    settings: widget.settings,
-                    chartSettings: _chartSettings,
-                  ),
+              ),
+              Expanded(
+                child: _Chart(
+                  values: values,
+                  settings: widget.settings,
+                  chartSettings: _chartSettings,
                 ),
-                _FilterButton(onPressed: () => _showFilterSheet(context), l10n: l10n),
-              ],
-            ),
+              ),
+              _FilterButton(
+                onPressed: () => _showFilterSheet(context),
+                l10n: l10n,
+              ),
+            ],
+          ),
         },
       ),
     );
@@ -172,17 +186,15 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       FieldChartEmpty(:final range) => range,
       FieldChartError(:final range) => range,
       FieldChartLoading() => DateTimeRange(
-          start: DateTime.now().subtract(const Duration(days: 7)),
-          end: DateTime.now(),
-        ),
+        start: DateTime.now().subtract(const Duration(days: 7)),
+        end: DateTime.now(),
+      ),
     };
 
     final range = await showModalBottomSheet<DateTimeRange>(
       context: context,
-      builder: (context) => _FilterSheet(
-        initialRange: currentRange,
-        settings: widget.settings,
-      ),
+      builder: (context) =>
+          _FilterSheet(initialRange: currentRange, settings: widget.settings),
     );
 
     if (range != null) _notifier.applyFilter(range);
@@ -288,17 +300,25 @@ class _ChartState extends State<_Chart> {
     final newDist = (pts[0] - pts[1]).distance;
     final newMid = (pts[0] + pts[1]) / 2;
 
-    if (_lastPinchDist != null && _lastPinchMid != null && _lastPinchDist! > 0) {
+    if (_lastPinchDist != null &&
+        _lastPinchMid != null &&
+        _lastPinchDist! > 0) {
       final scale = newDist / _lastPinchDist!;
       final currentRange = _maxX - _minX;
-      final newRange = (currentRange / scale).clamp(_fullRange / 500, _fullRange);
+      final newRange = (currentRange / scale).clamp(
+        _fullRange / 500,
+        _fullRange,
+      );
 
       final focalFraction = (_lastPinchMid!.dx / c.maxWidth).clamp(0.0, 1.0);
       final focalData = _minX + focalFraction * currentRange;
-      final panMs = -(newMid.dx - _lastPinchMid!.dx) / c.maxWidth * currentRange;
+      final panMs =
+          -(newMid.dx - _lastPinchMid!.dx) / c.maxWidth * currentRange;
 
-      double newMin = (focalData - focalFraction * newRange + panMs)
-          .clamp(_fullMinX, _fullMaxX - newRange);
+      double newMin = (focalData - focalFraction * newRange + panMs).clamp(
+        _fullMinX,
+        _fullMaxX - newRange,
+      );
       setState(() {
         _minX = newMin;
         _maxX = newMin + newRange;
@@ -327,10 +347,7 @@ class _ChartState extends State<_Chart> {
     final chartSettings = widget.chartSettings;
     final spots = _displayValues
         .map(
-          (v) => FlSpot(
-            v.createdAt.millisecondsSinceEpoch.toDouble(),
-            v.value,
-          ),
+          (v) => FlSpot(v.createdAt.millisecondsSinceEpoch.toDouble(), v.value),
         )
         .toList();
 

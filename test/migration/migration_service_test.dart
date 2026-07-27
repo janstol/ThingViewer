@@ -103,7 +103,10 @@ void main() {
 
     test('is idempotent — second run does not change prefs', () async {
       await _seedSettings(
-          dateFormat: 'd.M.y', timeFormat: 'HH:mm', themeMode: 1);
+        dateFormat: 'd.M.y',
+        timeFormat: 'HH:mm',
+        themeMode: 1,
+      );
       final prefs = await _freshPrefs();
 
       await _service(prefs).run();
@@ -133,7 +136,9 @@ void main() {
     });
 
     test('normalises empty serverUrl to default ThingSpeak URL', () async {
-      await _seedChannels([const LegacyChannel(id: 1, serverUrl: '', order: 0)]);
+      await _seedChannels([
+        const LegacyChannel(id: 1, serverUrl: '', order: 0),
+      ]);
       final prefs = await _freshPrefs();
       await _service(prefs).run();
 
@@ -146,7 +151,10 @@ void main() {
     test('preserves non-empty serverUrl', () async {
       await _seedChannels([
         const LegacyChannel(
-            id: 1, serverUrl: 'https://custom.example.com', order: 0),
+          id: 1,
+          serverUrl: 'https://custom.example.com',
+          order: 0,
+        ),
       ]);
       final prefs = await _freshPrefs();
       await _service(prefs).run();
@@ -166,8 +174,9 @@ void main() {
     });
 
     test('preserves non-empty apiKey', () async {
-      await _seedChannels(
-          [const LegacyChannel(id: 1, apiKey: 'ABCDEF12', order: 0)]);
+      await _seedChannels([
+        const LegacyChannel(id: 1, apiKey: 'ABCDEF12', order: 0),
+      ]);
       final prefs = await _freshPrefs();
       await _service(prefs).run();
 
@@ -191,8 +200,9 @@ void main() {
         isPublic: true,
       );
       await _seedChannels([const LegacyChannel(id: 1, order: 0)]);
-      final prefs =
-          await _freshPrefs({'channels': Channel.listToJson([existing])});
+      final prefs = await _freshPrefs({
+        'channels': Channel.listToJson([existing]),
+      });
 
       await _service(prefs).run();
 

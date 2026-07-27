@@ -71,15 +71,15 @@ class FieldChartSettings {
   }
 
   Map<String, dynamic> toJson() => {
-        if (type != ChartType.line) 'type': type.name,
-        if (title != null) 'title': title,
-        if (xAxisLabel != null) 'xAxisLabel': xAxisLabel,
-        if (yAxisLabel != null) 'yAxisLabel': yAxisLabel,
-        if (yMin != null) 'yMin': yMin,
-        if (yMax != null) 'yMax': yMax,
-        if (decimals != null) 'decimals': decimals,
-        if (showDelta) 'showDelta': showDelta,
-      };
+    if (type != ChartType.line) 'type': type.name,
+    if (title != null) 'title': title,
+    if (xAxisLabel != null) 'xAxisLabel': xAxisLabel,
+    if (yAxisLabel != null) 'yAxisLabel': yAxisLabel,
+    if (yMin != null) 'yMin': yMin,
+    if (yMax != null) 'yMax': yMax,
+    if (decimals != null) 'decimals': decimals,
+    if (showDelta) 'showDelta': showDelta,
+  };
 
   factory FieldChartSettings.fromJson(Map<String, dynamic> json) =>
       FieldChartSettings(
@@ -107,13 +107,13 @@ class FieldChartSettings {
 
   @override
   int get hashCode => Object.hash(
-        type,
-        title,
-        xAxisLabel,
-        yAxisLabel,
-        yMin,
-        yMax,
-        decimals,
-        showDelta,
-      );
+    type,
+    title,
+    xAxisLabel,
+    yAxisLabel,
+    yMin,
+    yMax,
+    decimals,
+    showDelta,
+  );
 }

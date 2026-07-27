@@ -22,8 +22,7 @@ class ChannelAddScreen extends StatefulWidget {
 
 class _ChannelAddScreenState extends State<ChannelAddScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _serverUrlController =
-      TextEditingController(text: _defaultServerUrl);
+  final _serverUrlController = TextEditingController(text: _defaultServerUrl);
   final _channelIdController = TextEditingController();
   final _apiKeyController = TextEditingController();
 
@@ -51,18 +50,14 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
           children: [
             TextFormField(
               controller: _serverUrlController,
-              decoration: InputDecoration(
-                labelText: l10n.fieldServerUrl,
-              ),
+              decoration: InputDecoration(labelText: l10n.fieldServerUrl),
               keyboardType: TextInputType.url,
               validator: (v) => _validateServerUrl(v, l10n),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _channelIdController,
-              decoration: InputDecoration(
-                labelText: l10n.fieldChannelId,
-              ),
+              decoration: InputDecoration(labelText: l10n.fieldChannelId),
               keyboardType: TextInputType.number,
               validator: (v) => _validateChannelId(v, l10n),
             ),
@@ -92,8 +87,7 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
               const SizedBox(height: 16),
               Text(
                 _errorMessage!,
-                style:
-                    TextStyle(color: Theme.of(context).colorScheme.error),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
             const SizedBox(height: 24),

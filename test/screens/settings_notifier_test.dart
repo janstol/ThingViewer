@@ -35,12 +35,12 @@ class _FakeSettingsStorage implements SettingsStorage {
     int? startChannelId,
     String? startChannelServerUrl,
     this.throwOnSave = false,
-  })  : _themeMode = themeMode,
-        _dateFormat = dateFormat,
-        _timeFormat = timeFormat,
-        _timezoneDisplay = timezoneDisplay,
-        _startChannelId = startChannelId,
-        _startChannelServerUrl = startChannelServerUrl;
+  }) : _themeMode = themeMode,
+       _dateFormat = dateFormat,
+       _timeFormat = timeFormat,
+       _timezoneDisplay = timezoneDisplay,
+       _startChannelId = startChannelId,
+       _startChannelServerUrl = startChannelServerUrl;
 
   @override
   ThemeMode get themeMode => _themeMode;
@@ -146,16 +146,21 @@ void main() {
       notifier.dispose();
     });
 
-    test('notifies listeners twice on storage failure (update then revert)', () async {
-      final notifier = SettingsNotifier(_FakeSettingsStorage(throwOnSave: true));
-      int notifyCount = 0;
-      notifier.addListener(() => notifyCount++);
+    test(
+      'notifies listeners twice on storage failure (update then revert)',
+      () async {
+        final notifier = SettingsNotifier(
+          _FakeSettingsStorage(throwOnSave: true),
+        );
+        int notifyCount = 0;
+        notifier.addListener(() => notifyCount++);
 
-      await notifier.setThemeMode(ThemeMode.dark);
+        await notifier.setThemeMode(ThemeMode.dark);
 
-      expect(notifyCount, 2); // once optimistically, once for the revert
-      notifier.dispose();
-    });
+        expect(notifyCount, 2); // once optimistically, once for the revert
+        notifier.dispose();
+      },
+    );
   });
 
   group('setDateFormat', () {
@@ -231,17 +236,20 @@ void main() {
   });
 
   group('formatDate', () {
-    test('formats using the configured date format, no timezone suffix', () async {
-      final storage = _FakeSettingsStorage(
-        dateFormat: 'yyyy-MM-dd',
-        timezoneDisplay: TimezoneDisplay.offset,
-      );
-      final notifier = SettingsNotifier(storage);
-      final dt = DateTime(2026, 3, 5, 14, 30);
+    test(
+      'formats using the configured date format, no timezone suffix',
+      () async {
+        final storage = _FakeSettingsStorage(
+          dateFormat: 'yyyy-MM-dd',
+          timezoneDisplay: TimezoneDisplay.offset,
+        );
+        final notifier = SettingsNotifier(storage);
+        final dt = DateTime(2026, 3, 5, 14, 30);
 
-      expect(notifier.formatDate(dt), '2026-03-05');
-      notifier.dispose();
-    });
+        expect(notifier.formatDate(dt), '2026-03-05');
+        notifier.dispose();
+      },
+    );
   });
 
   group('formatDateTime', () {
@@ -257,53 +265,57 @@ void main() {
       notifier.dispose();
     });
 
-    test('offset mode appends the UTC offset derived from the DateTime itself',
-        () async {
-      final storage = _FakeSettingsStorage(
-        dateFormat: 'yyyy-MM-dd',
-        timeFormat: 'HH:mm',
-        timezoneDisplay: TimezoneDisplay.offset,
-      );
-      final notifier = SettingsNotifier(storage);
-      final dt = DateTime(2026, 3, 5, 14, 30);
-      final offset = dt.timeZoneOffset;
-      final sign = offset.isNegative ? '-' : '+';
-      final abs = offset.abs();
-      final hours = abs.inHours.toString().padLeft(2, '0');
-      final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
-
-      expect(
-        notifier.formatDateTime(dt),
-        '2026-03-05 14:30 $sign$hours:$minutes',
-      );
-      notifier.dispose();
-    });
-
-    test('name mode appends the timezone name, or the offset as fallback',
-        () async {
-      final storage = _FakeSettingsStorage(
-        dateFormat: 'yyyy-MM-dd',
-        timeFormat: 'HH:mm',
-        timezoneDisplay: TimezoneDisplay.name,
-      );
-      final notifier = SettingsNotifier(storage);
-      final dt = DateTime(2026, 3, 5, 14, 30);
-      final name = dt.timeZoneName.trim();
-      final String suffix;
-      if (name.isNotEmpty) {
-        suffix = name;
-      } else {
+    test(
+      'offset mode appends the UTC offset derived from the DateTime itself',
+      () async {
+        final storage = _FakeSettingsStorage(
+          dateFormat: 'yyyy-MM-dd',
+          timeFormat: 'HH:mm',
+          timezoneDisplay: TimezoneDisplay.offset,
+        );
+        final notifier = SettingsNotifier(storage);
+        final dt = DateTime(2026, 3, 5, 14, 30);
         final offset = dt.timeZoneOffset;
         final sign = offset.isNegative ? '-' : '+';
         final abs = offset.abs();
         final hours = abs.inHours.toString().padLeft(2, '0');
         final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
-        suffix = '$sign$hours:$minutes';
-      }
 
-      expect(notifier.formatDateTime(dt), '2026-03-05 14:30 $suffix');
-      notifier.dispose();
-    });
+        expect(
+          notifier.formatDateTime(dt),
+          '2026-03-05 14:30 $sign$hours:$minutes',
+        );
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'name mode appends the timezone name, or the offset as fallback',
+      () async {
+        final storage = _FakeSettingsStorage(
+          dateFormat: 'yyyy-MM-dd',
+          timeFormat: 'HH:mm',
+          timezoneDisplay: TimezoneDisplay.name,
+        );
+        final notifier = SettingsNotifier(storage);
+        final dt = DateTime(2026, 3, 5, 14, 30);
+        final name = dt.timeZoneName.trim();
+        final String suffix;
+        if (name.isNotEmpty) {
+          suffix = name;
+        } else {
+          final offset = dt.timeZoneOffset;
+          final sign = offset.isNegative ? '-' : '+';
+          final abs = offset.abs();
+          final hours = abs.inHours.toString().padLeft(2, '0');
+          final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
+          suffix = '$sign$hours:$minutes';
+        }
+
+        expect(notifier.formatDateTime(dt), '2026-03-05 14:30 $suffix');
+        notifier.dispose();
+      },
+    );
   });
 
   group('setStartChannel', () {
@@ -367,19 +379,19 @@ void main() {
       final notifier = SettingsNotifier(_FakeSettingsStorage());
       await notifier.setStartChannel(_channel);
 
-      expect(
-        notifier.startChannel([_channel, _otherChannel]),
-        _channel,
-      );
+      expect(notifier.startChannel([_channel, _otherChannel]), _channel);
       notifier.dispose();
     });
 
-    test('returns null when the stored channel is no longer in the list', () async {
-      final notifier = SettingsNotifier(_FakeSettingsStorage());
-      await notifier.setStartChannel(_channel);
+    test(
+      'returns null when the stored channel is no longer in the list',
+      () async {
+        final notifier = SettingsNotifier(_FakeSettingsStorage());
+        await notifier.setStartChannel(_channel);
 
-      expect(notifier.startChannel([_otherChannel]), isNull);
-      notifier.dispose();
-    });
+        expect(notifier.startChannel([_otherChannel]), isNull);
+        notifier.dispose();
+      },
+    );
   });
 }

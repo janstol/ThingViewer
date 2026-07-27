@@ -24,8 +24,12 @@ class FieldChartError extends FieldChartState {
   final List<FieldValue> cachedValues;
   final ApiErrorCode errorCode;
   final String? serverMessage;
-  FieldChartError(this.range, this.cachedValues, this.errorCode,
-      [this.serverMessage]);
+  FieldChartError(
+    this.range,
+    this.cachedValues,
+    this.errorCode, [
+    this.serverMessage,
+  ]);
 }
 
 class FieldChartNotifier extends ChangeNotifier {
@@ -41,7 +45,7 @@ class FieldChartNotifier extends ChangeNotifier {
   FieldChartState get state => _state;
 
   FieldChartNotifier(this._api, this._channel, this._field)
-      : _cache = List.of(_field.values) {
+    : _cache = List.of(_field.values) {
     // Always fetch the default range from the API on first open. The single
     // cached value from the channel detail screen is not enough to draw a
     // useful chart.
@@ -95,12 +99,18 @@ class FieldChartNotifier extends ChangeNotifier {
         }
         _cache
           ..clear()
-          ..addAll(merged.values.toList()
-            ..sort((a, b) => a.createdAt.compareTo(b.createdAt)));
+          ..addAll(
+            merged.values.toList()
+              ..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
+          );
       }
     } on ApiException catch (e) {
       return FieldChartError(
-          range, _filterByRange(_cache, range), e.code, e.serverMessage);
+        range,
+        _filterByRange(_cache, range),
+        e.code,
+        e.serverMessage,
+      );
     }
 
     final filtered = _filterByRange(_cache, range);
@@ -112,14 +122,13 @@ class FieldChartNotifier extends ChangeNotifier {
   static List<FieldValue> _filterByRange(
     List<FieldValue> data,
     DateTimeRange range,
-  ) =>
-      data
-          .where(
-            (v) =>
-                !v.createdAt.isBefore(range.start) &&
-                !v.createdAt.isAfter(range.end),
-          )
-          .toList();
+  ) => data
+      .where(
+        (v) =>
+            !v.createdAt.isBefore(range.start) &&
+            !v.createdAt.isAfter(range.end),
+      )
+      .toList();
 
   static DateTimeRange _cacheRange(List<FieldValue> data) {
     if (data.isEmpty) return _defaultRange();

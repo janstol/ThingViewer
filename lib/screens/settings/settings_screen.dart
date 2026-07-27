@@ -9,18 +9,8 @@ import '../../storage/settings_storage.dart';
 import '../../widgets/section_header.dart';
 import 'settings_notifier.dart';
 
-const _dateFormats = [
-  'dd.MM.yyyy',
-  'dd/MM/yyyy',
-  'MM/dd/yyyy',
-  'yyyy-MM-dd',
-];
-const _timeFormats = [
-  'HH:mm',
-  'HH:mm:ss',
-  'hh:mm a',
-  'hh:mm:ss a',
-];
+const _dateFormats = ['dd.MM.yyyy', 'dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'];
+const _timeFormats = ['HH:mm', 'HH:mm:ss', 'hh:mm a', 'hh:mm:ss a'];
 
 class SettingsScreen extends StatelessWidget {
   final SettingsNotifier settings;
@@ -68,7 +58,9 @@ class SettingsScreen extends StatelessWidget {
               leading: const Icon(Icons.privacy_tip_outlined),
               title: Text(l10n.privacyPolicy),
               onTap: () => launchUrl(
-                Uri.parse('https://sites.google.com/view/thingviewer-privacy-policy/home'),
+                Uri.parse(
+                  'https://sites.google.com/view/thingviewer-privacy-policy/home',
+                ),
                 mode: LaunchMode.externalApplication,
               ),
             ),
@@ -93,8 +85,7 @@ class _ThemeTile extends StatelessWidget {
       (ThemeMode.light, l10n.settingsThemeLight),
       (ThemeMode.dark, l10n.settingsThemeDark),
     ];
-    final current =
-        options.firstWhere((e) => e.$1 == settings.themeMode).$2;
+    final current = options.firstWhere((e) => e.$1 == settings.themeMode).$2;
 
     return ListTile(
       leading: const Icon(Icons.brightness_6_outlined),
@@ -126,7 +117,9 @@ class _ThemeTile extends StatelessWidget {
             ],
           ),
         );
-        if (selected != null && context.mounted) settings.setThemeMode(selected);
+        if (selected != null && context.mounted) {
+          settings.setThemeMode(selected);
+        }
       },
     );
   }
@@ -149,7 +142,8 @@ class _StartScreenTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final current = settings.startChannel(channels);
-    final subtitle = current?.displayName ?? l10n.settingsStartScreenChannelList;
+    final subtitle =
+        current?.displayName ?? l10n.settingsStartScreenChannelList;
 
     return ListTile(
       leading: const Icon(Icons.home_outlined),
@@ -261,8 +255,9 @@ class _TimezoneTile extends StatelessWidget {
       (TimezoneDisplay.offset, l10n.settingsTimezoneOffset),
       (TimezoneDisplay.name, l10n.settingsTimezoneName),
     ];
-    final current =
-        options.firstWhere((e) => e.$1 == settings.timezoneDisplay).$2;
+    final current = options
+        .firstWhere((e) => e.$1 == settings.timezoneDisplay)
+        .$2;
     final preview = settings.formatDateTime(DateTime.now());
 
     return ListTile(
@@ -337,10 +332,7 @@ class _AboutTile extends StatelessWidget {
                 Uri.parse(l10n.aboutThingSpeakUrl),
                 mode: LaunchMode.externalApplication,
               ),
-              child: Text(
-                l10n.aboutThingSpeakUrl,
-                style: linkStyle,
-              ),
+              child: Text(l10n.aboutThingSpeakUrl, style: linkStyle),
             ),
           ],
           child: Text(l10n.aboutTitle),

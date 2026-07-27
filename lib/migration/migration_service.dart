@@ -147,7 +147,7 @@ class MigrationService {
   final Future<void> Function() hiveInit;
 
   MigrationService(this._prefs, {Future<void> Function()? hiveInit})
-      : hiveInit = hiveInit ?? _legacyHiveInit;
+    : hiveInit = hiveInit ?? _legacyHiveInit;
 
   /// Initialises Hive at the path where the old build stored its boxes.
   ///

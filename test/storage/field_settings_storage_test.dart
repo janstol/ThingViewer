@@ -44,7 +44,11 @@ void main() {
 
     await storage.save(_channel, 1, forField1);
     await storage.save(_channel, 2, forField2);
-    await storage.save(_otherChannel, 1, FieldChartSettings.defaults.copyWith(decimals: 3));
+    await storage.save(
+      _otherChannel,
+      1,
+      FieldChartSettings.defaults.copyWith(decimals: 3),
+    );
 
     expect(storage.settingsFor(_channel, 1), forField1);
     expect(storage.settingsFor(_channel, 2), forField2);
@@ -55,14 +59,20 @@ void main() {
   test('saving default settings removes any existing entry', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = FieldSettingsStorage(await SharedPreferences.getInstance());
-    await storage.save(_channel, 1, const FieldChartSettings(type: ChartType.step));
+    await storage.save(
+      _channel,
+      1,
+      const FieldChartSettings(type: ChartType.step),
+    );
 
     await storage.save(_channel, 1, FieldChartSettings.defaults);
 
     expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
     // Re-load from the persisted blob to confirm the entry was actually removed,
     // not just shadowed in memory.
-    final reloaded = FieldSettingsStorage(await SharedPreferences.getInstance());
+    final reloaded = FieldSettingsStorage(
+      await SharedPreferences.getInstance(),
+    );
     expect(reloaded.settingsFor(_channel, 1), FieldChartSettings.defaults);
   });
 

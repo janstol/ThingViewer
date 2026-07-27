@@ -69,8 +69,9 @@ void main() {
     });
 
     test('is ChannelDetailError when readChannel fails', () async {
-      when(mockApi.readChannel(any))
-          .thenThrow(const ApiException(ApiErrorCode.network));
+      when(
+        mockApi.readChannel(any),
+      ).thenThrow(const ApiException(ApiErrorCode.network));
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       await Future<void>.delayed(Duration.zero);
@@ -81,23 +82,26 @@ void main() {
       notifier.dispose();
     });
 
-    test('is ChannelDetailError when readFeed fails after readChannel succeeds',
-        () async {
-      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-      when(mockApi.readFeed(any, any))
-          .thenThrow(const ApiException(ApiErrorCode.credentials));
+    test(
+      'is ChannelDetailError when readFeed fails after readChannel succeeds',
+      () async {
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenThrow(const ApiException(ApiErrorCode.credentials));
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
-      await Future<void>.delayed(Duration.zero);
+        final notifier = ChannelDetailNotifier(mockApi, channel);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(notifier.state, isA<ChannelDetailError>());
-      final error = notifier.state as ChannelDetailError;
-      expect(error.errorCode, ApiErrorCode.credentials);
-      // Channel reference should be the original (not enriched), since
-      // _channel = updated only runs after readFeed succeeds.
-      expect(error.channel.name, isNull);
-      notifier.dispose();
-    });
+        expect(notifier.state, isA<ChannelDetailError>());
+        final error = notifier.state as ChannelDetailError;
+        expect(error.errorCode, ApiErrorCode.credentials);
+        // Channel reference should be the original (not enriched), since
+        // _channel = updated only runs after readFeed succeeds.
+        expect(error.channel.name, isNull);
+        notifier.dispose();
+      },
+    );
 
     test('does not call notifyListeners after dispose', () async {
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);

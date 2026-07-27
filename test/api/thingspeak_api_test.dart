@@ -32,15 +32,14 @@ void main() {
   http.Response ok(String body) =>
       http.Response(body, 200, headers: {'content-type': 'application/json'});
 
-  Uri feedsUriFrom(List<dynamic> captured) => captured
-      .cast<Uri>()
-      .firstWhere((uri) => uri.path.endsWith('feeds.json'));
+  Uri feedsUriFrom(List<dynamic> captured) =>
+      captured.cast<Uri>().firstWhere((uri) => uri.path.endsWith('feeds.json'));
 
   group('readChannel', () {
     test('parses channel name and field count', () async {
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
 
       final result = await api.readChannel(publicChannel);
 
@@ -51,10 +50,16 @@ void main() {
     });
 
     test('parses url and githubUrl from the settings endpoint', () async {
-      when(mockClient.get(argThat(predicate<Uri>((uri) => uri.path.endsWith('feeds.json')))))
-          .thenAnswer((_) async => ok(fixture('channel_feed.json')));
-      when(mockClient.get(argThat(predicate<Uri>((uri) => !uri.path.endsWith('feeds.json')))))
-          .thenAnswer((_) async => ok(fixture('channel_settings.json')));
+      when(
+        mockClient.get(
+          argThat(predicate<Uri>((uri) => uri.path.endsWith('feeds.json'))),
+        ),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
+      when(
+        mockClient.get(
+          argThat(predicate<Uri>((uri) => !uri.path.endsWith('feeds.json'))),
+        ),
+      ).thenAnswer((_) async => ok(fixture('channel_settings.json')));
 
       final result = await api.readChannel(publicChannel);
 
@@ -63,10 +68,16 @@ void main() {
     });
 
     test('returns null links when the settings endpoint 404s', () async {
-      when(mockClient.get(argThat(predicate<Uri>((uri) => uri.path.endsWith('feeds.json')))))
-          .thenAnswer((_) async => ok(fixture('channel_feed.json')));
-      when(mockClient.get(argThat(predicate<Uri>((uri) => !uri.path.endsWith('feeds.json')))))
-          .thenAnswer((_) async => http.Response('Not Found', 404));
+      when(
+        mockClient.get(
+          argThat(predicate<Uri>((uri) => uri.path.endsWith('feeds.json'))),
+        ),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
+      when(
+        mockClient.get(
+          argThat(predicate<Uri>((uri) => !uri.path.endsWith('feeds.json'))),
+        ),
+      ).thenAnswer((_) async => http.Response('Not Found', 404));
 
       final result = await api.readChannel(publicChannel);
 
@@ -78,9 +89,9 @@ void main() {
 
   group('readFeed', () {
     test('returns fields with values', () async {
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
 
       final fields = await api.readFeed(
         publicChannel,
@@ -94,9 +105,9 @@ void main() {
     });
 
     test('returns fields with no values for empty feed', () async {
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed_empty.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed_empty.json')));
 
       final fields = await api.readFeed(
         publicChannel,
@@ -111,9 +122,9 @@ void main() {
 
   group('_buildUri', () {
     test('defaults to https://api.thingspeak.com', () async {
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
       await api.readChannel(publicChannel);
 
       final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
@@ -128,9 +139,9 @@ void main() {
         serverUrl: 'http://192.168.1.5:8080',
         isPublic: true,
       );
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
       await api.readChannel(channel);
 
       final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
@@ -145,9 +156,9 @@ void main() {
         serverUrl: 'http://192.168.1.5:8080/thingspeak',
         isPublic: true,
       );
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
       await api.readChannel(channel);
 
       final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
@@ -162,9 +173,9 @@ void main() {
         serverUrl: 'http://192.168.1.5:8080/thingspeak/',
         isPublic: true,
       );
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
       await api.readChannel(channel);
 
       final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
@@ -177,9 +188,9 @@ void main() {
         serverUrl: 'http://192.168.1.5:8080?foo=bar',
         isPublic: true,
       );
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('channel_feed.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
       await api.readChannel(channel);
 
       final uri = feedsUriFrom(verify(mockClient.get(captureAny)).captured);
@@ -188,28 +199,30 @@ void main() {
   });
 
   group('error handling', () {
-    test('throws ApiException with credentials code on auth error (400 -1)',
-        () async {
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => http.Response('-1', 400),
-      );
+    test(
+      'throws ApiException with credentials code on auth error (400 -1)',
+      () async {
+        when(
+          mockClient.get(any),
+        ).thenAnswer((_) async => http.Response('-1', 400));
 
-      expect(
-        () => api.readChannel(publicChannel),
-        throwsA(
-          isA<ApiException>().having(
-            (e) => e.code,
-            'code',
-            ApiErrorCode.credentials,
+        expect(
+          () => api.readChannel(publicChannel),
+          throwsA(
+            isA<ApiException>().having(
+              (e) => e.code,
+              'code',
+              ApiErrorCode.credentials,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test('parses normally on 200 JSON error body', () async {
-      when(mockClient.get(any)).thenAnswer(
-        (_) async => ok(fixture('error_auth_response.json')),
-      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('error_auth_response.json')));
 
       // ThingSpeak sometimes returns 200 with an error JSON body.
       // The client should not throw — it returns the channel with no enrichment.
@@ -219,9 +232,9 @@ void main() {
     });
 
     test('throws ApiException with network code on SocketException', () {
-      when(mockClient.get(any)).thenThrow(
-        const SocketException('No address', osError: OSError('', 7)),
-      );
+      when(
+        mockClient.get(any),
+      ).thenThrow(const SocketException('No address', osError: OSError('', 7)));
 
       expect(
         () => api.readChannel(publicChannel),

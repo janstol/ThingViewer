@@ -56,8 +56,9 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
           : yAxisLabel as String?,
       yMin: identical(yMin, _unset) ? _settings.yMin : yMin as double?,
       yMax: identical(yMax, _unset) ? _settings.yMax : yMax as double?,
-      decimals:
-          identical(decimals, _unset) ? _settings.decimals : decimals as int?,
+      decimals: identical(decimals, _unset)
+          ? _settings.decimals
+          : decimals as int?,
       showDelta: showDelta ?? _settings.showDelta,
     );
     setState(() => _settings = next);
@@ -89,7 +90,10 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
       body: ListView(
         children: [
           SectionHeader(title: l10n.fieldSettingsSectionChart),
-          _TypeTile(current: _settings.type, onChanged: (v) => _apply(type: v)),
+          _TypeTile(
+            current: _settings.type,
+            onChanged: (v) => _apply(type: v),
+          ),
           _TextTile(
             icon: Icons.title,
             title: l10n.fieldSettingsChartTitle,
@@ -274,8 +278,9 @@ class _NumberTile extends StatelessWidget {
       title: Text(title),
       subtitle: Text(value != null ? _formatNumber(value!) : placeholder),
       onTap: () async {
-        final controller =
-            TextEditingController(text: value != null ? _formatNumber(value!) : '');
+        final controller = TextEditingController(
+          text: value != null ? _formatNumber(value!) : '',
+        );
         final result = await showDialog<String>(
           context: context,
           builder: (context) => AlertDialog(
@@ -283,8 +288,10 @@ class _NumberTile extends StatelessWidget {
             content: TextField(
               controller: controller,
               autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true, signed: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
             ),
             actions: [
               TextButton(
@@ -330,8 +337,7 @@ class _RoundingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final label =
-        current == null ? l10n.fieldSettingsRoundingAuto : '$current';
+    final label = current == null ? l10n.fieldSettingsRoundingAuto : '$current';
 
     return ListTile(
       leading: const Icon(Icons.pin_outlined),

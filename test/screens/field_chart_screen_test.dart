@@ -35,11 +35,11 @@ final _field = Field(
 );
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: AppTheme.light(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    );
+  theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
 
 Future<SettingsNotifier> _settings() async {
   final prefs = await SharedPreferences.getInstance();
@@ -60,63 +60,74 @@ void main() {
     when(mockApi.readField(any, any, any)).thenAnswer((_) async => _field);
   });
 
-  testWidgets('selecting Step in field settings applies isStepLineChart to the rendered chart',
-      (tester) async {
-    await tester.pumpWidget(_wrap(FieldChartScreen(
-      channel: _channel,
-      field: _field,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'selecting Step in field settings applies isStepLineChart to the rendered chart',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    LineChartData chartData() =>
-        tester.widget<LineChart>(find.byType(LineChart)).data;
+      LineChartData chartData() =>
+          tester.widget<LineChart>(find.byType(LineChart)).data;
 
-    expect(chartData().lineBarsData.single.isStepLineChart, isFalse);
-    expect(chartData().lineBarsData.single.isCurved, isFalse);
+      expect(chartData().lineBarsData.single.isStepLineChart, isFalse);
+      expect(chartData().lineBarsData.single.isCurved, isFalse);
 
-    await tester.tap(find.byIcon(Icons.tune));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Type'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Step'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Type'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Step'));
+      await tester.pumpAndSettle();
 
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
 
-    expect(chartData().lineBarsData.single.isStepLineChart, isTrue);
-    expect(chartData().lineBarsData.single.isCurved, isFalse);
-  });
+      expect(chartData().lineBarsData.single.isStepLineChart, isTrue);
+      expect(chartData().lineBarsData.single.isCurved, isFalse);
+    },
+  );
 
-  testWidgets('selecting Spline in field settings applies isCurved to the rendered chart',
-      (tester) async {
-    await tester.pumpWidget(_wrap(FieldChartScreen(
-      channel: _channel,
-      field: _field,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'selecting Spline in field settings applies isCurved to the rendered chart',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.tune));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Type'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Spline'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Type'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Spline'));
+      await tester.pumpAndSettle();
 
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
 
-    final chartData =
-        tester.widget<LineChart>(find.byType(LineChart)).data;
-    expect(chartData.lineBarsData.single.isCurved, isTrue);
-    expect(chartData.lineBarsData.single.isStepLineChart, isFalse);
-  });
+      final chartData = tester.widget<LineChart>(find.byType(LineChart)).data;
+      expect(chartData.lineBarsData.single.isCurved, isTrue);
+      expect(chartData.lineBarsData.single.isStepLineChart, isFalse);
+    },
+  );
 }

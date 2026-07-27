@@ -22,10 +22,10 @@ const _otherChannel = Channel(
 );
 
 Widget _wrap(Widget child) => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    );
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
 
 void main() {
   testWidgets('tapping Theme opens the theme dialog', (tester) async {
@@ -62,16 +62,22 @@ void main() {
     expect(settings.themeMode, ThemeMode.dark);
   });
 
-  testWidgets('Start screen tile shows Channel list by default', (tester) async {
+  testWidgets('Start screen tile shows Channel list by default', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final settings = SettingsNotifier(
       SettingsStorage(await SharedPreferences.getInstance()),
     );
 
-    await tester.pumpWidget(_wrap(SettingsScreen(
-      settings: settings,
-      channels: const [_channel, _otherChannel],
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [_channel, _otherChannel],
+        ),
+      ),
+    );
 
     expect(find.text('Start screen'), findsOneWidget);
     expect(find.text('Channel list'), findsOneWidget);
@@ -83,10 +89,14 @@ void main() {
       SettingsStorage(await SharedPreferences.getInstance()),
     );
 
-    await tester.pumpWidget(_wrap(SettingsScreen(
-      settings: settings,
-      channels: const [_channel, _otherChannel],
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [_channel, _otherChannel],
+        ),
+      ),
+    );
     await tester.tap(find.text('Start screen'));
     await tester.pumpAndSettle();
 
@@ -127,10 +137,14 @@ void main() {
       SettingsStorage(await SharedPreferences.getInstance()),
     );
 
-    await tester.pumpWidget(_wrap(SettingsScreen(
-      settings: settings,
-      channels: const [_channel, _otherChannel],
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        SettingsScreen(
+          settings: settings,
+          channels: const [_channel, _otherChannel],
+        ),
+      ),
+    );
     await tester.tap(find.text('Start screen'));
     await tester.pumpAndSettle();
 

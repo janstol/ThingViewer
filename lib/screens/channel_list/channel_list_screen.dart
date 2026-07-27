@@ -80,8 +80,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                 settings: widget.settings,
                 fieldSettingsStorage: widget.fieldSettingsStorage,
                 selectedChannel: _selectedChannel,
-                onChannelSelected: (c) =>
-                    setState(() => _selectedChannel = c),
+                onChannelSelected: (c) => setState(() => _selectedChannel = c),
                 onChannelRemoved: (c) {
                   if (_selectedChannel == c) {
                     setState(() => _selectedChannel = null);
@@ -126,10 +125,8 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     final channel = await Navigator.push<Channel>(
       context,
       MaterialPageRoute(
-        builder: (_) => ChannelAddScreen(
-          api: widget.api,
-          existingChannels: existing,
-        ),
+        builder: (_) =>
+            ChannelAddScreen(api: widget.api, existingChannels: existing),
       ),
     );
     if (channel != null && mounted) _notifier.addChannel(channel);
@@ -274,10 +271,8 @@ class _SettingsButton extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => SettingsScreen(
-              settings: settings,
-              channels: channels,
-            ),
+            builder: (_) =>
+                SettingsScreen(settings: settings, channels: channels),
           ),
         );
       },
@@ -305,59 +300,63 @@ class _ChannelListBody extends StatelessWidget {
     return ListenableBuilder(
       listenable: notifier,
       builder: (context, _) => switch (notifier.state) {
-        ChannelListLoading() =>
-          const Center(child: CircularProgressIndicator()),
+        ChannelListLoading() => const Center(
+          child: CircularProgressIndicator(),
+        ),
         ChannelListError(:final message) => Center(child: Text(message)),
-        ChannelListLoaded(:final channels) => channels.isEmpty
-            ? Center(child: Text(l10n.channelListEmpty))
-            : ReorderableListView.builder(
-                itemCount: channels.length,
-                onReorderItem: notifier.reorderChannels,
-                itemBuilder: (context, index) {
-                  final channel = channels[index];
-                  return Dismissible(
-                    key: ValueKey(channel),
-                    direction: DismissDirection.endToStart,
-                    confirmDismiss: (_) => showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text(l10n.removeChannelTitle),
-                        content: Text(l10n.removeChannelText(channel.displayName)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: Text(l10n.labelCancel),
+        ChannelListLoaded(:final channels) =>
+          channels.isEmpty
+              ? Center(child: Text(l10n.channelListEmpty))
+              : ReorderableListView.builder(
+                  itemCount: channels.length,
+                  onReorderItem: notifier.reorderChannels,
+                  itemBuilder: (context, index) {
+                    final channel = channels[index];
+                    return Dismissible(
+                      key: ValueKey(channel),
+                      direction: DismissDirection.endToStart,
+                      confirmDismiss: (_) => showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text(l10n.removeChannelTitle),
+                          content: Text(
+                            l10n.removeChannelText(channel.displayName),
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: Text(
-                              l10n.labelDelete,
-                              style: TextStyle(
-                                color: Theme.of(ctx).colorScheme.error,
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: Text(l10n.labelCancel),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: Text(
+                                l10n.labelDelete,
+                                style: TextStyle(
+                                  color: Theme.of(ctx).colorScheme.error,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    onDismissed: (_) => onDelete(channel),
-                    background: Container(
-                      color: Theme.of(context).colorScheme.error,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Icon(
-                        Icons.delete_outline,
-                        color: Theme.of(context).colorScheme.onError,
+                      onDismissed: (_) => onDelete(channel),
+                      background: Container(
+                        color: Theme.of(context).colorScheme.error,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Icon(
+                          Icons.delete_outline,
+                          color: Theme.of(context).colorScheme.onError,
+                        ),
                       ),
-                    ),
-                    child: _ChannelTile(
-                      channel: channel,
-                      isSelected: channel == selectedChannel,
-                      onTap: () => onTap(channel),
-                    ),
-                  );
-                },
-              ),
+                      child: _ChannelTile(
+                        channel: channel,
+                        isSelected: channel == selectedChannel,
+                        onTap: () => onTap(channel),
+                      ),
+                    );
+                  },
+                ),
       },
     );
   }
@@ -387,10 +386,9 @@ class _ChannelTile extends StatelessWidget {
       // (brandGreen), which is only 2.43:1 on white — fails WCAG AA. Selection
       // is already conveyed by selectedTileColor, so keep the foreground plain.
       selectedColor: Theme.of(context).colorScheme.onSurface,
-      selectedTileColor: Theme.of(context)
-          .colorScheme
-          .secondaryContainer
-          .withValues(alpha: 0.4),
+      selectedTileColor: Theme.of(
+        context,
+      ).colorScheme.secondaryContainer.withValues(alpha: 0.4),
       onTap: onTap,
       trailing: Icon(
         Icons.drag_handle,
@@ -399,4 +397,3 @@ class _ChannelTile extends StatelessWidget {
     );
   }
 }
-

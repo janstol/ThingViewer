@@ -15,10 +15,10 @@ const _existing = Channel(
 );
 
 Widget _wrap(Widget child) => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    );
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
 
 Future<void> _tapSave(WidgetTester tester) async {
   await tester.tap(find.text('Save'));
@@ -34,8 +34,14 @@ void main() {
 
   testWidgets('shows an error for an empty server URL', (tester) async {
     await tester.pumpWidget(_wrap(ChannelAddScreen(api: mockApi)));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Server URL'), '');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Channel ID'), '1');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Server URL'),
+      '',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Channel ID'),
+      '1',
+    );
     await _tapSave(tester);
 
     expect(find.text('Enter a server URL'), findsOneWidget);
@@ -47,7 +53,10 @@ void main() {
       find.widgetWithText(TextFormField, 'Server URL'),
       'not-a-url',
     );
-    await tester.enterText(find.widgetWithText(TextFormField, 'Channel ID'), '1');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Channel ID'),
+      '1',
+    );
     await _tapSave(tester);
 
     expect(find.text('Enter a valid server URL'), findsOneWidget);
@@ -55,24 +64,35 @@ void main() {
 
   testWidgets('shows an error for an invalid channel ID', (tester) async {
     await tester.pumpWidget(_wrap(ChannelAddScreen(api: mockApi)));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Channel ID'), 'abc');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Channel ID'),
+      'abc',
+    );
     await _tapSave(tester);
 
     expect(find.text('Enter a valid channel ID'), findsOneWidget);
   });
 
-  testWidgets('shows a duplicate-channel error when the api returns an existing channel',
-      (tester) async {
-    when(mockApi.readChannel(any)).thenAnswer(
-      (_) async => _existing,
-    );
+  testWidgets(
+    'shows a duplicate-channel error when the api returns an existing channel',
+    (tester) async {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => _existing);
 
-    await tester.pumpWidget(_wrap(
-      ChannelAddScreen(api: mockApi, existingChannels: const [_existing]),
-    ));
-    await tester.enterText(find.widgetWithText(TextFormField, 'Channel ID'), '1');
-    await _tapSave(tester);
+      await tester.pumpWidget(
+        _wrap(
+          ChannelAddScreen(api: mockApi, existingChannels: const [_existing]),
+        ),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Channel ID'),
+        '1',
+      );
+      await _tapSave(tester);
 
-    expect(find.text('This channel is already in your list.'), findsOneWidget);
-  });
+      expect(
+        find.text('This channel is already in your list.'),
+        findsOneWidget,
+      );
+    },
+  );
 }

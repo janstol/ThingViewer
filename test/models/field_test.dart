@@ -49,25 +49,31 @@ void main() {
     });
 
     test('a single value returns empty output', () {
-      expect(deltaValues([FieldValue(createdAt: DateTime(2024), value: 5)]), isEmpty);
+      expect(
+        deltaValues([FieldValue(createdAt: DateTime(2024), value: 5)]),
+        isEmpty,
+      );
     });
 
-    test('increasing series yields positive deltas keyed by the later timestamp', () {
-      final t1 = DateTime(2024, 1, 1);
-      final t2 = DateTime(2024, 1, 2);
-      final t3 = DateTime(2024, 1, 3);
-      final result = deltaValues([
-        FieldValue(createdAt: t1, value: 10),
-        FieldValue(createdAt: t2, value: 15),
-        FieldValue(createdAt: t3, value: 25),
-      ]);
+    test(
+      'increasing series yields positive deltas keyed by the later timestamp',
+      () {
+        final t1 = DateTime(2024, 1, 1);
+        final t2 = DateTime(2024, 1, 2);
+        final t3 = DateTime(2024, 1, 3);
+        final result = deltaValues([
+          FieldValue(createdAt: t1, value: 10),
+          FieldValue(createdAt: t2, value: 15),
+          FieldValue(createdAt: t3, value: 25),
+        ]);
 
-      expect(result, hasLength(2));
-      expect(result[0].createdAt, t2);
-      expect(result[0].value, 5);
-      expect(result[1].createdAt, t3);
-      expect(result[1].value, 10);
-    });
+        expect(result, hasLength(2));
+        expect(result[0].createdAt, t2);
+        expect(result[0].value, 5);
+        expect(result[1].createdAt, t3);
+        expect(result[1].value, 10);
+      },
+    );
 
     test('decreasing series yields negative deltas', () {
       final t1 = DateTime(2024, 1, 1);

@@ -16,22 +16,26 @@ const _channel = Channel(
 const _field = Field(id: 1, label: 'Temp');
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: AppTheme.light(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    );
+  theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
 
 void main() {
   testWidgets('selecting a chart type fires onChanged with it', (tester) async {
     FieldChartSettings? changed;
 
-    await tester.pumpWidget(_wrap(FieldSettingsScreen(
-      channel: _channel,
-      field: _field,
-      settings: FieldChartSettings.defaults,
-      onChanged: (v) => changed = v,
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: FieldChartSettings.defaults,
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Type'));
@@ -49,12 +53,19 @@ void main() {
   testWidgets('reset restores defaults after changes', (tester) async {
     FieldChartSettings? changed;
 
-    await tester.pumpWidget(_wrap(FieldSettingsScreen(
-      channel: _channel,
-      field: _field,
-      settings: const FieldChartSettings(type: ChartType.step, showDelta: true),
-      onChanged: (v) => changed = v,
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: const FieldChartSettings(
+            type: ChartType.step,
+            showDelta: true,
+          ),
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(find.text('Reset to defaults'), 200);
@@ -64,15 +75,21 @@ void main() {
     expect(changed, FieldChartSettings.defaults);
   });
 
-  testWidgets('setting yMin >= yMax is rejected, previous value kept', (tester) async {
+  testWidgets('setting yMin >= yMax is rejected, previous value kept', (
+    tester,
+  ) async {
     FieldChartSettings? changed;
 
-    await tester.pumpWidget(_wrap(FieldSettingsScreen(
-      channel: _channel,
-      field: _field,
-      settings: const FieldChartSettings(yMin: 0, yMax: 10),
-      onChanged: (v) => changed = v,
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: const FieldChartSettings(yMin: 0, yMax: 10),
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Y-axis max'));

@@ -37,11 +37,11 @@ final _fields = [
 ];
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: AppTheme.light(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    );
+  theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
 
 Future<SettingsNotifier> _settings() async {
   final prefs = await SharedPreferences.getInstance();
@@ -60,16 +60,22 @@ void main() {
     mockApi = MockThingSpeakApi();
   });
 
-  testWidgets('shows empty-state message with no saved channels', (tester) async {
+  testWidgets('shows empty-state message with no saved channels', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final storage = ChannelStorage(await SharedPreferences.getInstance());
 
-    await tester.pumpWidget(_wrap(ChannelListScreen(
-      api: mockApi,
-      channelStorage: storage,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelListScreen(
+          api: mockApi,
+          channelStorage: storage,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('No saved channels. Tap + to add one.'), findsOneWidget);
@@ -81,29 +87,39 @@ void main() {
     });
     final storage = ChannelStorage(await SharedPreferences.getInstance());
 
-    await tester.pumpWidget(_wrap(ChannelListScreen(
-      api: mockApi,
-      channelStorage: storage,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelListScreen(
+          api: mockApi,
+          channelStorage: storage,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('My Channel'), findsOneWidget);
   });
 
-  testWidgets('cancelling the swipe-to-dismiss dialog keeps the channel', (tester) async {
+  testWidgets('cancelling the swipe-to-dismiss dialog keeps the channel', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       'channels': Channel.listToJson([_channel]),
     });
     final storage = ChannelStorage(await SharedPreferences.getInstance());
 
-    await tester.pumpWidget(_wrap(ChannelListScreen(
-      api: mockApi,
-      channelStorage: storage,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelListScreen(
+          api: mockApi,
+          channelStorage: storage,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.drag(find.text('My Channel'), const Offset(-500, 0));
@@ -123,37 +139,44 @@ void main() {
       when(mockApi.readFeed(any, any)).thenAnswer((_) async => _fields);
     });
 
-    testWidgets('set to a saved channel opens its detail screen, Back returns to the list', (tester) async {
-      // Narrow (phone) layout: the default 800x600 test surface is wide
-      // enough to trigger the tablet split view instead.
-      tester.view.physicalSize = const Size(400, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'set to a saved channel opens its detail screen, Back returns to the list',
+      (tester) async {
+        // Narrow (phone) layout: the default 800x600 test surface is wide
+        // enough to trigger the tablet split view instead.
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      SharedPreferences.setMockInitialValues({
-        'channels': Channel.listToJson([_channel, _otherChannel]),
-        'startChannelId': _channel.id,
-        'startChannelServerUrl': _channel.serverUrl,
-      });
-      final storage = ChannelStorage(await SharedPreferences.getInstance());
+        SharedPreferences.setMockInitialValues({
+          'channels': Channel.listToJson([_channel, _otherChannel]),
+          'startChannelId': _channel.id,
+          'startChannelServerUrl': _channel.serverUrl,
+        });
+        final storage = ChannelStorage(await SharedPreferences.getInstance());
 
-      await tester.pumpWidget(_wrap(ChannelListScreen(
-        api: mockApi,
-        channelStorage: storage,
-        settings: await _settings(),
-        fieldSettingsStorage: await _fieldSettingsStorage(),
-      )));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          _wrap(
+            ChannelListScreen(
+              api: mockApi,
+              channelStorage: storage,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Temp'), findsOneWidget);
+        expect(find.text('Temp'), findsOneWidget);
 
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
 
-      expect(find.text('My Channel'), findsOneWidget);
-      expect(find.text('Other Channel'), findsOneWidget);
-    });
+        expect(find.text('My Channel'), findsOneWidget);
+        expect(find.text('Other Channel'), findsOneWidget);
+      },
+    );
 
     testWidgets('unset shows the channel list', (tester) async {
       SharedPreferences.setMockInitialValues({
@@ -161,19 +184,25 @@ void main() {
       });
       final storage = ChannelStorage(await SharedPreferences.getInstance());
 
-      await tester.pumpWidget(_wrap(ChannelListScreen(
-        api: mockApi,
-        channelStorage: storage,
-        settings: await _settings(),
-        fieldSettingsStorage: await _fieldSettingsStorage(),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('My Channel'), findsOneWidget);
       expect(find.text('Other Channel'), findsOneWidget);
     });
 
-    testWidgets('a stale (deleted) channel identity falls back to the list', (tester) async {
+    testWidgets('a stale (deleted) channel identity falls back to the list', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({
         'channels': Channel.listToJson([_otherChannel]),
         'startChannelId': _channel.id,
@@ -181,12 +210,16 @@ void main() {
       });
       final storage = ChannelStorage(await SharedPreferences.getInstance());
 
-      await tester.pumpWidget(_wrap(ChannelListScreen(
-        api: mockApi,
-        channelStorage: storage,
-        settings: await _settings(),
-        fieldSettingsStorage: await _fieldSettingsStorage(),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Other Channel'), findsOneWidget);

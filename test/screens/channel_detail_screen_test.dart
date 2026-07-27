@@ -31,11 +31,11 @@ final _fields = [
 const _emptyFields = [Field(id: 1, label: 'Temp')];
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: AppTheme.light(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    );
+  theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
 
 Future<SettingsNotifier> _settings() async {
   final prefs = await SharedPreferences.getInstance();
@@ -64,12 +64,16 @@ void main() {
     );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('A description of the channel'), findsOneWidget);
@@ -77,23 +81,31 @@ void main() {
   });
 
   testWidgets('renders nothing extra when description is null', (tester) async {
-    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      fieldCount: 1,
+    );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(Divider), findsNothing);
     expect(find.text('Temp'), findsOneWidget);
   });
 
-  testWidgets('renders nothing extra when description is whitespace only',
-      (tester) async {
+  testWidgets('renders nothing extra when description is whitespace only', (
+    tester,
+  ) async {
     final enrichedChannel = _channel.copyWith(
       name: 'My Channel',
       description: '   ',
@@ -101,20 +113,25 @@ void main() {
     );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(Divider), findsNothing);
     expect(find.text('Temp'), findsOneWidget);
   });
 
-  testWidgets('shows the description above the no-fields message when empty',
-      (tester) async {
+  testWidgets('shows the description above the no-fields message when empty', (
+    tester,
+  ) async {
     final enrichedChannel = _channel.copyWith(
       name: 'My Channel',
       description: 'A description of the channel',
@@ -123,12 +140,16 @@ void main() {
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
     when(mockApi.readFeed(any, any)).thenAnswer((_) async => _emptyFields);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('A description of the channel'), findsOneWidget);
@@ -136,25 +157,34 @@ void main() {
   });
 
   testWidgets(
-      'shows only the no-fields message when empty and no description',
-      (tester) async {
-    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
-    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-    when(mockApi.readFeed(any, any)).thenAnswer((_) async => _emptyFields);
+    'shows only the no-fields message when empty and no description',
+    (tester) async {
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        fieldCount: 1,
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(mockApi.readFeed(any, any)).thenAnswer((_) async => _emptyFields);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('No fields found for this channel.'), findsOneWidget);
-  });
+      expect(find.text('No fields found for this channel.'), findsOneWidget);
+    },
+  );
 
-  testWidgets('shows both link buttons when url and githubUrl are set',
-      (tester) async {
+  testWidgets('shows both link buttons when url and githubUrl are set', (
+    tester,
+  ) async {
     final enrichedChannel = _channel.copyWith(
       name: 'My Channel',
       url: 'https://dweet.io',
@@ -163,20 +193,25 @@ void main() {
     );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Website'), findsOneWidget);
     expect(find.text('Source code'), findsOneWidget);
   });
 
-  testWidgets('shows only the Website button when githubUrl is null',
-      (tester) async {
+  testWidgets('shows only the Website button when githubUrl is null', (
+    tester,
+  ) async {
     final enrichedChannel = _channel.copyWith(
       name: 'My Channel',
       url: 'https://dweet.io',
@@ -184,63 +219,80 @@ void main() {
     );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Website'), findsOneWidget);
     expect(find.text('Source code'), findsNothing);
   });
 
-  testWidgets('shows no buttons when there are no links, description unaffected',
-      (tester) async {
-    final enrichedChannel = _channel.copyWith(
-      name: 'My Channel',
-      description: 'A description of the channel',
-      fieldCount: 1,
-    );
-    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+  testWidgets(
+    'shows no buttons when there are no links, description unaffected',
+    (tester) async {
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        description: 'A description of the channel',
+        fieldCount: 1,
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('A description of the channel'), findsOneWidget);
-    expect(find.text('Website'), findsNothing);
-    expect(find.text('Source code'), findsNothing);
-  });
+      expect(find.text('A description of the channel'), findsOneWidget);
+      expect(find.text('Website'), findsNothing);
+      expect(find.text('Source code'), findsNothing);
+    },
+  );
 
-  testWidgets('shows the header when links are present but description is null',
-      (tester) async {
-    final enrichedChannel = _channel.copyWith(
-      name: 'My Channel',
-      url: 'https://dweet.io',
-      fieldCount: 1,
-    );
-    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+  testWidgets(
+    'shows the header when links are present but description is null',
+    (tester) async {
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        url: 'https://dweet.io',
+        fieldCount: 1,
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Website'), findsOneWidget);
-    expect(find.byType(Divider), findsOneWidget);
-  });
+      expect(find.text('Website'), findsOneWidget);
+      expect(find.byType(Divider), findsOneWidget);
+    },
+  );
 
-  testWidgets('rejects a javascript: scheme url, no button rendered',
-      (tester) async {
+  testWidgets('rejects a javascript: scheme url, no button rendered', (
+    tester,
+  ) async {
     final enrichedChannel = _channel.copyWith(
       name: 'My Channel',
       url: 'javascript:alert(1)',
@@ -248,29 +300,41 @@ void main() {
     );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Website'), findsNothing);
     expect(find.text('Source code'), findsNothing);
   });
 
-  testWidgets('pull-to-refresh on the field list re-fetches the channel',
-      (tester) async {
-    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
+  testWidgets('pull-to-refresh on the field list re-fetches the channel', (
+    tester,
+  ) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      fieldCount: 1,
+    );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
@@ -279,39 +343,52 @@ void main() {
     verify(mockApi.readChannel(any)).called(2);
   });
 
-  testWidgets('field list stays on screen while a pull-to-refresh is in flight',
-      (tester) async {
-    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
-    var callCount = 0;
-    when(mockApi.readChannel(any)).thenAnswer((_) async {
-      callCount++;
-      if (callCount > 1) {
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-      return enrichedChannel;
-    });
+  testWidgets(
+    'field list stays on screen while a pull-to-refresh is in flight',
+    (tester) async {
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        fieldCount: 1,
+      );
+      var callCount = 0;
+      when(mockApi.readChannel(any)).thenAnswer((_) async {
+        callCount++;
+        if (callCount > 1) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+        return enrichedChannel;
+      });
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+      await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Temp'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Temp'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
 
-    await tester.pumpAndSettle();
-  });
+      await tester.pumpAndSettle();
+    },
+  );
 
-  testWidgets('pulling to refresh on the error state recovers to loaded',
-      (tester) async {
-    final enrichedChannel = _channel.copyWith(name: 'My Channel', fieldCount: 1);
+  testWidgets('pulling to refresh on the error state recovers to loaded', (
+    tester,
+  ) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      fieldCount: 1,
+    );
     var callCount = 0;
     when(mockApi.readChannel(any)).thenAnswer((_) async {
       callCount++;
@@ -321,19 +398,28 @@ void main() {
       return enrichedChannel;
     });
 
-    await tester.pumpWidget(_wrap(ChannelDetailScreen(
-      channel: _channel,
-      api: mockApi,
-      settings: await _settings(),
-      fieldSettingsStorage: await _fieldSettingsStorage(),
-    )));
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Network error. Please check your connection.'),
-        findsOneWidget);
+    expect(
+      find.text('Network error. Please check your connection.'),
+      findsOneWidget,
+    );
 
     await tester.fling(
-        find.byType(SingleChildScrollView), const Offset(0, 300), 1000);
+      find.byType(SingleChildScrollView),
+      const Offset(0, 300),
+      1000,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Temp'), findsOneWidget);

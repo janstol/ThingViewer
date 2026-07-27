@@ -54,20 +54,20 @@ class Channel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'serverUrl': serverUrl,
-        'isPublic': isPublic,
-        if (apiKey != null) 'apiKey': apiKey,
-        if (name != null) 'name': name,
-      };
+    'id': id,
+    'serverUrl': serverUrl,
+    'isPublic': isPublic,
+    if (apiKey != null) 'apiKey': apiKey,
+    if (name != null) 'name': name,
+  };
 
   factory Channel.fromJson(Map<String, dynamic> json) => Channel(
-        id: json['id'] as int,
-        serverUrl: json['serverUrl'] as String,
-        isPublic: json['isPublic'] as bool,
-        apiKey: json['apiKey'] as String?,
-        name: json['name'] as String?,
-      );
+    id: json['id'] as int,
+    serverUrl: json['serverUrl'] as String,
+    isPublic: json['isPublic'] as bool,
+    apiKey: json['apiKey'] as String?,
+    name: json['name'] as String?,
+  );
 
   static List<Channel> listFromJson(String raw) {
     final list = jsonDecode(raw) as List<dynamic>;

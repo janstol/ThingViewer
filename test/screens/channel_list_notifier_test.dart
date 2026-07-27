@@ -25,14 +25,28 @@ class _FakeChannelStorage implements ChannelStorage {
   }
 }
 
-const _a = Channel(id: 1, serverUrl: 'https://api.thingspeak.com', isPublic: true);
-const _b = Channel(id: 2, serverUrl: 'https://api.thingspeak.com', isPublic: true);
-const _c = Channel(id: 3, serverUrl: 'https://api.thingspeak.com', isPublic: true);
+const _a = Channel(
+  id: 1,
+  serverUrl: 'https://api.thingspeak.com',
+  isPublic: true,
+);
+const _b = Channel(
+  id: 2,
+  serverUrl: 'https://api.thingspeak.com',
+  isPublic: true,
+);
+const _c = Channel(
+  id: 3,
+  serverUrl: 'https://api.thingspeak.com',
+  isPublic: true,
+);
 
 void main() {
   group('initial load', () {
     test('is ChannelListLoaded with saved channels', () {
-      final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b]));
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(initial: [_a, _b]),
+      );
       expect(notifier.state, isA<ChannelListLoaded>());
       expect((notifier.state as ChannelListLoaded).channels, [_a, _b]);
       notifier.dispose();
@@ -46,7 +60,9 @@ void main() {
     });
 
     test('is ChannelListError when storage throws', () {
-      final notifier = ChannelListNotifier(_FakeChannelStorage(throwOnLoad: true));
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(throwOnLoad: true),
+      );
       expect(notifier.state, isA<ChannelListError>());
       notifier.dispose();
     });
@@ -96,7 +112,9 @@ void main() {
 
     test('moves item down correctly', () async {
       // [A, B, C] drag A (0) to after C → newIndex = 2
-      final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(initial: [_a, _b, _c]),
+      );
 
       await notifier.reorderChannels(0, 2);
 
@@ -106,7 +124,9 @@ void main() {
 
     test('moves item up correctly', () async {
       // [A, B, C] drag C (2) to before A → newIndex = 0
-      final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(initial: [_a, _b, _c]),
+      );
 
       await notifier.reorderChannels(2, 0);
 
@@ -116,7 +136,9 @@ void main() {
 
     test('moves item one position down', () async {
       // [A, B, C] drag A (0) to after B → newIndex = 1
-      final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(initial: [_a, _b, _c]),
+      );
 
       await notifier.reorderChannels(0, 1);
 
@@ -126,7 +148,9 @@ void main() {
 
     test('moves item one position up', () async {
       // [A, B, C] drag B (1) to before A → newIndex = 0
-      final notifier = ChannelListNotifier(_FakeChannelStorage(initial: [_a, _b, _c]));
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(initial: [_a, _b, _c]),
+      );
 
       await notifier.reorderChannels(1, 0);
 
