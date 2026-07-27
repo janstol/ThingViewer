@@ -51,9 +51,26 @@ class FieldSettingsStorage {
     } else {
       _settings[key] = settings;
     }
-    await _prefs.setString(
-      _kFieldChartSettingsKey,
-      jsonEncode(_settings.map((k, v) => MapEntry(k, v.toJson()))),
-    );
+    await _persist();
   }
+
+  /// Re-keys every entry stored under [from]'s identity onto [to]'s, for
+  /// when an edited channel's server URL and/or id changes.
+  Future<void> migrateChannel(Channel from, Channel to) async {
+    final prefix = '${from.serverUrl}|${from.id}|';
+    final matching = _settings.keys.where((k) => k.startsWith(prefix)).toList();
+    if (matching.isEmpty) return;
+    for (final key in matching) {
+      final fieldIdSuffix = key.substring(prefix.length);
+      _settings['${to.serverUrl}|${to.id}|$fieldIdSuffix'] = _settings.remove(
+        key,
+      )!;
+    }
+    await _persist();
+  }
+
+  Future<void> _persist() => _prefs.setString(
+    _kFieldChartSettingsKey,
+    jsonEncode(_settings.map((k, v) => MapEntry(k, v.toJson()))),
+  );
 }

@@ -24,6 +24,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addChannelTooltip => 'Add channel';
 
   @override
+  String get editChannelTitle => 'Edit Channel';
+
+  @override
+  String get editChannelTooltip => 'Edit channel';
+
+  @override
+  String get channelListAuthError => 'Authentication failed';
+
+  @override
   String get fieldServerUrl => 'Server URL';
 
   @override
@@ -206,7 +215,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNetwork => 'Network error. Please check your connection.';
 
   @override
-  String get errorApiCredentials => 'Please check your channel ID and API key.';
+  String get errorApiCredentials =>
+      'ThingSpeak didn\'t accept that channel ID and API key together. Each channel has its own key, so double check both.';
+
+  @override
+  String get errorApiCredentialsDetail =>
+      'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, tap Edit above to update it here.';
 
   @override
   String get errorGeneral => 'An error occurred.';

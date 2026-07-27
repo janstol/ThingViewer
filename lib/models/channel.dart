@@ -11,6 +11,7 @@ class Channel {
   final String? githubUrl;
   final DateTime? updatedAt;
   final int fieldCount;
+  final bool authError;
 
   const Channel({
     required this.id,
@@ -23,6 +24,7 @@ class Channel {
     this.githubUrl,
     this.updatedAt,
     this.fieldCount = 0,
+    this.authError = false,
   });
 
   String get displayName => name?.isNotEmpty == true ? name! : 'Channel $id';
@@ -38,6 +40,7 @@ class Channel {
     String? githubUrl,
     DateTime? updatedAt,
     int? fieldCount,
+    bool? authError,
   }) {
     return Channel(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class Channel {
       githubUrl: githubUrl ?? this.githubUrl,
       updatedAt: updatedAt ?? this.updatedAt,
       fieldCount: fieldCount ?? this.fieldCount,
+      authError: authError ?? this.authError,
     );
   }
 
@@ -59,6 +63,7 @@ class Channel {
     'isPublic': isPublic,
     if (apiKey != null) 'apiKey': apiKey,
     if (name != null) 'name': name,
+    if (authError) 'authError': authError,
   };
 
   factory Channel.fromJson(Map<String, dynamic> json) => Channel(
@@ -67,6 +72,7 @@ class Channel {
     isPublic: json['isPublic'] as bool,
     apiKey: json['apiKey'] as String?,
     name: json['name'] as String?,
+    authError: json['authError'] as bool? ?? false,
   );
 
   static List<Channel> listFromJson(String raw) {

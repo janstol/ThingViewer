@@ -63,6 +63,18 @@ class ChannelListNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Replaces [original] with [updated], which may differ in identity
+  /// (id and/or serverUrl) — unlike [updateChannel], which assumes identity
+  /// never changes.
+  Future<void> replaceChannel(Channel original, Channel updated) async {
+    final index = _channels.indexWhere((c) => c == original);
+    if (index == -1) return;
+    _channels[index] = updated;
+    await _storage.saveChannels(_channels);
+    _state = ChannelListLoaded(List.unmodifiable(_channels));
+    notifyListeners();
+  }
+
   /// `newIndex` is the target position *after* the item at `oldIndex` has
   /// been removed, matching `ReorderableListView.onReorderItem`.
   Future<void> reorderChannels(int oldIndex, int newIndex) async {

@@ -87,6 +87,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                   }
                   _notifier.removeChannel(c);
                 },
+                onChannelEdited: _onChannelEdited,
                 onAddChannel: _openAddChannel,
                 l10n: l10n,
               )
@@ -103,6 +104,10 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
   }
 
   void _openChannel(Channel channel) {
+    final existing = switch (_notifier.state) {
+      ChannelListLoaded(:final channels) => channels,
+      _ => const <Channel>[],
+    };
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -111,10 +116,25 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
           api: widget.api,
           settings: widget.settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
+          existingChannels: existing,
           onChannelUpdated: _notifier.updateChannel,
+          onChannelEdited: _onChannelEdited,
         ),
       ),
     );
+  }
+
+  Future<void> _onChannelEdited(Channel original, Channel updated) async {
+    if (original != updated) {
+      await widget.fieldSettingsStorage.migrateChannel(original, updated);
+      if (widget.settings.isStartChannel(original)) {
+        await widget.settings.setStartChannel(updated);
+      }
+    }
+    await _notifier.replaceChannel(original, updated);
+    if (_selectedChannel == original) {
+      setState(() => _selectedChannel = updated);
+    }
   }
 
   void _openAddChannel() async {
@@ -184,6 +204,8 @@ class _WideLayout extends StatelessWidget {
   final Channel? selectedChannel;
   final ValueChanged<Channel> onChannelSelected;
   final ValueChanged<Channel> onChannelRemoved;
+  final Future<void> Function(Channel original, Channel updated)
+  onChannelEdited;
   final VoidCallback onAddChannel;
   final AppLocalizations l10n;
 
@@ -195,6 +217,7 @@ class _WideLayout extends StatelessWidget {
     required this.selectedChannel,
     required this.onChannelSelected,
     required this.onChannelRemoved,
+    required this.onChannelEdited,
     required this.onAddChannel,
     required this.l10n,
   });
@@ -234,7 +257,12 @@ class _WideLayout extends StatelessWidget {
                     api: api,
                     settings: settings,
                     fieldSettingsStorage: fieldSettingsStorage,
+                    existingChannels: switch (notifier.state) {
+                      ChannelListLoaded(:final channels) => channels,
+                      _ => const <Channel>[],
+                    },
                     onChannelUpdated: notifier.updateChannel,
+                    onChannelEdited: onChannelEdited,
                   )
                 : Center(
                     child: Text(
@@ -375,12 +403,32 @@ class _ChannelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final errorColor = Theme.of(context).colorScheme.error;
     return ListTile(
       leading: Icon(
         channel.isPublic ? Icons.lock_open_outlined : Icons.lock_outline,
       ),
       title: Text(channel.displayName),
-      subtitle: Text('${channel.serverUrl} · ${channel.id}'),
+      subtitle: channel.authError
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${channel.serverUrl} · ${channel.id}'),
+                Row(
+                  children: [
+                    Icon(Icons.error_outline, size: 14, color: errorColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.channelListAuthError,
+                      style: TextStyle(color: errorColor),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Text('${channel.serverUrl} · ${channel.id}'),
+      isThreeLine: channel.authError,
       selected: isSelected,
       // ListTile.selected defaults its text/icon colour to colorScheme.primary
       // (brandGreen), which is only 2.43:1 on white — fails WCAG AA. Selection

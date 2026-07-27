@@ -14,6 +14,13 @@ const _existing = Channel(
   name: 'Existing',
 );
 
+const _other = Channel(
+  id: 2,
+  serverUrl: 'https://api.thingspeak.com',
+  isPublic: true,
+  name: 'Other',
+);
+
 Widget _wrap(Widget child) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
@@ -102,6 +109,71 @@ void main() {
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Channel ID'),
         '1',
+      );
+      await _tapSave(tester);
+
+      expect(
+        find.text('This channel is already in your list.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('prefills fields from initialChannel and titles as Edit', (
+    tester,
+  ) async {
+    const initial = Channel(
+      id: 42,
+      serverUrl: 'https://example.com',
+      isPublic: false,
+      apiKey: 'secret-key',
+      name: 'My Channel',
+    );
+
+    await tester.pumpWidget(
+      _wrap(ChannelAddScreen(api: mockApi, initialChannel: initial)),
+    );
+
+    expect(find.text('Edit Channel'), findsOneWidget);
+    expect(find.text('https://example.com'), findsOneWidget);
+    expect(find.text('42'), findsOneWidget);
+    expect(find.text('secret-key'), findsOneWidget);
+  });
+
+  testWidgets('duplicate check exempts the channel being edited from itself', (
+    tester,
+  ) async {
+    when(mockApi.readChannel(any)).thenAnswer((_) async => _existing);
+    await tester.pumpWidget(
+      _wrap(
+        ChannelAddScreen(
+          api: mockApi,
+          existingChannels: const [_existing, _other],
+          initialChannel: _existing,
+        ),
+      ),
+    );
+    await _tapSave(tester);
+
+    expect(find.text('This channel is already in your list.'), findsNothing);
+  });
+
+  testWidgets(
+    'duplicate check still trips when editing into a different saved channel',
+    (tester) async {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => _other);
+      await tester.pumpWidget(
+        _wrap(
+          ChannelAddScreen(
+            api: mockApi,
+            existingChannels: const [_existing, _other],
+            initialChannel: _existing,
+          ),
+        ),
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Channel ID'),
+        '2',
       );
       await _tapSave(tester);
 

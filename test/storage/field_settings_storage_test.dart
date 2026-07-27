@@ -83,6 +83,73 @@ void main() {
     expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
   });
 
+  group('migrateChannel', () {
+    test('re-keys settings onto the new channel identity', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      const forField1 = FieldChartSettings(type: ChartType.step);
+      const forField2 = FieldChartSettings(type: ChartType.spline);
+      await storage.save(_channel, 1, forField1);
+      await storage.save(_channel, 2, forField2);
+
+      const migrated = Channel(
+        id: 42,
+        serverUrl: 'https://example.com',
+        isPublic: true,
+      );
+      await storage.migrateChannel(_channel, migrated);
+
+      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+      expect(storage.settingsFor(_channel, 2), FieldChartSettings.defaults);
+      expect(storage.settingsFor(migrated, 1), forField1);
+      expect(storage.settingsFor(migrated, 2), forField2);
+
+      // Confirm the migration was actually persisted, not just in memory.
+      final reloaded = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      expect(reloaded.settingsFor(migrated, 1), forField1);
+      expect(reloaded.settingsFor(migrated, 2), forField2);
+    });
+
+    test('leaves other channels untouched', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      const forOther = FieldChartSettings(type: ChartType.step);
+      await storage.save(_channel, 1, const FieldChartSettings(decimals: 2));
+      await storage.save(_otherChannel, 1, forOther);
+
+      const migrated = Channel(
+        id: 42,
+        serverUrl: 'https://example.com',
+        isPublic: true,
+      );
+      await storage.migrateChannel(_channel, migrated);
+
+      expect(storage.settingsFor(_otherChannel, 1), forOther);
+    });
+
+    test('is a no-op when nothing is saved for the channel', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      const migrated = Channel(
+        id: 42,
+        serverUrl: 'https://example.com',
+        isPublic: true,
+      );
+
+      await storage.migrateChannel(_channel, migrated);
+
+      expect(storage.settingsFor(migrated, 1), FieldChartSettings.defaults);
+    });
+  });
+
   test('settings persist across storage instances', () async {
     SharedPreferences.setMockInitialValues({});
     final first = FieldSettingsStorage(await SharedPreferences.getInstance());

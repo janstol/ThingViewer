@@ -117,6 +117,53 @@ void main() {
       notifier.dispose();
     });
 
+    test(
+      'reports authError: true through onChannelUpdated on a credentials failure',
+      () async {
+        when(
+          mockApi.readChannel(any),
+        ).thenThrow(const ApiException(ApiErrorCode.credentials));
+        Channel? reported;
+
+        final notifier = ChannelDetailNotifier(
+          mockApi,
+          channel,
+          onChannelUpdated: (c) => reported = c,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(reported?.authError, isTrue);
+        final error = notifier.state as ChannelDetailError;
+        expect(error.channel.authError, isTrue);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'reports authError: false through onChannelUpdated once a load succeeds',
+      () async {
+        when(
+          mockApi.readChannel(any),
+        ).thenThrow(const ApiException(ApiErrorCode.credentials));
+        Channel? reported;
+
+        final notifier = ChannelDetailNotifier(
+          mockApi,
+          channel,
+          onChannelUpdated: (c) => reported = c,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(reported?.authError, isTrue);
+
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
+        await notifier.load();
+
+        expect(reported?.authError, isFalse);
+        notifier.dispose();
+      },
+    );
+
     test('does not call notifyListeners after dispose', () async {
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
       when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);

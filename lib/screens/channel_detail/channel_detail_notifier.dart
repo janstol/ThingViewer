@@ -55,19 +55,30 @@ class ChannelDetailNotifier extends ChangeNotifier {
   /// caller (a pull-to-refresh gesture) renders its own progress indicator.
   Future<void> refresh() => _fetch();
 
+  /// Points this notifier at a different channel (e.g. after editing it) and
+  /// reloads from scratch.
+  Future<void> setChannel(Channel channel) {
+    _channel = channel;
+    return load();
+  }
+
   Future<void> _fetch() async {
     try {
       final params = ApiParameters(apiKey: _channel.apiKey, results: 100);
       final updated = await _api.readChannel(_channel);
       final fields = await _api.readFeed(updated, params);
-      _channel = updated;
-      onChannelUpdated?.call(updated);
+      _channel = updated.copyWith(authError: false);
+      onChannelUpdated?.call(_channel);
 
       final nonEmpty = fields.where((f) => f.lastValue != null).toList();
       _state = nonEmpty.isEmpty
-          ? ChannelDetailEmpty(updated)
-          : ChannelDetailLoaded(updated, nonEmpty);
+          ? ChannelDetailEmpty(_channel)
+          : ChannelDetailLoaded(_channel, nonEmpty);
     } on ApiException catch (e) {
+      if (e.code == ApiErrorCode.credentials && !_channel.authError) {
+        _channel = _channel.copyWith(authError: true);
+        onChannelUpdated?.call(_channel);
+      }
       _state = ChannelDetailError(_channel, e.code, e.serverMessage);
     }
     if (!_disposed) notifyListeners();

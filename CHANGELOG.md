@@ -16,6 +16,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A Column chart type, added to the per-field chart type picker above. Bars support the same pinch-zoom and pan as the other chart types, and dense windows are automatically downsampled for display.
 - A "Source code" link to the app's GitHub repo, added to the Settings → Info section.
 - The channel description on the channel detail screen is now selectable, so it can be copied.
+- Saved channels can now be edited (server URL, channel ID, public/private, API key) via a new edit button on the channel detail screen, instead of requiring delete-and-re-add.
+- The channel list now shows an "Authentication failed" indicator on any saved channel whose last refresh failed due to invalid credentials.
 
 ### Fixed
 

@@ -9,11 +9,13 @@ const _defaultServerUrl = 'https://api.thingspeak.com';
 class ChannelAddScreen extends StatefulWidget {
   final ThingSpeakApi api;
   final List<Channel> existingChannels;
+  final Channel? initialChannel;
 
   const ChannelAddScreen({
     super.key,
     required this.api,
     this.existingChannels = const [],
+    this.initialChannel,
   });
 
   @override
@@ -22,13 +24,27 @@ class ChannelAddScreen extends StatefulWidget {
 
 class _ChannelAddScreenState extends State<ChannelAddScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _serverUrlController = TextEditingController(text: _defaultServerUrl);
-  final _channelIdController = TextEditingController();
-  final _apiKeyController = TextEditingController();
+  late final TextEditingController _serverUrlController;
+  late final TextEditingController _channelIdController;
+  late final TextEditingController _apiKeyController;
 
-  bool _isPublic = true;
+  late bool _isPublic;
   bool _isSaving = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialChannel;
+    _serverUrlController = TextEditingController(
+      text: initial?.serverUrl ?? _defaultServerUrl,
+    );
+    _channelIdController = TextEditingController(
+      text: initial != null ? initial.id.toString() : '',
+    );
+    _apiKeyController = TextEditingController(text: initial?.apiKey ?? '');
+    _isPublic = initial?.isPublic ?? true;
+  }
 
   @override
   void dispose() {
@@ -42,7 +58,13 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.addChannelTitle)),
+      appBar: AppBar(
+        title: Text(
+          widget.initialChannel == null
+              ? l10n.addChannelTitle
+              : l10n.editChannelTitle,
+        ),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -148,7 +170,7 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       final isDuplicate = widget.existingChannels.any(
-        (c) => c.id == enriched.id && c.serverUrl == enriched.serverUrl,
+        (c) => c == enriched && c != widget.initialChannel,
       );
       if (isDuplicate) {
         setState(() {

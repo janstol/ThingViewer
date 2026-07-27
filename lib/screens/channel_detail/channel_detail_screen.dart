@@ -7,6 +7,7 @@ import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../theme.dart';
+import '../channel_add/channel_add_screen.dart';
 import '../field_chart/field_chart_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'channel_detail_notifier.dart';
@@ -104,7 +105,10 @@ class ChannelDetailScreen extends StatefulWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final List<Channel> existingChannels;
   final void Function(Channel)? onChannelUpdated;
+  final Future<void> Function(Channel original, Channel updated)?
+  onChannelEdited;
 
   const ChannelDetailScreen({
     super.key,
@@ -112,7 +116,9 @@ class ChannelDetailScreen extends StatefulWidget {
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
+    this.existingChannels = const [],
     this.onChannelUpdated,
+    this.onChannelEdited,
   });
 
   @override
@@ -121,10 +127,12 @@ class ChannelDetailScreen extends StatefulWidget {
 
 class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
   late final ChannelDetailNotifier _notifier;
+  late Channel _channel;
 
   @override
   void initState() {
     super.initState();
+    _channel = widget.channel;
     _notifier = ChannelDetailNotifier(
       widget.api,
       widget.channel,
@@ -138,13 +146,37 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _editChannel() async {
+    final updated = await Navigator.push<Channel>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChannelAddScreen(
+          api: widget.api,
+          existingChannels: widget.existingChannels,
+          initialChannel: _channel,
+        ),
+      ),
+    );
+    if (updated == null || !mounted) return;
+    final original = _channel;
+    await widget.onChannelEdited?.call(original, updated);
+    if (!mounted) return;
+    setState(() => _channel = updated);
+    await _notifier.setChannel(updated);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.channel.displayName),
+        title: Text(_channel.displayName),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: l10n.editChannelTooltip,
+            onPressed: _editChannel,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: l10n.channelDetailRefresh,
@@ -167,21 +199,25 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
             ),
             ChannelDetailError(:final errorCode, :final serverMessage) =>
               _ScrollableCenter(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(switch (errorCode) {
-                      ApiErrorCode.network => l10n.errorNetwork,
-                      ApiErrorCode.credentials => l10n.errorApiCredentials,
-                      ApiErrorCode.general =>
-                        serverMessage ?? l10n.errorGeneral,
-                    }),
-                    const SizedBox(height: 16),
-                    FilledButton.tonal(
-                      onPressed: _notifier.load,
-                      child: Text(l10n.channelDetailRefresh),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(switch (errorCode) {
+                        ApiErrorCode.network => l10n.errorNetwork,
+                        ApiErrorCode.credentials =>
+                          l10n.errorApiCredentialsDetail,
+                        ApiErrorCode.general =>
+                          serverMessage ?? l10n.errorGeneral,
+                      }, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      FilledButton.tonal(
+                        onPressed: _notifier.load,
+                        child: Text(l10n.channelDetailRefresh),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ChannelDetailLoaded(:final channel, :final fields) => _FieldList(

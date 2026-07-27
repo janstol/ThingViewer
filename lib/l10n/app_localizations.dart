@@ -124,6 +124,24 @@ abstract class AppLocalizations {
   /// **'Add channel'**
   String get addChannelTooltip;
 
+  /// No description provided for @editChannelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Channel'**
+  String get editChannelTitle;
+
+  /// No description provided for @editChannelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit channel'**
+  String get editChannelTooltip;
+
+  /// No description provided for @channelListAuthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed'**
+  String get channelListAuthError;
+
   /// No description provided for @fieldServerUrl.
   ///
   /// In en, this message translates to:
@@ -469,8 +487,14 @@ abstract class AppLocalizations {
   /// No description provided for @errorApiCredentials.
   ///
   /// In en, this message translates to:
-  /// **'Please check your channel ID and API key.'**
+  /// **'ThingSpeak didn\'t accept that channel ID and API key together. Each channel has its own key, so double check both.'**
   String get errorApiCredentials;
+
+  /// No description provided for @errorApiCredentialsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, tap Edit above to update it here.'**
+  String get errorApiCredentialsDetail;
 
   /// No description provided for @errorGeneral.
   ///

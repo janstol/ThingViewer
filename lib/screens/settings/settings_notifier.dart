@@ -142,4 +142,9 @@ class SettingsNotifier extends ChangeNotifier {
     }
     return null;
   }
+
+  /// Whether [channel] is the currently configured start channel.
+  bool isStartChannel(Channel channel) =>
+      channel.id == _startChannelId &&
+      channel.serverUrl == _startChannelServerUrl;
 }

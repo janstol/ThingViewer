@@ -106,6 +106,36 @@ void main() {
     });
   });
 
+  group('replaceChannel', () {
+    test('replaces channel in place, keeping list position', () async {
+      final storage = _FakeChannelStorage(initial: [_a, _b, _c]);
+      final notifier = ChannelListNotifier(storage);
+
+      const updated = Channel(
+        id: 99,
+        serverUrl: 'https://example.com',
+        isPublic: true,
+        name: 'Renumbered',
+      );
+      await notifier.replaceChannel(_b, updated);
+
+      final state = notifier.state as ChannelListLoaded;
+      expect(state.channels, [_a, updated, _c]);
+      expect(storage.loadChannels(), [_a, updated, _c]);
+      notifier.dispose();
+    });
+
+    test('is a no-op for a channel not in the list', () async {
+      final storage = _FakeChannelStorage(initial: [_a]);
+      final notifier = ChannelListNotifier(storage);
+
+      await notifier.replaceChannel(_b, _c);
+
+      expect((notifier.state as ChannelListLoaded).channels, [_a]);
+      notifier.dispose();
+    });
+  });
+
   group('reorderChannels', () {
     // ReorderableListView.onReorderItem passes (oldIndex, newIndex) where
     // newIndex is already the target position *after* removing the item.
