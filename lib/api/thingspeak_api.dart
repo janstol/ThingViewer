@@ -55,11 +55,31 @@ class ApiParameters {
       dt.toUtc().toIso8601String().replaceAll('T', ' ').replaceAll('Z', '');
 }
 
+/// The result of [ThingSpeakApi.readFieldRange]: the paginated field data,
+/// plus whether the page budget was exhausted before the full range was
+/// covered.
+class FieldRange {
+  final Field field;
+  final bool truncated;
+
+  const FieldRange({required this.field, required this.truncated});
+}
+
 /// HTTP client for the ThingSpeak REST API.
 ///
 /// Docs: https://www.mathworks.com/help/thingspeak/
 class ThingSpeakApi {
   final http.Client _client;
+
+  /// ThingSpeak silently caps any single `feeds`/`fields` request at this many
+  /// entries, regardless of the requested date range — verified against the
+  /// live API. [readFieldRange] paginates backwards past it.
+  static const _maxResultsPerRequest = 8000;
+
+  /// Cap on the number of pages [readFieldRange] will fetch (≈80 000 points)
+  /// so a very dense channel can't turn a single chart open into an unbounded
+  /// number of requests.
+  static const _maxPages = 10;
 
   ThingSpeakApi(this._client);
 
@@ -124,6 +144,72 @@ class ThingSpeakApi {
 
     final raw = await _sendRequest(uri);
     return await compute(_parseSingleField, _ParseFieldArgs(raw, fieldId));
+  }
+
+  /// Reads all data for a single field over [start]..[end], paginating
+  /// backwards past ThingSpeak's [_maxResultsPerRequest]-entry-per-request cap.
+  ///
+  /// Each page requests `results: _maxResultsPerRequest` ending at a cursor
+  /// that starts at [end] and walks backward to just before the oldest
+  /// timestamp seen so far. Stops when a page comes back short (the full
+  /// range is covered), when a page makes no backward progress (defensive
+  /// against many entries sharing one timestamp), or after [_maxPages].
+  Future<FieldRange> readFieldRange(
+    Channel channel,
+    int fieldId, {
+    String? apiKey,
+    required DateTime start,
+    required DateTime end,
+    void Function(int fetched)? onProgress,
+  }) async {
+    final collected = <FieldValue>[];
+    String? label;
+    var cursorEnd = end;
+    var truncated = false;
+
+    for (var page = 0; page < _maxPages; page++) {
+      final result = await readField(
+        channel,
+        fieldId,
+        ApiParameters(
+          apiKey: apiKey,
+          startDate: start,
+          endDate: cursorEnd,
+          results: _maxResultsPerRequest,
+        ),
+      );
+      label ??= result.label;
+
+      if (result.values.isEmpty) break;
+
+      collected.addAll(result.values);
+      onProgress?.call(collected.length);
+
+      if (result.values.length < _maxResultsPerRequest) {
+        // Short page: the full range down to `start` is covered.
+        break;
+      }
+
+      final oldest = result.values.first.createdAt;
+      final nextCursorEnd = oldest.subtract(const Duration(seconds: 1));
+      if (!nextCursorEnd.isAfter(start)) break;
+
+      if (!nextCursorEnd.isBefore(cursorEnd)) {
+        // No backward progress possible (e.g. many entries share one
+        // timestamp) — stop rather than loop forever.
+        truncated = true;
+        break;
+      }
+      cursorEnd = nextCursorEnd;
+
+      if (page == _maxPages - 1) truncated = true;
+    }
+
+    collected.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return FieldRange(
+      field: Field(id: fieldId, label: label, values: collected),
+      truncated: truncated,
+    );
   }
 
   Uri _buildUri({
@@ -244,19 +330,19 @@ class ThingSpeakApi {
       if (createdAt == null) continue;
 
       for (final id in fields.keys) {
-        final rawValue = feed['field$id'] as String?;
+        final rawValue = feed['field$id'];
         if (rawValue == null) continue;
-        final value = double.tryParse(rawValue);
-        if (value == null) continue;
+        final value = double.tryParse('$rawValue');
+        if (value == null || !value.isFinite) continue;
         fields[id]!.values.add(FieldValue(createdAt: createdAt, value: value));
       }
     }
 
-    return fields.entries
-        .map(
-          (e) => Field(id: e.key, label: e.value.label, values: e.value.values),
-        )
-        .toList();
+    return fields.entries.map((e) {
+      final values = e.value.values
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      return Field(id: e.key, label: e.value.label, values: values);
+    }).toList();
   }
 
   static Field _parseSingleField(_ParseFieldArgs args) {
@@ -272,12 +358,13 @@ class ThingSpeakApi {
       final createdAt = DateTime.tryParse(
         feed['created_at'] as String? ?? '',
       )?.toLocal();
-      final rawValue = feed['field${args.fieldId}'] as String?;
+      final rawValue = feed['field${args.fieldId}'];
       if (createdAt == null || rawValue == null) continue;
-      final value = double.tryParse(rawValue);
-      if (value == null) continue;
+      final value = double.tryParse('$rawValue');
+      if (value == null || !value.isFinite) continue;
       values.add(FieldValue(createdAt: createdAt, value: value));
     }
+    values.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
     return Field(id: args.fieldId, label: label, values: values);
   }

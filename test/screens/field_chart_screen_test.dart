@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
@@ -58,7 +59,15 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     mockApi = MockThingSpeakApi();
-    when(mockApi.readField(any, any, any)).thenAnswer((_) async => _field);
+    when(
+      mockApi.readFieldRange(
+        any,
+        any,
+        apiKey: anyNamed('apiKey'),
+        start: anyNamed('start'),
+        end: anyNamed('end'),
+      ),
+    ).thenAnswer((_) async => FieldRange(field: _field, truncated: false));
   });
 
   testWidgets(

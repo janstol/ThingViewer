@@ -18,6 +18,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Field values are no longer rounded to 2 decimal places on the channel detail readout and chart tooltip, which flattened high-precision channels into apparently unchanging graphs. Values now show a minimum of 2 and a maximum of 6 decimal places.
+- Field charts now paginate past ThingSpeak's 8000-entry-per-request cap instead of silently showing only the newest ~8000 points of a requested range. A notice is shown if a range is so dense the app's page budget is exhausted before the full range is covered.
+- The channel detail screen now fetches the last 100 entries (was 1) before deciding which fields have no data, so fields not written in the very latest entry no longer disappear from the field list and become unreachable.
+- Re-selecting a date range that falls in the gap between two previously viewed ranges now fetches from the API instead of incorrectly serving an empty/partial result from cache.
+- `NaN`/`Infinity` field values (and numeric-typed, not just string-typed, JSON field values) from the ThingSpeak API no longer blank an entire chart or throw; they are parsed without error and non-finite readings are skipped. Feed values are also sorted by timestamp after parsing, since ThingSpeak orders `feeds` by entry ID rather than time.
+- The field chart filter sheet's From/To fields are tappable again and now let you pick a time in addition to a date, so choosing "today" as the end date includes today's readings instead of excluding them. Values are clamped so From/To can't cross each other or exceed the current time.
+- A field chart's default view now anchors to the field's last known reading instead of always to the current time, so a field that hasn't reported recently no longer opens on an empty "No values for the selected data range" chart.
 
 ### Changed
 

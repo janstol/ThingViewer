@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -117,6 +118,194 @@ void main() {
       // Channel has 8 fields defined but no feed entries
       expect(fields.length, 8);
       expect(fields.every((f) => f.values.isEmpty), isTrue);
+    });
+  });
+
+  group('readFeed parser hardening', () {
+    String feedWithFieldValues(List<dynamic> field1Values) {
+      final feeds = <Map<String, dynamic>>[];
+      for (var i = 0; i < field1Values.length; i++) {
+        feeds.add({
+          'created_at': DateTime.utc(
+            2024,
+            1,
+            1,
+          ).add(Duration(seconds: i)).toIso8601String(),
+          'field1': field1Values[i],
+        });
+      }
+      return jsonEncode({
+        'channel': {'id': 123456, 'field1': 'Field1'},
+        'feeds': feeds,
+      });
+    }
+
+    test(
+      'drops NaN/Infinity/null values and tolerates numeric JSON values',
+      () async {
+        when(mockClient.get(any)).thenAnswer(
+          (_) async => ok(
+            feedWithFieldValues(['NaN', null, 20, '10.5', '-Infinity']),
+          ),
+        );
+
+        final fields = await api.readFeed(
+          publicChannel,
+          const ApiParameters(),
+        );
+
+        final values = fields.single.values;
+        expect(values.length, 2);
+        expect(values[0].value, 20.0);
+        expect(values[1].value, 10.5);
+      },
+    );
+
+    test(
+      'a 100-result window keeps a field visible even though the newest '
+      'entry only sets a different field (channel 851108 shape)',
+      () async {
+        when(
+          mockClient.get(any),
+        ).thenAnswer((_) async => ok(fixture('channel_feed_sparse.json')));
+
+        final fields = await api.readFeed(
+          publicChannel,
+          const ApiParameters(results: 100),
+        );
+
+        expect(fields.length, 4);
+        final byId = {for (final f in fields) f.id: f};
+
+        // field1 ("Sine"): newest entry (7) sets it to null, but its last
+        // real value from entry 6 is retained rather than being dropped.
+        expect(byId[1]!.lastValue, closeTo(-0.5, 0.001));
+        // field2 ("Counter"): same story — last real value from entry 6.
+        expect(byId[2]!.lastValue, 6.0);
+        // field3 ("Sparse"): the NaN at entry 3 is skipped; newest real
+        // value (entry 7) is retained.
+        expect(byId[3]!.lastValue, closeTo(9.8, 0.001));
+        expect(byId[3]!.values.length, 3);
+        // field4 ("StartOnly"): only ever set once, at the very start of the
+        // range — still visible because the 100-entry window reaches back to it.
+        expect(byId[4]!.lastValue, 100.0);
+      },
+    );
+
+    test('sorts values by created_at, not response order', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'field1': 'Field1'},
+        'feeds': [
+          {'created_at': '2024-01-02T00:00:00Z', 'field1': '2'},
+          {'created_at': '2024-01-01T00:00:00Z', 'field1': '1'},
+          {'created_at': '2024-01-03T00:00:00Z', 'field1': '3'},
+        ],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final fields = await api.readFeed(publicChannel, const ApiParameters());
+
+      final values = fields.single.values;
+      expect(values.map((v) => v.value).toList(), [1.0, 2.0, 3.0]);
+    });
+  });
+
+  group('readFieldRange', () {
+    String feedForTimes(List<DateTime> times) {
+      final feeds = times
+          .map(
+            (t) => {
+              'created_at': t.toIso8601String(),
+              'field1': '${t.millisecondsSinceEpoch}',
+            },
+          )
+          .toList();
+      return jsonEncode({
+        'channel': {'id': 123456, 'field1': 'Field1'},
+        'feeds': feeds,
+      });
+    }
+
+    String formatDate(DateTime dt) =>
+        dt.toUtc().toIso8601String().replaceAll('T', ' ').replaceAll('Z', '');
+
+    test(
+      'paginates backward past the 8000-entry cap and merges sorted results',
+      () async {
+        final end = DateTime.utc(2024, 1, 10);
+        final start = DateTime.utc(2023, 12, 1);
+
+        // Full page: exactly 8000 entries, 1 second apart, ending at `end`.
+        final page1Times = List.generate(
+          8000,
+          (i) => end.subtract(Duration(seconds: 7999 - i)),
+        );
+        // Short page: continues backward from just before page 1's oldest.
+        final page1Oldest = page1Times.first;
+        final expectedSecondEnd = page1Oldest.subtract(
+          const Duration(seconds: 1),
+        );
+        final page2Times = List.generate(
+          100,
+          (i) => expectedSecondEnd.subtract(Duration(seconds: 99 - i)),
+        );
+
+        var callCount = 0;
+        when(mockClient.get(any)).thenAnswer((_) async {
+          callCount++;
+          return ok(feedForTimes(callCount == 1 ? page1Times : page2Times));
+        });
+
+        final result = await api.readFieldRange(
+          publicChannel,
+          1,
+          start: start,
+          end: end,
+        );
+
+        expect(callCount, 2);
+        expect(result.truncated, isFalse);
+        expect(result.field.values.length, 8100);
+        // Sorted ascending, oldest (page 2) first.
+        expect(
+          result.field.values.first.createdAt,
+          page2Times.first.toLocal(),
+        );
+        expect(result.field.values.last.createdAt, page1Times.last.toLocal());
+
+        final captured = verify(
+          mockClient.get(captureAny),
+        ).captured.cast<Uri>();
+        expect(captured[0].queryParameters['end'], formatDate(end));
+        expect(captured[0].queryParameters['results'], '8000');
+        expect(
+          captured[1].queryParameters['end'],
+          formatDate(expectedSecondEnd),
+        );
+      },
+    );
+
+    test('stops without truncation when a page comes back short', () async {
+      final end = DateTime.utc(2024, 1, 10);
+      final start = DateTime.utc(2024, 1, 1);
+      final times = List.generate(
+        50,
+        (i) => end.subtract(Duration(seconds: 49 - i)),
+      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(feedForTimes(times)));
+
+      final result = await api.readFieldRange(
+        publicChannel,
+        1,
+        start: start,
+        end: end,
+      );
+
+      expect(result.truncated, isFalse);
+      expect(result.field.values.length, 50);
+      verify(mockClient.get(any)).called(1);
     });
   });
 

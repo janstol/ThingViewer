@@ -202,6 +202,12 @@ abstract class AppLocalizations {
   /// **'No data at this zoom level.'**
   String get fieldChartNoValuesInZoom;
 
+  /// No description provided for @fieldChartTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Only part of this range could be loaded — the channel has more data than a single request can return.'**
+  String get fieldChartTruncated;
+
   /// No description provided for @fieldChartShowingValues.
   ///
   /// In en, this message translates to:

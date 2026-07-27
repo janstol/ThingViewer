@@ -156,7 +156,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                 );
               },
             ),
-          FieldChartLoaded(:final values) => Column(
+          FieldChartLoaded(:final values, :final truncated) => Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -165,6 +165,21 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              if (truncated)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    l10n.fieldChartTruncated,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               Expanded(
                 child: _Chart(
                   values: values,
@@ -652,36 +667,91 @@ class _FilterSheetState extends State<_FilterSheet> {
           const SizedBox(height: 8),
           ListTile(
             title: Text(l10n.filterFrom),
-            subtitle: Text(widget.settings.formatDate(_range.start)),
+            subtitle: Text(widget.settings.formatDateTime(_range.start)),
+            onTap: () => _pickFrom(context),
           ),
           ListTile(
             title: Text(l10n.filterTo),
-            subtitle: Text(widget.settings.formatDate(_range.end)),
+            subtitle: Text(widget.settings.formatDateTime(_range.end)),
+            onTap: () => _pickTo(context),
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: () => _pickDateRange(context),
-            child: Text(l10n.filterTitle),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, _range),
-            child: Text(l10n.labelApply),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.labelCancel),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, _range),
+                  child: Text(l10n.labelApply),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Future<void> _pickDateRange(BuildContext context) async {
-    final picked = await showDateRangePicker(
-      context: context,
-      initialDateRange: _range,
+  Future<void> _pickFrom(BuildContext context) async {
+    var dateTime = await _pickDateTime(
+      context,
+      initial: _range.start,
       firstDate: DateTime(2010),
-      lastDate: DateTime.now(),
+      lastDate: _range.end,
     );
-    if (picked != null) {
-      setState(() => _range = picked);
+    if (dateTime == null) return;
+    if (dateTime.isAfter(_range.end)) {
+      dateTime = _range.end.subtract(const Duration(minutes: 1));
     }
+    final picked = dateTime;
+    setState(() => _range = DateTimeRange(start: picked, end: _range.end));
+  }
+
+  Future<void> _pickTo(BuildContext context) async {
+    final now = DateTime.now();
+    var dateTime = await _pickDateTime(
+      context,
+      initial: _range.end,
+      firstDate: _range.start,
+      lastDate: now,
+    );
+    if (dateTime == null) return;
+    if (dateTime.isBefore(_range.start)) {
+      dateTime = _range.start.add(const Duration(minutes: 1));
+    }
+    if (dateTime.isAfter(now)) dateTime = now;
+    final picked = dateTime;
+    setState(() => _range = DateTimeRange(start: _range.start, end: picked));
+  }
+
+  /// Combines a date picker and a time picker into a single [DateTime].
+  /// Returns null if either dialog is cancelled.
+  Future<DateTime?> _pickDateTime(
+    BuildContext context, {
+    required DateTime initial,
+    required DateTime firstDate,
+    required DateTime lastDate,
+  }) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (date == null || !context.mounted) return null;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return null;
+
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 }

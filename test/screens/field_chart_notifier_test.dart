@@ -23,14 +23,25 @@ void main() {
   final yesterday = DateTime(2024, 1, 14, 12, 0);
   final twoDaysAgo = DateTime(2024, 1, 13, 12, 0);
 
+  // Matches any call to readFieldRange regardless of arguments — factored out
+  // since mockito requires a matcher for every named parameter the real call
+  // site passes (apiKey, start, end), and repeating that is noisy.
+  Future<FieldRange> anyReadFieldRange() => mockApi.readFieldRange(
+    any,
+    any,
+    apiKey: anyNamed('apiKey'),
+    start: anyNamed('start'),
+    end: anyNamed('end'),
+  );
+
   setUp(() {
     mockApi = MockThingSpeakApi();
     // Default stub for the constructor-time auto-fetch. Returns an empty field
     // so the fixture cache is not clobbered. Tests that need specific return
     // values override this stub after calling settleNotifier().
     when(
-      mockApi.readField(any, any, any),
-    ).thenAnswer((_) async => const Field(id: 1, label: 'Temp'));
+      anyReadFieldRange(),
+    ).thenAnswer((_) async => const FieldRange(field: Field(id: 1), truncated: false));
   });
 
   Field fieldWithValues(List<DateTime> times) => Field(
@@ -60,9 +71,10 @@ void main() {
         DateTime.now().subtract(const Duration(days: 2)),
         DateTime.now().subtract(const Duration(days: 1)),
       ];
-      when(
-        mockApi.readField(any, any, any),
-      ).thenAnswer((_) async => fieldWithValues(recentValues));
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async =>
+            FieldRange(field: fieldWithValues(recentValues), truncated: false),
+      );
 
       final notifier = FieldChartNotifier(
         mockApi,
@@ -74,6 +86,7 @@ void main() {
       expect(notifier.state, isA<FieldChartLoaded>());
       final loaded = notifier.state as FieldChartLoaded;
       expect(loaded.values.length, 2);
+      expect(loaded.truncated, isFalse);
       notifier.dispose();
     });
 
@@ -89,17 +102,78 @@ void main() {
       expect(notifier.state, isA<FieldChartEmpty>());
       notifier.dispose();
     });
+
+    test('surfaces truncated: true from the API on the loaded state', () async {
+      final recentValues = [
+        DateTime.now().subtract(const Duration(days: 2)),
+        DateTime.now().subtract(const Duration(days: 1)),
+      ];
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async =>
+            FieldRange(field: fieldWithValues(recentValues), truncated: true),
+      );
+
+      final notifier = FieldChartNotifier(
+        mockApi,
+        channel,
+        const Field(id: 1, label: 'Temp'),
+      );
+      await pumpEventQueue();
+
+      final loaded = notifier.state as FieldChartLoaded;
+      expect(loaded.truncated, isTrue);
+      notifier.dispose();
+    });
+
+    test(
+      'anchors the default range on a stale field\'s last value, not now',
+      () async {
+        final lastUpdated = DateTime(2025, 11, 4);
+        final notifier = FieldChartNotifier(
+          mockApi,
+          channel,
+          fieldWithValues([lastUpdated]),
+        );
+        await pumpEventQueue();
+
+        final captured = verify(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: captureAnyNamed('start'),
+            end: captureAnyNamed('end'),
+          ),
+        ).captured;
+        final requestedStart = captured[0] as DateTime;
+        final requestedEnd = captured[1] as DateTime;
+
+        expect(requestedEnd, lastUpdated);
+        expect(requestedStart, lastUpdated.subtract(const Duration(days: 7)));
+        notifier.dispose();
+      },
+    );
   });
 
   group('applyFilter', () {
     test('uses cache when range is already covered', () async {
-      final field = fieldWithValues([twoDaysAgo, yesterday, now]);
-      final notifier = await settleNotifier(field);
+      final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
 
-      // Filter to just yesterday–now — should NOT fetch (cache covers the range).
+      // First fetch: populates cache and records this exact range as covered.
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([twoDaysAgo, yesterday, now]),
+          truncated: false,
+        ),
+      );
+      await notifier.applyFilter(DateTimeRange(start: twoDaysAgo, end: now));
+      clearInteractions(mockApi);
+
+      // Filter to just yesterday–now, a sub-range of what's covered above —
+      // should NOT fetch.
       await notifier.applyFilter(DateTimeRange(start: yesterday, end: now));
 
-      verifyNever(mockApi.readField(any, any, any));
+      verifyNever(anyReadFieldRange());
       expect(notifier.state, isA<FieldChartLoaded>());
       final loaded = notifier.state as FieldChartLoaded;
       expect(loaded.values.length, 2); // yesterday + now
@@ -107,29 +181,102 @@ void main() {
     });
 
     test('fetches from API when range extends beyond cache', () async {
-      final field = fieldWithValues([yesterday, now]);
-      final notifier = await settleNotifier(field);
+      final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([yesterday, now]),
+          truncated: false,
+        ),
+      );
+      await notifier.applyFilter(DateTimeRange(start: yesterday, end: now));
+      clearInteractions(mockApi);
 
       final extendedStart = DateTime(2024, 1, 10);
-      final fetchedField = fieldWithValues([extendedStart, yesterday, now]);
-      when(
-        mockApi.readField(any, 1, any),
-      ).thenAnswer((_) async => fetchedField);
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([extendedStart, yesterday, now]),
+          truncated: false,
+        ),
+      );
 
       await notifier.applyFilter(DateTimeRange(start: extendedStart, end: now));
 
-      verify(mockApi.readField(any, 1, any)).called(1);
+      verify(anyReadFieldRange()).called(1);
       expect(notifier.state, isA<FieldChartLoaded>());
       notifier.dispose();
     });
 
+    test(
+      'fetches again when the requested range falls in the hole between '
+      'two previously fetched, disjoint ranges',
+      () async {
+        final notifier = await settleNotifier(
+          const Field(id: 1, label: 'Temp'),
+        );
+
+        final rangeA = DateTimeRange(
+          start: DateTime(2024, 1, 10),
+          end: DateTime(2024, 1, 12),
+        );
+        final rangeB = DateTimeRange(
+          start: DateTime(2024, 1, 1),
+          end: DateTime(2024, 1, 3),
+        );
+        // Falls between rangeB and rangeA — never fetched, but its bounds
+        // sit within the overall min/max of already-cached data, which is
+        // exactly what the old cache-coverage heuristic got wrong.
+        final holeRange = DateTimeRange(
+          start: DateTime(2024, 1, 5),
+          end: DateTime(2024, 1, 7),
+        );
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([rangeA.start]),
+            truncated: false,
+          ),
+        );
+        await notifier.applyFilter(rangeA);
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([rangeB.start]),
+            truncated: false,
+          ),
+        );
+        await notifier.applyFilter(rangeB);
+
+        clearInteractions(mockApi);
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([holeRange.start]),
+            truncated: false,
+          ),
+        );
+
+        await notifier.applyFilter(holeRange);
+
+        verify(anyReadFieldRange()).called(1);
+        expect(notifier.state, isA<FieldChartLoaded>());
+        notifier.dispose();
+      },
+    );
+
     test('returns FieldChartError with cached values on API failure', () async {
-      final field = fieldWithValues([yesterday, now]);
-      final notifier = await settleNotifier(field);
+      final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([yesterday, now]),
+          truncated: false,
+        ),
+      );
+      await notifier.applyFilter(DateTimeRange(start: yesterday, end: now));
 
       final extendedStart = DateTime(2024, 1, 10);
       when(
-        mockApi.readField(any, 1, any),
+        anyReadFieldRange(),
       ).thenThrow(const ApiException(ApiErrorCode.network));
 
       await notifier.applyFilter(DateTimeRange(start: extendedStart, end: now));
@@ -141,13 +288,12 @@ void main() {
     });
 
     test('returns FieldChartEmpty when no data in range', () async {
-      final field = fieldWithValues([yesterday, now]);
-      final notifier = await settleNotifier(field);
+      final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
 
       final farFuture = DateTime(2030);
       when(
-        mockApi.readField(any, 1, any),
-      ).thenAnswer((_) async => const Field(id: 1, label: 'Temp'));
+        anyReadFieldRange(),
+      ).thenAnswer((_) async => const FieldRange(field: Field(id: 1, label: 'Temp'), truncated: false));
 
       await notifier.applyFilter(
         DateTimeRange(

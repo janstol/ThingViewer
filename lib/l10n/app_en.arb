@@ -18,6 +18,7 @@
   "channelDetailSource": "Source code",
   "fieldChartNoValues": "No values for the selected date range.",
   "fieldChartNoValuesInZoom": "No data at this zoom level.",
+  "fieldChartTruncated": "Only part of this range could be loaded — the channel has more data than a single request can return.",
   "fieldChartShowingValues": "{count, plural, =1{Showing 1 value} other{Showing {count} values}}",
   "@fieldChartShowingValues": {
     "placeholders": {

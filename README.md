@@ -19,9 +19,11 @@ Mobile app for viewing and visualizing data from [ThingSpeak](https://thingspeak
 
 ## Features
 
-- Browse and manage multiple ThingSpeak channels
-- View latest field values per channel
-- Visualize field data as line charts with date range filtering
+- Browse and manage multiple ThingSpeak channels, with a configurable start screen (channel list or a chosen channel's detail screen)
+- View latest field values per channel, including its description and website/source links when set, with pull-to-refresh
+- Visualize field data as line, spline, step, or column charts, with date and time range filtering
+- Per-field chart settings: custom title, axis labels, Y-axis min/max, fixed decimal rounding, and a "show change between readings" mode for counters
+- Automatically pages past ThingSpeak's per-request result cap so large date ranges aren't silently truncated; non-finite (`NaN`/`Infinity`) readings are skipped rather than breaking the chart
 - Supports public and private (API key) channels
 - Custom server URL (self-hosted ThingSpeak instances)
 - Light / dark / system theme

@@ -63,6 +63,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldChartNoValuesInZoom => 'No data at this zoom level.';
 
   @override
+  String get fieldChartTruncated =>
+      'Only part of this range could be loaded — the channel has more data than a single request can return.';
+
+  @override
   String fieldChartShowingValues(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

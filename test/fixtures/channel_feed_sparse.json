@@ -1,0 +1,71 @@
+{
+  "channel": {
+    "id": 851108,
+    "name": "Sparse test channel",
+    "field1": "Sine",
+    "field2": "Counter",
+    "field3": "Sparse",
+    "field4": "StartOnly",
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-07T00:00:00Z",
+    "last_entry_id": 7
+  },
+  "feeds": [
+    {
+      "created_at": "2026-01-01T00:00:00Z",
+      "entry_id": 1,
+      "field1": "0.0",
+      "field2": "1",
+      "field3": "10.5",
+      "field4": "100.0"
+    },
+    {
+      "created_at": "2026-01-02T00:00:00Z",
+      "entry_id": 2,
+      "field1": "0.5",
+      "field2": "2",
+      "field3": null,
+      "field4": null
+    },
+    {
+      "created_at": "2026-01-03T00:00:00Z",
+      "entry_id": 3,
+      "field1": "1.0",
+      "field2": "3",
+      "field3": "NaN",
+      "field4": null
+    },
+    {
+      "created_at": "2026-01-04T00:00:00Z",
+      "entry_id": 4,
+      "field1": "0.5",
+      "field2": "4",
+      "field3": null,
+      "field4": null
+    },
+    {
+      "created_at": "2026-01-05T00:00:00Z",
+      "entry_id": 5,
+      "field1": "0.0",
+      "field2": "5",
+      "field3": "11.2",
+      "field4": null
+    },
+    {
+      "created_at": "2026-01-06T00:00:00Z",
+      "entry_id": 6,
+      "field1": "-0.5",
+      "field2": "6",
+      "field3": null,
+      "field4": null
+    },
+    {
+      "created_at": "2026-01-07T00:00:00Z",
+      "entry_id": 7,
+      "field1": null,
+      "field2": null,
+      "field3": "9.8",
+      "field4": null
+    }
+  ]
+}

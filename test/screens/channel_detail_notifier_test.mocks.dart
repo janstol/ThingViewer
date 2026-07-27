@@ -35,6 +35,11 @@ class _FakeField_1 extends _i1.SmartFake implements _i3.Field {
     : super(parent, parentInvocation);
 }
 
+class _FakeFieldRange_2 extends _i1.SmartFake implements _i4.FieldRange {
+  _FakeFieldRange_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [ThingSpeakApi].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -80,4 +85,42 @@ class MockThingSpeakApi extends _i1.Mock implements _i4.ThingSpeakApi {
             ),
           )
           as _i5.Future<_i3.Field>);
+
+  @override
+  _i5.Future<_i4.FieldRange> readFieldRange(
+    _i2.Channel? channel,
+    int? fieldId, {
+    String? apiKey,
+    required DateTime? start,
+    required DateTime? end,
+    void Function(int)? onProgress,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #readFieldRange,
+              [channel, fieldId],
+              {
+                #apiKey: apiKey,
+                #start: start,
+                #end: end,
+                #onProgress: onProgress,
+              },
+            ),
+            returnValue: _i5.Future<_i4.FieldRange>.value(
+              _FakeFieldRange_2(
+                this,
+                Invocation.method(
+                  #readFieldRange,
+                  [channel, fieldId],
+                  {
+                    #apiKey: apiKey,
+                    #start: start,
+                    #end: end,
+                    #onProgress: onProgress,
+                  },
+                ),
+              ),
+            ),
+          )
+          as _i5.Future<_i4.FieldRange>);
 }

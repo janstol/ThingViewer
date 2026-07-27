@@ -11,7 +11,8 @@ class FieldChartLoading extends FieldChartState {}
 class FieldChartLoaded extends FieldChartState {
   final DateTimeRange range;
   final List<FieldValue> values;
-  FieldChartLoaded(this.range, this.values);
+  final bool truncated;
+  FieldChartLoaded(this.range, this.values, {this.truncated = false});
 }
 
 class FieldChartEmpty extends FieldChartState {
@@ -41,6 +42,12 @@ class FieldChartNotifier extends ChangeNotifier {
   /// Local cache of all fetched values.
   final List<FieldValue> _cache;
 
+  /// Disjoint, merged ranges the cache is known to fully cover. A range is
+  /// served from cache only when it falls entirely within one of these — the
+  /// cache's own min/max is not enough, since two fetches can leave a hole
+  /// between them.
+  final List<DateTimeRange> _covered = [];
+
   FieldChartState _state = FieldChartLoading();
   FieldChartState get state => _state;
 
@@ -48,7 +55,7 @@ class FieldChartNotifier extends ChangeNotifier {
     : _cache = List.of(_field.values) {
     // Always fetch the default range from the API on first open. The single
     // cached value from the channel detail screen is not enough to draw a
-    // useful chart.
+    // useful chart, and isn't recorded as covered.
     applyFilter(_defaultRange());
   }
 
@@ -67,12 +74,9 @@ class FieldChartNotifier extends ChangeNotifier {
   }
 
   Future<FieldChartState> _getData(DateTimeRange range) async {
-    final cacheRange = _cacheRange(_cache);
-
-    // If the cache already covers the requested range, filter locally.
-    if (_cache.isNotEmpty &&
-        !range.start.isBefore(cacheRange.start) &&
-        !range.end.isAfter(cacheRange.end)) {
+    // If a single covered interval already spans the requested range, filter
+    // locally instead of fetching.
+    if (_isCovered(range)) {
       final filtered = _filterByRange(_cache, range);
       return filtered.isEmpty
           ? FieldChartEmpty(range)
@@ -80,21 +84,21 @@ class FieldChartNotifier extends ChangeNotifier {
     }
 
     // Fetch from API.
+    final bool truncated;
     try {
-      final result = await _api.readField(
+      final result = await _api.readFieldRange(
         _channel,
         _field.id,
-        ApiParameters(
-          apiKey: _channel.apiKey,
-          startDate: range.start,
-          endDate: range.end,
-        ),
+        apiKey: _channel.apiKey,
+        start: range.start,
+        end: range.end,
       );
-      if (result.values.isNotEmpty) {
+      truncated = result.truncated;
+      if (result.field.values.isNotEmpty) {
         // Merge new values into the cache (keyed by timestamp) so previously
         // cached data outside the requested range is preserved.
         final merged = {for (final v in _cache) v.createdAt: v};
-        for (final v in result.values) {
+        for (final v in result.field.values) {
           merged[v.createdAt] = v;
         }
         _cache
@@ -104,6 +108,9 @@ class FieldChartNotifier extends ChangeNotifier {
               ..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
           );
       }
+      // The requested range is now covered even if it returned no data —
+      // an empty window is a legitimate result, not a hole to re-fetch.
+      _addCovered(range);
     } on ApiException catch (e) {
       return FieldChartError(
         range,
@@ -116,7 +123,39 @@ class FieldChartNotifier extends ChangeNotifier {
     final filtered = _filterByRange(_cache, range);
     return filtered.isEmpty
         ? FieldChartEmpty(range)
-        : FieldChartLoaded(range, filtered);
+        : FieldChartLoaded(range, filtered, truncated: truncated);
+  }
+
+  bool _isCovered(DateTimeRange range) {
+    for (final c in _covered) {
+      if (!range.start.isBefore(c.start) && !range.end.isAfter(c.end)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Inserts [range] into [_covered], merging it with any overlapping or
+  /// adjacent intervals so the list stays sorted and disjoint.
+  void _addCovered(DateTimeRange range) {
+    final all = [..._covered, range]
+      ..sort((a, b) => a.start.compareTo(b.start));
+
+    final merged = <DateTimeRange>[];
+    for (final r in all) {
+      if (merged.isEmpty || r.start.isAfter(merged.last.end)) {
+        merged.add(r);
+      } else if (r.end.isAfter(merged.last.end)) {
+        merged[merged.length - 1] = DateTimeRange(
+          start: merged.last.start,
+          end: r.end,
+        );
+      }
+    }
+
+    _covered
+      ..clear()
+      ..addAll(merged);
   }
 
   static List<FieldValue> _filterByRange(
@@ -130,17 +169,19 @@ class FieldChartNotifier extends ChangeNotifier {
       )
       .toList();
 
-  static DateTimeRange _cacheRange(List<FieldValue> data) {
-    if (data.isEmpty) return _defaultRange();
-    final sorted = data.map((v) => v.createdAt).toList()..sort();
-    return DateTimeRange(start: sorted.first, end: sorted.last);
-  }
-
-  static DateTimeRange _defaultRange() {
+  /// Last 7 days ending now — or, for a field that hasn't reported in a
+  /// while, ending at its last known reading instead. Anchoring to
+  /// `DateTime.now()` unconditionally would open a stale field's chart on an
+  /// empty window even though older data exists.
+  DateTimeRange _defaultRange() {
     final now = DateTime.now();
+    final lastUpdated = _field.lastUpdated;
+    final end = (lastUpdated != null && lastUpdated.isBefore(now))
+        ? lastUpdated
+        : now;
     return DateTimeRange(
-      start: now.subtract(const Duration(days: 7)),
-      end: now,
+      start: end.subtract(const Duration(days: 7)),
+      end: end,
     );
   }
 }
