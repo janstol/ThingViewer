@@ -39,9 +39,9 @@ void main() {
     // Default stub for the constructor-time auto-fetch. Returns an empty field
     // so the fixture cache is not clobbered. Tests that need specific return
     // values override this stub after calling settleNotifier().
-    when(
-      anyReadFieldRange(),
-    ).thenAnswer((_) async => const FieldRange(field: Field(id: 1), truncated: false));
+    when(anyReadFieldRange()).thenAnswer(
+      (_) async => const FieldRange(field: Field(id: 1), truncated: false),
+    );
   });
 
   Field fieldWithValues(List<DateTime> times) => Field(
@@ -207,61 +207,56 @@ void main() {
       notifier.dispose();
     });
 
-    test(
-      'fetches again when the requested range falls in the hole between '
-      'two previously fetched, disjoint ranges',
-      () async {
-        final notifier = await settleNotifier(
-          const Field(id: 1, label: 'Temp'),
-        );
+    test('fetches again when the requested range falls in the hole between '
+        'two previously fetched, disjoint ranges', () async {
+      final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
 
-        final rangeA = DateTimeRange(
-          start: DateTime(2024, 1, 10),
-          end: DateTime(2024, 1, 12),
-        );
-        final rangeB = DateTimeRange(
-          start: DateTime(2024, 1, 1),
-          end: DateTime(2024, 1, 3),
-        );
-        // Falls between rangeB and rangeA — never fetched, but its bounds
-        // sit within the overall min/max of already-cached data, which is
-        // exactly what the old cache-coverage heuristic got wrong.
-        final holeRange = DateTimeRange(
-          start: DateTime(2024, 1, 5),
-          end: DateTime(2024, 1, 7),
-        );
+      final rangeA = DateTimeRange(
+        start: DateTime(2024, 1, 10),
+        end: DateTime(2024, 1, 12),
+      );
+      final rangeB = DateTimeRange(
+        start: DateTime(2024, 1, 1),
+        end: DateTime(2024, 1, 3),
+      );
+      // Falls between rangeB and rangeA — never fetched, but its bounds
+      // sit within the overall min/max of already-cached data, which is
+      // exactly what the old cache-coverage heuristic got wrong.
+      final holeRange = DateTimeRange(
+        start: DateTime(2024, 1, 5),
+        end: DateTime(2024, 1, 7),
+      );
 
-        when(anyReadFieldRange()).thenAnswer(
-          (_) async => FieldRange(
-            field: fieldWithValues([rangeA.start]),
-            truncated: false,
-          ),
-        );
-        await notifier.applyFilter(rangeA);
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([rangeA.start]),
+          truncated: false,
+        ),
+      );
+      await notifier.applyFilter(rangeA);
 
-        when(anyReadFieldRange()).thenAnswer(
-          (_) async => FieldRange(
-            field: fieldWithValues([rangeB.start]),
-            truncated: false,
-          ),
-        );
-        await notifier.applyFilter(rangeB);
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([rangeB.start]),
+          truncated: false,
+        ),
+      );
+      await notifier.applyFilter(rangeB);
 
-        clearInteractions(mockApi);
-        when(anyReadFieldRange()).thenAnswer(
-          (_) async => FieldRange(
-            field: fieldWithValues([holeRange.start]),
-            truncated: false,
-          ),
-        );
+      clearInteractions(mockApi);
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => FieldRange(
+          field: fieldWithValues([holeRange.start]),
+          truncated: false,
+        ),
+      );
 
-        await notifier.applyFilter(holeRange);
+      await notifier.applyFilter(holeRange);
 
-        verify(anyReadFieldRange()).called(1);
-        expect(notifier.state, isA<FieldChartLoaded>());
-        notifier.dispose();
-      },
-    );
+      verify(anyReadFieldRange()).called(1);
+      expect(notifier.state, isA<FieldChartLoaded>());
+      notifier.dispose();
+    });
 
     test('returns FieldChartError with cached values on API failure', () async {
       final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
@@ -291,9 +286,12 @@ void main() {
       final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
 
       final farFuture = DateTime(2030);
-      when(
-        anyReadFieldRange(),
-      ).thenAnswer((_) async => const FieldRange(field: Field(id: 1, label: 'Temp'), truncated: false));
+      when(anyReadFieldRange()).thenAnswer(
+        (_) async => const FieldRange(
+          field: Field(id: 1, label: 'Temp'),
+          truncated: false,
+        ),
+      );
 
       await notifier.applyFilter(
         DateTimeRange(

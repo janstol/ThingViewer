@@ -103,22 +103,19 @@ void main() {
       },
     );
 
-    test(
-      'requests 100 results, not just the latest entry, so a field with no '
-      'value in the newest entry is not dropped',
-      () async {
-        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-        when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
+    test('requests 100 results, not just the latest entry, so a field with no '
+        'value in the newest entry is not dropped', () async {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
-        await Future<void>.delayed(Duration.zero);
+      final notifier = ChannelDetailNotifier(mockApi, channel);
+      await Future<void>.delayed(Duration.zero);
 
-        final captured = verify(mockApi.readFeed(any, captureAny)).captured;
-        final params = captured.single as ApiParameters;
-        expect(params.results, 100);
-        notifier.dispose();
-      },
-    );
+      final captured = verify(mockApi.readFeed(any, captureAny)).captured;
+      final params = captured.single as ApiParameters;
+      expect(params.results, 100);
+      notifier.dispose();
+    });
 
     test('does not call notifyListeners after dispose', () async {
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);

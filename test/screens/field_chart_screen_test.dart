@@ -141,63 +141,59 @@ void main() {
     },
   );
 
-  testWidgets(
-    'selecting Column renders a BarChart and no LineChart',
-    (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          FieldChartScreen(
-            channel: _channel,
-            field: _field,
-            api: mockApi,
-            settings: await _settings(),
-            fieldSettingsStorage: await _fieldSettingsStorage(),
-          ),
+  testWidgets('selecting Column renders a BarChart and no LineChart', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        FieldChartScreen(
+          channel: _channel,
+          field: _field,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.tune));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Type'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Column'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Type'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Column'));
+    await tester.pumpAndSettle();
 
-      await tester.pageBack();
-      await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
 
-      expect(find.byType(BarChart), findsOneWidget);
-      expect(find.byType(LineChart), findsNothing);
-    },
-  );
+    expect(find.byType(BarChart), findsOneWidget);
+    expect(find.byType(LineChart), findsNothing);
+  });
 
-  testWidgets(
-    'Scatter is not offered in the type picker',
-    (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          FieldChartScreen(
-            channel: _channel,
-            field: _field,
-            api: mockApi,
-            settings: await _settings(),
-            fieldSettingsStorage: await _fieldSettingsStorage(),
-          ),
+  testWidgets('Scatter is not offered in the type picker', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        FieldChartScreen(
+          channel: _channel,
+          field: _field,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.tune));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Type'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Type'));
+    await tester.pumpAndSettle();
 
-      expect(find.text('Scatter'), findsNothing);
-    },
-  );
+    expect(find.text('Scatter'), findsNothing);
+  });
 
   testWidgets(
     // Scatter is hidden from the picker but stays implemented — a field

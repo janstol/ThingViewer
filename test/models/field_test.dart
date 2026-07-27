@@ -129,15 +129,18 @@ void main() {
       expect(result[0].value, 1.5); // mean of 0..3
     });
 
-    test('a length not evenly divisible by maxPoints still covers all input', () {
-      final values = series(7);
-      final result = bucketAverage(values, 3);
+    test(
+      'a length not evenly divisible by maxPoints still covers all input',
+      () {
+        final values = series(7);
+        final result = bucketAverage(values, 3);
 
-      expect(result, hasLength(3));
-      // buckets: [0,1], [2,3], [4,5,6]
-      expect(result[0].value, 0.5);
-      expect(result[1].value, 2.5);
-      expect(result[2].value, 5.0);
-    });
+        expect(result, hasLength(3));
+        // buckets: [0,1], [2,3], [4,5,6]
+        expect(result[0].value, 0.5);
+        expect(result[1].value, 2.5);
+        expect(result[2].value, 5.0);
+      },
+    );
   });
 }

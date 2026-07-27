@@ -144,15 +144,11 @@ void main() {
       'drops NaN/Infinity/null values and tolerates numeric JSON values',
       () async {
         when(mockClient.get(any)).thenAnswer(
-          (_) async => ok(
-            feedWithFieldValues(['NaN', null, 20, '10.5', '-Infinity']),
-          ),
+          (_) async =>
+              ok(feedWithFieldValues(['NaN', null, 20, '10.5', '-Infinity'])),
         );
 
-        final fields = await api.readFeed(
-          publicChannel,
-          const ApiParameters(),
-        );
+        final fields = await api.readFeed(publicChannel, const ApiParameters());
 
         final values = fields.single.values;
         expect(values.length, 2);
@@ -169,37 +165,34 @@ void main() {
       },
     );
 
-    test(
-      'a 100-result window keeps a field visible even though the newest '
-      'entry only sets a different field (channel 851108 shape)',
-      () async {
-        when(
-          mockClient.get(any),
-        ).thenAnswer((_) async => ok(fixture('channel_feed_sparse.json')));
+    test('a 100-result window keeps a field visible even though the newest '
+        'entry only sets a different field (channel 851108 shape)', () async {
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed_sparse.json')));
 
-        final fields = await api.readFeed(
-          publicChannel,
-          const ApiParameters(results: 100),
-        );
+      final fields = await api.readFeed(
+        publicChannel,
+        const ApiParameters(results: 100),
+      );
 
-        expect(fields.length, 4);
-        final byId = {for (final f in fields) f.id: f};
+      expect(fields.length, 4);
+      final byId = {for (final f in fields) f.id: f};
 
-        // field1 ("Sine"): newest entry (7) sets it to null, but its last
-        // real value from entry 6 is retained rather than being dropped.
-        expect(byId[1]!.lastValue, closeTo(-0.5, 0.001));
-        // field2 ("Counter"): same story — last real value from entry 6.
-        expect(byId[2]!.lastValue, 6.0);
-        // field3 ("Sparse"): the NaN at entry 3 is skipped; newest real
-        // value (entry 7) is retained.
-        expect(byId[3]!.lastValue, closeTo(9.8, 0.001));
-        expect(byId[3]!.values.length, 3);
-        expect(byId[3]!.invalidAt, [DateTime.utc(2026, 1, 3).toLocal()]);
-        // field4 ("StartOnly"): only ever set once, at the very start of the
-        // range — still visible because the 100-entry window reaches back to it.
-        expect(byId[4]!.lastValue, 100.0);
-      },
-    );
+      // field1 ("Sine"): newest entry (7) sets it to null, but its last
+      // real value from entry 6 is retained rather than being dropped.
+      expect(byId[1]!.lastValue, closeTo(-0.5, 0.001));
+      // field2 ("Counter"): same story — last real value from entry 6.
+      expect(byId[2]!.lastValue, 6.0);
+      // field3 ("Sparse"): the NaN at entry 3 is skipped; newest real
+      // value (entry 7) is retained.
+      expect(byId[3]!.lastValue, closeTo(9.8, 0.001));
+      expect(byId[3]!.values.length, 3);
+      expect(byId[3]!.invalidAt, [DateTime.utc(2026, 1, 3).toLocal()]);
+      // field4 ("StartOnly"): only ever set once, at the very start of the
+      // range — still visible because the 100-entry window reaches back to it.
+      expect(byId[4]!.lastValue, 100.0);
+    });
 
     test('sorts values by created_at, not response order', () async {
       final raw = jsonEncode({
@@ -276,10 +269,7 @@ void main() {
         expect(result.truncated, isFalse);
         expect(result.field.values.length, 8100);
         // Sorted ascending, oldest (page 2) first.
-        expect(
-          result.field.values.first.createdAt,
-          page2Times.first.toLocal(),
-        );
+        expect(result.field.values.first.createdAt, page2Times.first.toLocal());
         expect(result.field.values.last.createdAt, page1Times.last.toLocal());
 
         final captured = verify(
