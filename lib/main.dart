@@ -6,6 +6,7 @@ import 'api/thingspeak_api.dart';
 import 'app.dart';
 import 'migration/migration_service.dart';
 import 'storage/channel_storage.dart';
+import 'storage/field_settings_storage.dart';
 import 'storage/settings_storage.dart';
 
 void main() async {
@@ -16,12 +17,14 @@ void main() async {
   final api = ThingSpeakApi(http.Client());
   final channelStorage = ChannelStorage(prefs);
   final settingsStorage = SettingsStorage(prefs);
+  final fieldSettingsStorage = FieldSettingsStorage(prefs);
 
   runApp(
     App(
       api: api,
       channelStorage: channelStorage,
       settingsStorage: settingsStorage,
+      fieldSettingsStorage: fieldSettingsStorage,
     ),
   );
 }

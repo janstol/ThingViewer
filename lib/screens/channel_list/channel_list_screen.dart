@@ -4,6 +4,7 @@ import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../storage/channel_storage.dart';
+import '../../storage/field_settings_storage.dart';
 import '../channel_add/channel_add_screen.dart';
 import '../channel_detail/channel_detail_screen.dart';
 import '../settings/settings_notifier.dart';
@@ -16,12 +17,14 @@ class ChannelListScreen extends StatefulWidget {
   final ThingSpeakApi api;
   final ChannelStorage channelStorage;
   final SettingsNotifier settings;
+  final FieldSettingsStorage fieldSettingsStorage;
 
   const ChannelListScreen({
     super.key,
     required this.api,
     required this.channelStorage,
     required this.settings,
+    required this.fieldSettingsStorage,
   });
 
   @override
@@ -75,6 +78,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                 notifier: _notifier,
                 api: widget.api,
                 settings: widget.settings,
+                fieldSettingsStorage: widget.fieldSettingsStorage,
                 selectedChannel: _selectedChannel,
                 onChannelSelected: (c) =>
                     setState(() => _selectedChannel = c),
@@ -107,6 +111,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
           channel: channel,
           api: widget.api,
           settings: widget.settings,
+          fieldSettingsStorage: widget.fieldSettingsStorage,
           onChannelUpdated: _notifier.updateChannel,
         ),
       ),
@@ -178,6 +183,7 @@ class _WideLayout extends StatelessWidget {
   final ChannelListNotifier notifier;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final FieldSettingsStorage fieldSettingsStorage;
   final Channel? selectedChannel;
   final ValueChanged<Channel> onChannelSelected;
   final ValueChanged<Channel> onChannelRemoved;
@@ -188,6 +194,7 @@ class _WideLayout extends StatelessWidget {
     required this.notifier,
     required this.api,
     required this.settings,
+    required this.fieldSettingsStorage,
     required this.selectedChannel,
     required this.onChannelSelected,
     required this.onChannelRemoved,
@@ -229,6 +236,7 @@ class _WideLayout extends StatelessWidget {
                     channel: selectedChannel!,
                     api: api,
                     settings: settings,
+                    fieldSettingsStorage: fieldSettingsStorage,
                     onChannelUpdated: notifier.updateChannel,
                   )
                 : Center(

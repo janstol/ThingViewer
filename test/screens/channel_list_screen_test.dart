@@ -8,6 +8,7 @@ import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
+import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 import 'package:thingviewer/theme.dart';
 
@@ -47,6 +48,11 @@ Future<SettingsNotifier> _settings() async {
   return SettingsNotifier(SettingsStorage(prefs));
 }
 
+Future<FieldSettingsStorage> _fieldSettingsStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return FieldSettingsStorage(prefs);
+}
+
 void main() {
   late MockThingSpeakApi mockApi;
 
@@ -62,6 +68,7 @@ void main() {
       api: mockApi,
       channelStorage: storage,
       settings: await _settings(),
+      fieldSettingsStorage: await _fieldSettingsStorage(),
     )));
     await tester.pumpAndSettle();
 
@@ -78,6 +85,7 @@ void main() {
       api: mockApi,
       channelStorage: storage,
       settings: await _settings(),
+      fieldSettingsStorage: await _fieldSettingsStorage(),
     )));
     await tester.pumpAndSettle();
 
@@ -94,6 +102,7 @@ void main() {
       api: mockApi,
       channelStorage: storage,
       settings: await _settings(),
+      fieldSettingsStorage: await _fieldSettingsStorage(),
     )));
     await tester.pumpAndSettle();
 
@@ -133,6 +142,7 @@ void main() {
         api: mockApi,
         channelStorage: storage,
         settings: await _settings(),
+        fieldSettingsStorage: await _fieldSettingsStorage(),
       )));
       await tester.pumpAndSettle();
 
@@ -155,6 +165,7 @@ void main() {
         api: mockApi,
         channelStorage: storage,
         settings: await _settings(),
+        fieldSettingsStorage: await _fieldSettingsStorage(),
       )));
       await tester.pumpAndSettle();
 
@@ -174,6 +185,7 @@ void main() {
         api: mockApi,
         channelStorage: storage,
         settings: await _settings(),
+        fieldSettingsStorage: await _fieldSettingsStorage(),
       )));
       await tester.pumpAndSettle();
 

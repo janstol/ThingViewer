@@ -5,6 +5,7 @@ import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
+import '../../storage/field_settings_storage.dart';
 import '../../theme.dart';
 import '../field_chart/field_chart_screen.dart';
 import '../settings/settings_notifier.dart';
@@ -101,6 +102,7 @@ class ChannelDetailScreen extends StatefulWidget {
   final Channel channel;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final FieldSettingsStorage fieldSettingsStorage;
   final void Function(Channel)? onChannelUpdated;
 
   const ChannelDetailScreen({
@@ -108,6 +110,7 @@ class ChannelDetailScreen extends StatefulWidget {
     required this.channel,
     required this.api,
     required this.settings,
+    required this.fieldSettingsStorage,
     this.onChannelUpdated,
   });
 
@@ -185,6 +188,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                 fields: fields,
                 api: widget.api,
                 settings: widget.settings,
+                fieldSettingsStorage: widget.fieldSettingsStorage,
               ),
           },
         ),
@@ -198,12 +202,14 @@ class _FieldList extends StatelessWidget {
   final List<Field> fields;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final FieldSettingsStorage fieldSettingsStorage;
 
   const _FieldList({
     required this.channel,
     required this.fields,
     required this.api,
     required this.settings,
+    required this.fieldSettingsStorage,
   });
 
   @override
@@ -229,6 +235,8 @@ class _FieldList extends StatelessWidget {
             }
             final field = fields[hasHeader ? i - 1 : i];
             final lastUpdated = field.lastUpdated;
+            final decimals =
+                fieldSettingsStorage.settingsFor(channel, field.id).decimals;
             return ListTile(
               title: Text(field.displayLabel),
               subtitle: lastUpdated != null
@@ -238,7 +246,7 @@ class _FieldList extends StatelessWidget {
                   : null,
               trailing: field.lastValue != null
                   ? Text(
-                      formatFieldValue(field.lastValue!),
+                      formatFieldValue(field.lastValue!, decimals: decimals),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: dataAccent,
                             fontWeight: FontWeight.bold,
@@ -253,6 +261,7 @@ class _FieldList extends StatelessWidget {
                     field: field,
                     api: api,
                     settings: settings,
+                    fieldSettingsStorage: fieldSettingsStorage,
                   ),
                 ),
               ),

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../storage/settings_storage.dart';
+import '../../widgets/section_header.dart';
 import 'settings_notifier.dart';
 
 const _dateFormats = [
@@ -40,11 +41,11 @@ class SettingsScreen extends StatelessWidget {
         listenable: settings,
         builder: (context, _) => ListView(
           children: [
-            _SectionHeader(title: l10n.settingsSectionAppearance),
+            SectionHeader(title: l10n.settingsSectionAppearance),
             _ThemeTile(settings: settings),
-            _SectionHeader(title: l10n.settingsSectionGeneral),
+            SectionHeader(title: l10n.settingsSectionGeneral),
             _StartScreenTile(settings: settings, channels: channels),
-            _SectionHeader(title: l10n.settingsSectionDateTime),
+            SectionHeader(title: l10n.settingsSectionDateTime),
             _FormatTile(
               icon: Icons.calendar_today_outlined,
               title: l10n.settingsDateFormat,
@@ -62,7 +63,7 @@ class SettingsScreen extends StatelessWidget {
               onSelected: settings.setTimeFormat,
             ),
             _TimezoneTile(settings: settings),
-            _SectionHeader(title: l10n.settingsSectionInfo),
+            SectionHeader(title: l10n.settingsSectionInfo),
             ListTile(
               leading: const Icon(Icons.privacy_tip_outlined),
               title: Text(l10n.privacyPolicy),
@@ -73,26 +74,6 @@ class SettingsScreen extends StatelessWidget {
             ),
             _AboutTile(l10n: l10n),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.primary,
         ),
       ),
     );

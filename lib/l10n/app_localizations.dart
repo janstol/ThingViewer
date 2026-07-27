@@ -477,6 +477,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove {name} from the app? The channel on ThingSpeak will not be affected.'**
   String removeChannelText(String name);
+
+  /// No description provided for @fieldSettingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart settings'**
+  String get fieldSettingsTooltip;
+
+  /// No description provided for @fieldSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart settings'**
+  String get fieldSettingsTitle;
+
+  /// No description provided for @fieldSettingsSectionChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart'**
+  String get fieldSettingsSectionChart;
+
+  /// No description provided for @fieldSettingsSectionAxis.
+  ///
+  /// In en, this message translates to:
+  /// **'Axis'**
+  String get fieldSettingsSectionAxis;
+
+  /// No description provided for @fieldSettingsSectionData.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get fieldSettingsSectionData;
+
+  /// No description provided for @fieldSettingsType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get fieldSettingsType;
+
+  /// No description provided for @fieldSettingsTypeChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose chart type'**
+  String get fieldSettingsTypeChoose;
+
+  /// No description provided for @fieldSettingsTypeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Line'**
+  String get fieldSettingsTypeLine;
+
+  /// No description provided for @fieldSettingsTypeSpline.
+  ///
+  /// In en, this message translates to:
+  /// **'Spline'**
+  String get fieldSettingsTypeSpline;
+
+  /// No description provided for @fieldSettingsTypeStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step'**
+  String get fieldSettingsTypeStep;
+
+  /// No description provided for @fieldSettingsChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get fieldSettingsChartTitle;
+
+  /// No description provided for @fieldSettingsXAxisLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'X-axis label'**
+  String get fieldSettingsXAxisLabel;
+
+  /// No description provided for @fieldSettingsYAxisLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Y-axis label'**
+  String get fieldSettingsYAxisLabel;
+
+  /// No description provided for @fieldSettingsAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'auto'**
+  String get fieldSettingsAuto;
+
+  /// No description provided for @fieldSettingsYMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Y-axis min'**
+  String get fieldSettingsYMin;
+
+  /// No description provided for @fieldSettingsYMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Y-axis max'**
+  String get fieldSettingsYMax;
+
+  /// No description provided for @fieldSettingsRounding.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounding'**
+  String get fieldSettingsRounding;
+
+  /// No description provided for @fieldSettingsRoundingAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'auto (2–6)'**
+  String get fieldSettingsRoundingAuto;
+
+  /// No description provided for @fieldSettingsShowDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'Show change between readings'**
+  String get fieldSettingsShowDelta;
+
+  /// No description provided for @fieldSettingsShowDeltaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plot the difference between consecutive readings instead of raw values'**
+  String get fieldSettingsShowDeltaSubtitle;
+
+  /// No description provided for @fieldSettingsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to defaults'**
+  String get fieldSettingsReset;
 }
 
 class _AppLocalizationsDelegate

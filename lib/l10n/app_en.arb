@@ -73,5 +73,26 @@
     "placeholders": {
       "name": { "type": "String" }
     }
-  }
+  },
+  "fieldSettingsTooltip": "Chart settings",
+  "fieldSettingsTitle": "Chart settings",
+  "fieldSettingsSectionChart": "Chart",
+  "fieldSettingsSectionAxis": "Axis",
+  "fieldSettingsSectionData": "Data",
+  "fieldSettingsType": "Type",
+  "fieldSettingsTypeChoose": "Choose chart type",
+  "fieldSettingsTypeLine": "Line",
+  "fieldSettingsTypeSpline": "Spline",
+  "fieldSettingsTypeStep": "Step",
+  "fieldSettingsChartTitle": "Title",
+  "fieldSettingsXAxisLabel": "X-axis label",
+  "fieldSettingsYAxisLabel": "Y-axis label",
+  "fieldSettingsAuto": "auto",
+  "fieldSettingsYMin": "Y-axis min",
+  "fieldSettingsYMax": "Y-axis max",
+  "fieldSettingsRounding": "Rounding",
+  "fieldSettingsRoundingAuto": "auto (2–6)",
+  "fieldSettingsShowDelta": "Show change between readings",
+  "fieldSettingsShowDeltaSubtitle": "Plot the difference between consecutive readings instead of raw values",
+  "fieldSettingsReset": "Reset to defaults"
 }

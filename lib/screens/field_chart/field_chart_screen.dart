@@ -5,7 +5,10 @@ import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
+import '../../models/field_chart_settings.dart';
+import '../../storage/field_settings_storage.dart';
 import '../../theme.dart';
+import '../field_settings/field_settings_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'field_chart_notifier.dart';
 
@@ -18,6 +21,7 @@ class FieldChartScreen extends StatefulWidget {
   final Field field;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final FieldSettingsStorage fieldSettingsStorage;
 
   const FieldChartScreen({
     super.key,
@@ -25,6 +29,7 @@ class FieldChartScreen extends StatefulWidget {
     required this.field,
     required this.api,
     required this.settings,
+    required this.fieldSettingsStorage,
   });
 
   @override
@@ -33,12 +38,15 @@ class FieldChartScreen extends StatefulWidget {
 
 class _FieldChartScreenState extends State<FieldChartScreen> {
   late final FieldChartNotifier _notifier;
+  late FieldChartSettings _chartSettings;
 
   @override
   void initState() {
     super.initState();
     _notifier =
         FieldChartNotifier(widget.api, widget.channel, widget.field);
+    _chartSettings =
+        widget.fieldSettingsStorage.settingsFor(widget.channel, widget.field.id);
   }
 
   @override
@@ -47,11 +55,37 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
     super.dispose();
   }
 
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FieldSettingsScreen(
+          channel: widget.channel,
+          field: widget.field,
+          settings: _chartSettings,
+          onChanged: (next) {
+            widget.fieldSettingsStorage.save(widget.channel, widget.field.id, next);
+            setState(() => _chartSettings = next);
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.field.displayLabel)),
+      appBar: AppBar(
+        title: Text(_chartSettings.title ?? widget.field.displayLabel),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: l10n.fieldSettingsTooltip,
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
       body: ListenableBuilder(
         listenable: _notifier,
         builder: (context, _) => switch (_notifier.state) {
@@ -90,6 +124,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                           : _Chart(
                               values: cachedValues,
                               settings: widget.settings,
+                              chartSettings: _chartSettings,
                             ),
                     ),
                     Padding(
@@ -119,6 +154,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                   child: _Chart(
                     values: values,
                     settings: widget.settings,
+                    chartSettings: _chartSettings,
                   ),
                 ),
                 _FilterButton(onPressed: () => _showFilterSheet(context), l10n: l10n),
@@ -175,8 +211,13 @@ class _FilterButton extends StatelessWidget {
 class _Chart extends StatefulWidget {
   final List<FieldValue> values;
   final SettingsNotifier settings;
+  final FieldChartSettings chartSettings;
 
-  const _Chart({required this.values, required this.settings});
+  const _Chart({
+    required this.values,
+    required this.settings,
+    required this.chartSettings,
+  });
 
   @override
   State<_Chart> createState() => _ChartState();
@@ -193,21 +234,32 @@ class _ChartState extends State<_Chart> {
 
   BoxConstraints? _constraints;
 
+  // A 1-point series deltas to zero points, so this can be shorter than
+  // widget.values — never call .first/.last on it without checking length.
+  List<FieldValue> get _displayValues => widget.chartSettings.showDelta
+      ? deltaValues(widget.values)
+      : widget.values;
+
   double get _fullMinX =>
-      widget.values.first.createdAt.millisecondsSinceEpoch.toDouble();
+      _displayValues.first.createdAt.millisecondsSinceEpoch.toDouble();
   double get _fullMaxX =>
-      widget.values.last.createdAt.millisecondsSinceEpoch.toDouble();
+      _displayValues.last.createdAt.millisecondsSinceEpoch.toDouble();
   double get _fullRange => _fullMaxX - _fullMinX;
 
-  bool get _isSinglePoint => widget.values.length < 2;
+  bool get _isSinglePoint => _displayValues.length < 2;
 
   @override
   void initState() {
     super.initState();
     if (_isSinglePoint) {
+      final displayValues = _displayValues;
+      final anchor = displayValues.isNotEmpty
+          ? displayValues.first.createdAt
+          : widget.values.last.createdAt;
+      final anchorMs = anchor.millisecondsSinceEpoch.toDouble();
       final padding = _singlePointPadding.inMilliseconds.toDouble();
-      _minX = _fullMinX - padding;
-      _maxX = _fullMaxX + padding;
+      _minX = anchorMs - padding;
+      _maxX = anchorMs + padding;
     } else {
       _minX = _fullMinX;
       _maxX = _fullMaxX;
@@ -272,7 +324,8 @@ class _ChartState extends State<_Chart> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = Theme.of(context).extension<BrandColors>()!.dataAccent;
-    final spots = widget.values
+    final chartSettings = widget.chartSettings;
+    final spots = _displayValues
         .map(
           (v) => FlSpot(
             v.createdAt.millisecondsSinceEpoch.toDouble(),
@@ -298,10 +351,13 @@ class _ChartState extends State<_Chart> {
                   LineChartData(
                     minX: _minX,
                     maxX: _maxX,
+                    minY: chartSettings.yMin,
+                    maxY: chartSettings.yMax,
                     lineBarsData: [
                       LineChartBarData(
                         spots: spots,
-                        isCurved: false,
+                        isCurved: chartSettings.type == ChartType.spline,
+                        isStepLineChart: chartSettings.type == ChartType.step,
                         color: color,
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
@@ -318,10 +374,29 @@ class _ChartState extends State<_Chart> {
                       ),
                     ],
                     titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: true, reservedSize: 48),
+                      leftTitles: AxisTitles(
+                        axisNameWidget: chartSettings.yAxisLabel != null
+                            ? Text(chartSettings.yAxisLabel!)
+                            : null,
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 48,
+                          getTitlesWidget: (value, meta) => SideTitleWidget(
+                            meta: meta,
+                            child: Text(
+                              formatFieldValue(
+                                value,
+                                decimals: chartSettings.decimals,
+                              ),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ),
                       ),
                       bottomTitles: AxisTitles(
+                        axisNameWidget: chartSettings.xAxisLabel != null
+                            ? Text(chartSettings.xAxisLabel!)
+                            : null,
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 52,
@@ -358,7 +433,7 @@ class _ChartState extends State<_Chart> {
                           );
                           final dateStr = widget.settings.formatDateTime(dt);
                           return LineTooltipItem(
-                            '${formatFieldValue(s.y)}\n',
+                            '${formatFieldValue(s.y, decimals: chartSettings.decimals)}\n',
                             TextStyle(
                               color: colorScheme.onInverseSurface,
                               fontWeight: FontWeight.bold,

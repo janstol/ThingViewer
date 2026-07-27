@@ -6,6 +6,7 @@ import 'l10n/app_localizations.dart';
 import 'screens/channel_list/channel_list_screen.dart';
 import 'screens/settings/settings_notifier.dart';
 import 'storage/channel_storage.dart';
+import 'storage/field_settings_storage.dart';
 import 'storage/settings_storage.dart';
 import 'theme.dart';
 
@@ -13,12 +14,14 @@ class App extends StatefulWidget {
   final ThingSpeakApi api;
   final ChannelStorage channelStorage;
   final SettingsStorage settingsStorage;
+  final FieldSettingsStorage fieldSettingsStorage;
 
   const App({
     super.key,
     required this.api,
     required this.channelStorage,
     required this.settingsStorage,
+    required this.fieldSettingsStorage,
   });
 
   @override
@@ -60,6 +63,7 @@ class _AppState extends State<App> {
           api: widget.api,
           channelStorage: widget.channelStorage,
           settings: _settings,
+          fieldSettingsStorage: widget.fieldSettingsStorage,
         ),
       ),
     );

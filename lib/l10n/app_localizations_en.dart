@@ -210,4 +210,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String removeChannelText(String name) {
     return 'Remove $name from the app? The channel on ThingSpeak will not be affected.';
   }
+
+  @override
+  String get fieldSettingsTooltip => 'Chart settings';
+
+  @override
+  String get fieldSettingsTitle => 'Chart settings';
+
+  @override
+  String get fieldSettingsSectionChart => 'Chart';
+
+  @override
+  String get fieldSettingsSectionAxis => 'Axis';
+
+  @override
+  String get fieldSettingsSectionData => 'Data';
+
+  @override
+  String get fieldSettingsType => 'Type';
+
+  @override
+  String get fieldSettingsTypeChoose => 'Choose chart type';
+
+  @override
+  String get fieldSettingsTypeLine => 'Line';
+
+  @override
+  String get fieldSettingsTypeSpline => 'Spline';
+
+  @override
+  String get fieldSettingsTypeStep => 'Step';
+
+  @override
+  String get fieldSettingsChartTitle => 'Title';
+
+  @override
+  String get fieldSettingsXAxisLabel => 'X-axis label';
+
+  @override
+  String get fieldSettingsYAxisLabel => 'Y-axis label';
+
+  @override
+  String get fieldSettingsAuto => 'auto';
+
+  @override
+  String get fieldSettingsYMin => 'Y-axis min';
+
+  @override
+  String get fieldSettingsYMax => 'Y-axis max';
+
+  @override
+  String get fieldSettingsRounding => 'Rounding';
+
+  @override
+  String get fieldSettingsRoundingAuto => 'auto (2–6)';
+
+  @override
+  String get fieldSettingsShowDelta => 'Show change between readings';
+
+  @override
+  String get fieldSettingsShowDeltaSubtitle =>
+      'Plot the difference between consecutive readings instead of raw values';
+
+  @override
+  String get fieldSettingsReset => 'Reset to defaults';
 }

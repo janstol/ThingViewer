@@ -15,7 +15,12 @@ const _minDecimals = 2;
 ///
 /// ThingSpeak reports values as strings of arbitrary precision; rounding every
 /// reading to two decimals hides real movement in high-precision channels.
-String formatFieldValue(double value) {
+///
+/// Pass [decimals] to override the auto behaviour with a fixed number of
+/// decimal places (a per-field user setting).
+String formatFieldValue(double value, {int? decimals}) {
+  if (decimals != null) return value.toStringAsFixed(decimals);
+
   var s = value.toStringAsFixed(_maxDecimals);
   // Very large/small magnitudes fall back to exponential form — leave as-is.
   if (!s.contains('.')) return s;
@@ -23,6 +28,21 @@ String formatFieldValue(double value) {
     s = s.substring(0, s.length - 1);
   }
   return s;
+}
+
+/// Pairs consecutive readings into `value[n] - value[n-1]`, keeping `t[n]`.
+///
+/// Turns a monotonically increasing counter into a per-reading rate. Returns
+/// an empty list for inputs with fewer than 2 values.
+List<FieldValue> deltaValues(List<FieldValue> values) {
+  if (values.length < 2) return [];
+  return [
+    for (var i = 1; i < values.length; i++)
+      FieldValue(
+        createdAt: values[i].createdAt,
+        value: values[i].value - values[i - 1].value,
+      ),
+  ];
 }
 
 class Field {
