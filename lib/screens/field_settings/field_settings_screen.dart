@@ -44,6 +44,7 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
     Object? yMax = _unset,
     Object? decimals = _unset,
     bool? showDelta,
+    bool? gapOnInvalid,
   }) {
     final next = FieldChartSettings(
       type: type ?? _settings.type,
@@ -60,6 +61,7 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
           ? _settings.decimals
           : decimals as int?,
       showDelta: showDelta ?? _settings.showDelta,
+      gapOnInvalid: gapOnInvalid ?? _settings.gapOnInvalid,
     );
     setState(() => _settings = next);
     widget.onChanged(next);
@@ -141,6 +143,13 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
             subtitle: Text(l10n.fieldSettingsShowDeltaSubtitle),
             value: _settings.showDelta,
             onChanged: (v) => _apply(showDelta: v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.timeline),
+            title: Text(l10n.fieldSettingsGapOnInvalid),
+            subtitle: Text(l10n.fieldSettingsGapOnInvalidSubtitle),
+            value: _settings.gapOnInvalid,
+            onChanged: (v) => _apply(gapOnInvalid: v),
           ),
           const SizedBox(height: 8),
           ListTile(

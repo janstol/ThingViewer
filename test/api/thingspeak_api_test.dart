@@ -158,6 +158,14 @@ void main() {
         expect(values.length, 2);
         expect(values[0].value, 20.0);
         expect(values[1].value, 10.5);
+
+        final invalidAt = fields.single.invalidAt;
+        expect(invalidAt.length, 2);
+        expect(invalidAt[0], DateTime.utc(2024, 1, 1).toLocal());
+        expect(
+          invalidAt[1],
+          DateTime.utc(2024, 1, 1).add(const Duration(seconds: 4)).toLocal(),
+        );
       },
     );
 
@@ -186,6 +194,7 @@ void main() {
         // value (entry 7) is retained.
         expect(byId[3]!.lastValue, closeTo(9.8, 0.001));
         expect(byId[3]!.values.length, 3);
+        expect(byId[3]!.invalidAt, [DateTime.utc(2026, 1, 3).toLocal()]);
         // field4 ("StartOnly"): only ever set once, at the very start of the
         // range — still visible because the 100-entry window reaches back to it.
         expect(byId[4]!.lastValue, 100.0);
@@ -307,6 +316,60 @@ void main() {
       expect(result.field.values.length, 50);
       verify(mockClient.get(any)).called(1);
     });
+
+    test(
+      'continues past a full page for a sparse field with few values '
+      '(regression: must compare raw entry count, not filtered value count)',
+      () async {
+        final end = DateTime.utc(2024, 1, 10);
+        final start = DateTime.utc(2023, 12, 1);
+
+        final page1Times = List.generate(
+          8000,
+          (i) => end.subtract(Duration(seconds: 7999 - i)),
+        );
+        String page1Feed() {
+          final feeds = [
+            for (var i = 0; i < page1Times.length; i++)
+              {
+                'created_at': page1Times[i].toIso8601String(),
+                if (i % 20 == 0)
+                  'field1': '${page1Times[i].millisecondsSinceEpoch}',
+              },
+          ];
+          return jsonEncode({
+            'channel': {'id': 123456, 'field1': 'Field1'},
+            'feeds': feeds,
+          });
+        }
+
+        final page1Oldest = page1Times.first;
+        final expectedSecondEnd = page1Oldest.subtract(
+          const Duration(seconds: 1),
+        );
+        final page2Times = List.generate(
+          50,
+          (i) => expectedSecondEnd.subtract(Duration(seconds: 49 - i)),
+        );
+
+        var callCount = 0;
+        when(mockClient.get(any)).thenAnswer((_) async {
+          callCount++;
+          return ok(callCount == 1 ? page1Feed() : feedForTimes(page2Times));
+        });
+
+        final result = await api.readFieldRange(
+          publicChannel,
+          1,
+          start: start,
+          end: end,
+        );
+
+        expect(callCount, 2);
+        expect(result.truncated, isFalse);
+        expect(result.field.values.length, 400 + 50);
+      },
+    );
   });
 
   group('_buildUri', () {

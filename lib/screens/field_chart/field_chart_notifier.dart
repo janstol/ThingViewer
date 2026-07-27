@@ -11,8 +11,14 @@ class FieldChartLoading extends FieldChartState {}
 class FieldChartLoaded extends FieldChartState {
   final DateTimeRange range;
   final List<FieldValue> values;
+  final List<DateTime> invalidAt;
   final bool truncated;
-  FieldChartLoaded(this.range, this.values, {this.truncated = false});
+  FieldChartLoaded(
+    this.range,
+    this.values, {
+    this.invalidAt = const [],
+    this.truncated = false,
+  });
 }
 
 class FieldChartEmpty extends FieldChartState {
@@ -42,6 +48,10 @@ class FieldChartNotifier extends ChangeNotifier {
   /// Local cache of all fetched values.
   final List<FieldValue> _cache;
 
+  /// Local cache of timestamps of invalid (non-finite) readings, keyed by
+  /// timestamp to avoid duplicates across overlapping fetches.
+  final Set<DateTime> _invalidCache;
+
   /// Disjoint, merged ranges the cache is known to fully cover. A range is
   /// served from cache only when it falls entirely within one of these — the
   /// cache's own min/max is not enough, since two fetches can leave a hole
@@ -52,7 +62,8 @@ class FieldChartNotifier extends ChangeNotifier {
   FieldChartState get state => _state;
 
   FieldChartNotifier(this._api, this._channel, this._field)
-    : _cache = List.of(_field.values) {
+    : _cache = List.of(_field.values),
+      _invalidCache = Set.of(_field.invalidAt) {
     // Always fetch the default range from the API on first open. The single
     // cached value from the channel detail screen is not enough to draw a
     // useful chart, and isn't recorded as covered.
@@ -80,7 +91,11 @@ class FieldChartNotifier extends ChangeNotifier {
       final filtered = _filterByRange(_cache, range);
       return filtered.isEmpty
           ? FieldChartEmpty(range)
-          : FieldChartLoaded(range, filtered);
+          : FieldChartLoaded(
+              range,
+              filtered,
+              invalidAt: _filterDatesByRange(_invalidCache, range),
+            );
     }
 
     // Fetch from API.
@@ -108,6 +123,7 @@ class FieldChartNotifier extends ChangeNotifier {
               ..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
           );
       }
+      _invalidCache.addAll(result.field.invalidAt);
       // The requested range is now covered even if it returned no data —
       // an empty window is a legitimate result, not a hole to re-fetch.
       _addCovered(range);
@@ -123,7 +139,12 @@ class FieldChartNotifier extends ChangeNotifier {
     final filtered = _filterByRange(_cache, range);
     return filtered.isEmpty
         ? FieldChartEmpty(range)
-        : FieldChartLoaded(range, filtered, truncated: truncated);
+        : FieldChartLoaded(
+            range,
+            filtered,
+            invalidAt: _filterDatesByRange(_invalidCache, range),
+            truncated: truncated,
+          );
   }
 
   bool _isCovered(DateTimeRange range) {
@@ -168,6 +189,15 @@ class FieldChartNotifier extends ChangeNotifier {
             !v.createdAt.isAfter(range.end),
       )
       .toList();
+
+  static List<DateTime> _filterDatesByRange(
+    Iterable<DateTime> dates,
+    DateTimeRange range,
+  ) =>
+      dates
+          .where((d) => !d.isBefore(range.start) && !d.isAfter(range.end))
+          .toList()
+        ..sort();
 
   /// Last 7 days ending now — or, for a field that hasn't reported in a
   /// while, ending at its last known reading instead. Anchoring to

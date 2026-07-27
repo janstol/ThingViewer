@@ -136,6 +136,18 @@ class ThingSpeakApi {
     int fieldId,
     ApiParameters params,
   ) async {
+    final page = await _readFieldPage(channel, fieldId, params);
+    return page.field;
+  }
+
+  /// Like [readField], but also returns the raw feed entry count for the
+  /// page — the count *before* filtering to this field's values, needed by
+  /// [readFieldRange] to detect a short (final) page for sparse fields.
+  Future<({Field field, int rawEntryCount})> _readFieldPage(
+    Channel channel,
+    int fieldId,
+    ApiParameters params,
+  ) async {
     final uri = _buildUri(
       baseUrl: channel.serverUrl,
       path: '/channels/${channel.id}/fields/$fieldId.json',
@@ -163,12 +175,13 @@ class ThingSpeakApi {
     void Function(int fetched)? onProgress,
   }) async {
     final collected = <FieldValue>[];
+    final invalidAt = <DateTime>[];
     String? label;
     var cursorEnd = end;
     var truncated = false;
 
     for (var page = 0; page < _maxPages; page++) {
-      final result = await readField(
+      final result = await _readFieldPage(
         channel,
         fieldId,
         ApiParameters(
@@ -178,19 +191,22 @@ class ThingSpeakApi {
           results: _maxResultsPerRequest,
         ),
       );
-      label ??= result.label;
+      label ??= result.field.label;
 
-      if (result.values.isEmpty) break;
+      if (result.field.values.isEmpty) break;
 
-      collected.addAll(result.values);
+      collected.addAll(result.field.values);
+      invalidAt.addAll(result.field.invalidAt);
       onProgress?.call(collected.length);
 
-      if (result.values.length < _maxResultsPerRequest) {
-        // Short page: the full range down to `start` is covered.
+      if (result.rawEntryCount < _maxResultsPerRequest) {
+        // Short page: the full range down to `start` is covered. Compared
+        // against the raw feed entry count, not `values.length` — a sparse
+        // field can have far fewer values than entries in a full page.
         break;
       }
 
-      final oldest = result.values.first.createdAt;
+      final oldest = result.field.values.first.createdAt;
       final nextCursorEnd = oldest.subtract(const Duration(seconds: 1));
       if (!nextCursorEnd.isAfter(start)) break;
 
@@ -206,8 +222,14 @@ class ThingSpeakApi {
     }
 
     collected.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    invalidAt.sort();
     return FieldRange(
-      field: Field(id: fieldId, label: label, values: collected),
+      field: Field(
+        id: fieldId,
+        label: label,
+        values: collected,
+        invalidAt: invalidAt,
+      ),
       truncated: truncated,
     );
   }
@@ -315,11 +337,19 @@ class ThingSpeakApi {
     final channelJson = json['channel'] as Map<String, dynamic>? ?? {};
     final feeds = json['feeds'] as List<dynamic>? ?? [];
 
-    final fields = <int, ({String? label, List<FieldValue> values})>{};
+    final fields =
+        <
+          int,
+          ({String? label, List<FieldValue> values, List<DateTime> invalidAt})
+        >{};
 
     for (int i = 1; i <= 8; i++) {
       if (!channelJson.containsKey('field$i')) continue;
-      fields[i] = (label: channelJson['field$i'] as String?, values: []);
+      fields[i] = (
+        label: channelJson['field$i'] as String?,
+        values: [],
+        invalidAt: [],
+      );
     }
 
     for (final entry in feeds) {
@@ -333,7 +363,11 @@ class ThingSpeakApi {
         final rawValue = feed['field$id'];
         if (rawValue == null) continue;
         final value = double.tryParse('$rawValue');
-        if (value == null || !value.isFinite) continue;
+        if (value == null) continue;
+        if (!value.isFinite) {
+          fields[id]!.invalidAt.add(createdAt);
+          continue;
+        }
         fields[id]!.values.add(FieldValue(createdAt: createdAt, value: value));
       }
     }
@@ -341,17 +375,26 @@ class ThingSpeakApi {
     return fields.entries.map((e) {
       final values = e.value.values
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-      return Field(id: e.key, label: e.value.label, values: values);
+      final invalidAt = e.value.invalidAt..sort();
+      return Field(
+        id: e.key,
+        label: e.value.label,
+        values: values,
+        invalidAt: invalidAt,
+      );
     }).toList();
   }
 
-  static Field _parseSingleField(_ParseFieldArgs args) {
+  static ({Field field, int rawEntryCount}) _parseSingleField(
+    _ParseFieldArgs args,
+  ) {
     final json = jsonDecode(args.raw) as Map<String, dynamic>;
     final channelJson = json['channel'] as Map<String, dynamic>? ?? {};
     final feeds = json['feeds'] as List<dynamic>? ?? [];
 
     final label = channelJson['field${args.fieldId}'] as String?;
     final values = <FieldValue>[];
+    final invalidAt = <DateTime>[];
 
     for (final entry in feeds) {
       final feed = entry as Map<String, dynamic>;
@@ -361,12 +404,25 @@ class ThingSpeakApi {
       final rawValue = feed['field${args.fieldId}'];
       if (createdAt == null || rawValue == null) continue;
       final value = double.tryParse('$rawValue');
-      if (value == null || !value.isFinite) continue;
+      if (value == null) continue;
+      if (!value.isFinite) {
+        invalidAt.add(createdAt);
+        continue;
+      }
       values.add(FieldValue(createdAt: createdAt, value: value));
     }
     values.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    invalidAt.sort();
 
-    return Field(id: args.fieldId, label: label, values: values);
+    return (
+      field: Field(
+        id: args.fieldId,
+        label: label,
+        values: values,
+        invalidAt: invalidAt,
+      ),
+      rawEntryCount: feeds.length,
+    );
   }
 }
 

@@ -135,6 +135,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                           ? Center(child: Text(message))
                           : _Chart(
                               values: cachedValues,
+                              invalidAt: const [],
                               settings: widget.settings,
                               chartSettings: _chartSettings,
                             ),
@@ -156,43 +157,45 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                 );
               },
             ),
-          FieldChartLoaded(:final values, :final truncated) => Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  l10n.fieldChartShowingValues(values.length),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              if (truncated)
+          FieldChartLoaded(:final values, :final invalidAt, :final truncated) =>
+            Column(
+              children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    l10n.fieldChartTruncated,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
+                    l10n.fieldChartShowingValues(values.length),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                if (truncated)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      l10n.fieldChartTruncated,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
+                Expanded(
+                  child: _Chart(
+                    values: values,
+                    invalidAt: invalidAt,
+                    settings: widget.settings,
+                    chartSettings: _chartSettings,
+                  ),
                 ),
-              Expanded(
-                child: _Chart(
-                  values: values,
-                  settings: widget.settings,
-                  chartSettings: _chartSettings,
+                _FilterButton(
+                  onPressed: () => _showFilterSheet(context),
+                  l10n: l10n,
                 ),
-              ),
-              _FilterButton(
-                onPressed: () => _showFilterSheet(context),
-                l10n: l10n,
-              ),
-            ],
-          ),
+              ],
+            ),
         },
       ),
     );
@@ -241,11 +244,13 @@ class _FilterButton extends StatelessWidget {
 
 class _Chart extends StatefulWidget {
   final List<FieldValue> values;
+  final List<DateTime> invalidAt;
   final SettingsNotifier settings;
   final FieldChartSettings chartSettings;
 
   const _Chart({
     required this.values,
+    required this.invalidAt,
     required this.settings,
     required this.chartSettings,
   });
@@ -411,17 +416,39 @@ class _ChartState extends State<_Chart> {
     );
   }
 
+  /// Merges [_displayValues] and [FieldChartScreen]'s invalid timestamps into
+  /// one time-sorted sequence, emitting [FlSpot.nullSpot] for each invalid
+  /// entry so the line breaks there instead of connecting across it.
+  List<FlSpot> _spotsWithGaps() {
+    final points = <(DateTime, double?)>[
+      for (final v in _displayValues) (v.createdAt, v.value),
+      for (final t in widget.invalidAt) (t, null),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+
+    return [
+      for (final (t, v) in points)
+        v == null
+            ? FlSpot.nullSpot
+            : FlSpot(t.millisecondsSinceEpoch.toDouble(), v),
+    ];
+  }
+
   Widget _buildLineChart(
     ColorScheme colorScheme,
     Color color,
     FieldChartSettings chartSettings,
   ) {
     final isScatter = chartSettings.type == ChartType.scatter;
-    final spots = _displayValues
-        .map(
-          (v) => FlSpot(v.createdAt.millisecondsSinceEpoch.toDouble(), v.value),
-        )
-        .toList();
+    final spots = chartSettings.gapOnInvalid
+        ? _spotsWithGaps()
+        : _displayValues
+              .map(
+                (v) => FlSpot(
+                  v.createdAt.millisecondsSinceEpoch.toDouble(),
+                  v.value,
+                ),
+              )
+              .toList();
 
     return LineChart(
       LineChartData(
@@ -565,7 +592,11 @@ class _ChartState extends State<_Chart> {
             BarChartGroupData(
               x: i,
               barRods: [
-                BarChartRodData(toY: bars[i].value, color: color, width: barWidth),
+                BarChartRodData(
+                  toY: bars[i].value,
+                  color: color,
+                  width: barWidth,
+                ),
               ],
             ),
         ],

@@ -20,6 +20,10 @@ void main() {
         FieldChartSettings.defaults.copyWith(decimals: 2).isDefault,
         isFalse,
       );
+      expect(
+        FieldChartSettings.defaults.copyWith(gapOnInvalid: true).isDefault,
+        isFalse,
+      );
     });
   });
 
@@ -38,6 +42,7 @@ void main() {
         yMax: 100,
         decimals: 2,
         showDelta: true,
+        gapOnInvalid: true,
       );
 
       expect(settings.toJson(), {
@@ -49,7 +54,14 @@ void main() {
         'yMax': 100.0,
         'decimals': 2,
         'showDelta': true,
+        'gapOnInvalid': true,
       });
+    });
+
+    test('gapOnInvalid is omitted when false, like showDelta', () {
+      const settings = FieldChartSettings(showDelta: true, gapOnInvalid: false);
+
+      expect(settings.toJson().containsKey('gapOnInvalid'), isFalse);
     });
   });
 
@@ -64,11 +76,23 @@ void main() {
         yMax: 42.25,
         decimals: 4,
         showDelta: true,
+        gapOnInvalid: true,
       );
 
       final roundTripped = FieldChartSettings.fromJson(settings.toJson());
 
       expect(roundTripped, settings);
+    });
+
+    test('settings stored before gapOnInvalid existed still parse', () {
+      // Simulates a JSON blob persisted before this field was introduced.
+      final roundTripped = FieldChartSettings.fromJson({
+        'type': 'spline',
+        'showDelta': true,
+      });
+
+      expect(roundTripped.gapOnInvalid, isFalse);
+      expect(roundTripped.showDelta, isTrue);
     });
 
     test('round-trips defaults', () {

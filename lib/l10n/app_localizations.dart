@@ -622,6 +622,18 @@ abstract class AppLocalizations {
   /// **'Plot the difference between consecutive readings instead of raw values'**
   String get fieldSettingsShowDeltaSubtitle;
 
+  /// No description provided for @fieldSettingsGapOnInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Break line at invalid readings'**
+  String get fieldSettingsGapOnInvalid;
+
+  /// No description provided for @fieldSettingsGapOnInvalidSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a gap for NaN readings instead of connecting the line across them'**
+  String get fieldSettingsGapOnInvalidSubtitle;
+
   /// No description provided for @fieldSettingsReset.
   ///
   /// In en, this message translates to:

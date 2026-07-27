@@ -24,6 +24,7 @@ class FieldChartSettings {
   final double? yMax;
   final int? decimals;
   final bool showDelta;
+  final bool gapOnInvalid;
 
   const FieldChartSettings({
     this.type = ChartType.line,
@@ -34,6 +35,7 @@ class FieldChartSettings {
     this.yMax,
     this.decimals,
     this.showDelta = false,
+    this.gapOnInvalid = false,
   });
 
   static const defaults = FieldChartSettings();
@@ -46,7 +48,8 @@ class FieldChartSettings {
       yMin == null &&
       yMax == null &&
       decimals == null &&
-      showDelta == false;
+      showDelta == false &&
+      gapOnInvalid == false;
 
   FieldChartSettings copyWith({
     ChartType? type,
@@ -57,6 +60,7 @@ class FieldChartSettings {
     double? yMax,
     int? decimals,
     bool? showDelta,
+    bool? gapOnInvalid,
   }) {
     return FieldChartSettings(
       type: type ?? this.type,
@@ -67,6 +71,7 @@ class FieldChartSettings {
       yMax: yMax ?? this.yMax,
       decimals: decimals ?? this.decimals,
       showDelta: showDelta ?? this.showDelta,
+      gapOnInvalid: gapOnInvalid ?? this.gapOnInvalid,
     );
   }
 
@@ -79,6 +84,7 @@ class FieldChartSettings {
     if (yMax != null) 'yMax': yMax,
     if (decimals != null) 'decimals': decimals,
     if (showDelta) 'showDelta': showDelta,
+    if (gapOnInvalid) 'gapOnInvalid': gapOnInvalid,
   };
 
   factory FieldChartSettings.fromJson(Map<String, dynamic> json) =>
@@ -91,6 +97,7 @@ class FieldChartSettings {
         yMax: _parseDouble(json['yMax']),
         decimals: _parseInt(json['decimals']),
         showDelta: json['showDelta'] as bool? ?? false,
+        gapOnInvalid: json['gapOnInvalid'] as bool? ?? false,
       );
 
   @override
@@ -103,7 +110,8 @@ class FieldChartSettings {
       yMin == other.yMin &&
       yMax == other.yMax &&
       decimals == other.decimals &&
-      showDelta == other.showDelta;
+      showDelta == other.showDelta &&
+      gapOnInvalid == other.gapOnInvalid;
 
   @override
   int get hashCode => Object.hash(
@@ -115,5 +123,6 @@ class FieldChartSettings {
     yMax,
     decimals,
     showDelta,
+    gapOnInvalid,
   );
 }

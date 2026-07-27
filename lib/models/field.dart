@@ -66,9 +66,7 @@ List<FieldValue> bucketAverage(List<FieldValue> values, int maxPoints) {
     final lastMs = bucket.last.createdAt.millisecondsSinceEpoch;
     result.add(
       FieldValue(
-        createdAt: DateTime.fromMillisecondsSinceEpoch(
-          (firstMs + lastMs) ~/ 2,
-        ),
+        createdAt: DateTime.fromMillisecondsSinceEpoch((firstMs + lastMs) ~/ 2),
         value: sum / bucket.length,
       ),
     );
@@ -81,7 +79,18 @@ class Field {
   final String? label;
   final List<FieldValue> values;
 
-  const Field({required this.id, this.label, this.values = const []});
+  /// Timestamps of readings that parsed as non-finite (`NaN`/`Infinity`).
+  ///
+  /// Kept separate from [values] so the latter stays finite-only, as
+  /// [lastValue], [deltaValues] and [bucketAverage] all depend on that.
+  final List<DateTime> invalidAt;
+
+  const Field({
+    required this.id,
+    this.label,
+    this.values = const [],
+    this.invalidAt = const [],
+  });
 
   String get displayLabel => label?.isNotEmpty == true ? label! : 'Field $id';
 

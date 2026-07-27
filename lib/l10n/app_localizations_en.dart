@@ -286,5 +286,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Plot the difference between consecutive readings instead of raw values';
 
   @override
+  String get fieldSettingsGapOnInvalid => 'Break line at invalid readings';
+
+  @override
+  String get fieldSettingsGapOnInvalidSubtitle =>
+      'Show a gap for NaN readings instead of connecting the line across them';
+
+  @override
   String get fieldSettingsReset => 'Reset to defaults';
 }

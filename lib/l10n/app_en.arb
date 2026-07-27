@@ -98,5 +98,7 @@
   "fieldSettingsRoundingAuto": "auto (2–6)",
   "fieldSettingsShowDelta": "Show change between readings",
   "fieldSettingsShowDeltaSubtitle": "Plot the difference between consecutive readings instead of raw values",
+  "fieldSettingsGapOnInvalid": "Break line at invalid readings",
+  "fieldSettingsGapOnInvalidSubtitle": "Show a gap for NaN readings instead of connecting the line across them",
   "fieldSettingsReset": "Reset to defaults"
 }

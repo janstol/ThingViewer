@@ -236,4 +236,77 @@ void main() {
       expect(find.text('Scatter'), findsOneWidget); // shown as current value
     },
   );
+
+  testWidgets(
+    'gapOnInvalid inserts a null spot at the invalid reading; off by default',
+    (tester) async {
+      // Tall viewport so the new switch doesn't need scrolling into view.
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Between the day-2 and day-1 real values.
+      final invalidAt = _now.subtract(const Duration(hours: 36));
+      final fieldWithInvalid = Field(
+        id: 1,
+        label: 'Temp',
+        values: _field.values,
+        invalidAt: [invalidAt],
+      );
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenAnswer(
+        (_) async => FieldRange(field: fieldWithInvalid, truncated: false),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      List<FlSpot> spots() => tester
+          .widget<LineChart>(find.byType(LineChart))
+          .data
+          .lineBarsData
+          .single
+          .spots;
+
+      // Off by default: connected across the invalid reading, no null spot.
+      expect(spots().any((s) => s.x.isNaN), isFalse);
+
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Break line at invalid readings'));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      final withGap = spots();
+      final nullIndex = withGap.indexWhere((s) => s.x.isNaN);
+      expect(nullIndex, greaterThan(-1));
+      expect(
+        withGap[nullIndex - 1].x,
+        _field.values[0].createdAt.millisecondsSinceEpoch.toDouble(),
+      );
+      expect(
+        withGap[nullIndex + 1].x,
+        _field.values[1].createdAt.millisecondsSinceEpoch.toDouble(),
+      );
+    },
+  );
 }
