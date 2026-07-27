@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-27
+
 ### Added
 
 - Channel descriptions from ThingSpeak are now shown on the channel detail screen.
@@ -59,4 +61,5 @@ Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into
 - Migrated from Hive/get_it/BLoC to `SharedPreferences` + `ChangeNotifier`.
 - Updated dependencies to their latest versions compatible with existing constraints (`build_runner`, `equatable`, `path_provider_android`, and others).
 
+[0.10.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.10.0
 [0.9.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.9.0
