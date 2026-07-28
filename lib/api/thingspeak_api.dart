@@ -81,6 +81,11 @@ class ThingSpeakApi {
   /// number of requests.
   static const _maxPages = 10;
 
+  /// [readFieldRange] can request up to [_maxResultsPerRequest] entries per
+  /// page, so a generous ceiling avoids cutting off a slow-but-progressing
+  /// request while still bounding a stalled connection.
+  static const _requestTimeout = Duration(seconds: 20);
+
   ThingSpeakApi(this._client);
 
   /// Reads channel metadata (name, description, fields).
@@ -254,7 +259,7 @@ class ThingSpeakApi {
   Future<String> _sendRequest(Uri uri) async {
     http.Response response;
     try {
-      response = await _client.get(uri);
+      response = await _client.get(uri).timeout(_requestTimeout);
     } on SocketException catch (e) {
       throw ApiException(
         e.osError?.errorCode == 7 ? ApiErrorCode.network : ApiErrorCode.general,

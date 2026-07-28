@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mockito/annotations.dart';
@@ -489,5 +491,33 @@ void main() {
         ),
       );
     });
+
+    test(
+      'throws ApiException with network code when the request stalls past the timeout',
+      () {
+        fakeAsync((async) {
+          when(
+            mockClient.get(any),
+          ).thenAnswer((_) => Completer<http.Response>().future);
+
+          Object? caught;
+          api.readChannel(publicChannel).catchError((e) {
+            caught = e;
+            return publicChannel;
+          });
+
+          async.elapse(const Duration(seconds: 21));
+
+          expect(
+            caught,
+            isA<ApiException>().having(
+              (e) => e.code,
+              'code',
+              ApiErrorCode.network,
+            ),
+          );
+        });
+      },
+    );
   });
 }
