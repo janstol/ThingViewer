@@ -65,8 +65,12 @@ class ChannelDetailNotifier extends ChangeNotifier {
   Future<void> _fetch() async {
     try {
       final params = ApiParameters(apiKey: _channel.apiKey, results: 100);
-      final updated = await _api.readChannel(_channel);
-      final fields = await _api.readFeed(updated, params);
+      final results = await Future.wait([
+        _api.readChannel(_channel),
+        _api.readFeed(_channel, params),
+      ]);
+      final updated = results[0] as Channel;
+      final fields = results[1] as List<Field>;
       _channel = updated.copyWith(authError: false);
       onChannelUpdated?.call(_channel);
 
