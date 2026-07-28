@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Field chart pinch-zoom and panning are smoother, especially on dense channels: derived chart data is now cached instead of being recomputed on every frame.
+- The channel detail screen loads faster, fetching channel info and feed data in parallel instead of sequentially.
+- Release builds are now obfuscated, with debug symbols uploaded separately for de-obfuscating crash reports, and no longer bundle unused icon source images. Both reduce app size.
+
+### Fixed
+
+- API requests now time out after 20 seconds instead of leaving the chart or detail screen on a spinner indefinitely on a stalled connection.
+- Rapidly changing a field chart's date range no longer occasionally leaves a stale, older result on screen if a newer range finishes fetching first.
+
 ## [0.10.0] - 2026-07-27
 
 ### Added
