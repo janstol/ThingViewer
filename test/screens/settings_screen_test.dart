@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
@@ -38,6 +44,52 @@ Future<BackupService> _backupService() async {
     FieldSettingsStorage(prefs),
   );
 }
+
+// file_picker's static API delegates to FilePickerPlatform.instance, a
+// swappable federated-plugin singleton — this fake lets tests drive the
+// import/export flows without a real OS file dialog.
+class _FakeFilePickerPlatform extends FilePickerPlatform
+    with MockPlatformInterfaceMixin {
+  FilePickerResult? pickResult;
+  String? savePath;
+
+  @override
+  Future<FilePickerResult?> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    void Function(FilePickerStatus)? onFileLoading,
+    int compressionQuality = 0,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    bool lockParentWindow = false,
+    bool readSequential = false,
+    bool cancelUploadOnWindowBlur = true,
+  }) async => pickResult;
+
+  @override
+  Future<String?> saveFile({
+    String? dialogTitle,
+    String? fileName,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Uint8List? bytes,
+    bool lockParentWindow = false,
+  }) async => savePath;
+}
+
+Uint8List _backupBytes(List<Channel> channels) => Uint8List.fromList(
+  utf8.encode(
+    jsonEncode({
+      'app': 'thingviewer',
+      'version': 1,
+      'channels': channels.map((c) => c.toJson()).toList(),
+    }),
+  ),
+);
 
 void main() {
   testWidgets('tapping Theme opens the theme dialog', (tester) async {
@@ -279,6 +331,236 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  group('Import/export with a faked file picker', () {
+    late _FakeFilePickerPlatform fakePicker;
+
+    setUp(() {
+      fakePicker = _FakeFilePickerPlatform();
+      FilePickerPlatform.instance = fakePicker;
+    });
+
+    testWidgets(
+      'Import stays disabled until a mode is picked, then addChannels merges',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final channelStorage = ChannelStorage(prefs);
+        await channelStorage.saveChannels([_channel]);
+        final settings = SettingsNotifier(SettingsStorage(prefs));
+        fakePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'backup.json',
+            size: 0,
+            bytes: _backupBytes([_otherChannel]),
+          ),
+        ]);
+
+        await tester.pumpWidget(
+          _wrap(
+            SettingsScreen(
+              settings: settings,
+              channels: const [_channel],
+              backupService: BackupService(
+                channelStorage,
+                SettingsStorage(prefs),
+                FieldSettingsStorage(prefs),
+              ),
+              onImported: () {},
+            ),
+          ),
+        );
+        await tester.scrollUntilVisible(
+          find.text('Import'),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Import'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Import backup'), findsOneWidget);
+        final confirmButton = find.widgetWithText(TextButton, 'Import');
+        expect(tester.widget<TextButton>(confirmButton).onPressed, isNull);
+
+        await tester.tap(find.text('Add channels only'));
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextButton>(confirmButton).onPressed, isNotNull);
+
+        await tester.tap(confirmButton);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Backup imported'), findsOneWidget);
+        expect(channelStorage.loadChannels(), [_channel, _otherChannel]);
+      },
+    );
+
+    testWidgets('replace mode overwrites the existing saved channels', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final channelStorage = ChannelStorage(prefs);
+      await channelStorage.saveChannels([_channel]);
+      final settings = SettingsNotifier(SettingsStorage(prefs));
+      fakePicker.pickResult = FilePickerResult([
+        PlatformFile(
+          name: 'backup.json',
+          size: 0,
+          bytes: _backupBytes([_otherChannel]),
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [_channel],
+            backupService: BackupService(
+              channelStorage,
+              SettingsStorage(prefs),
+              FieldSettingsStorage(prefs),
+            ),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Import'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Import'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Replace everything'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Import'));
+      await tester.pumpAndSettle();
+
+      expect(channelStorage.loadChannels(), [_otherChannel]);
+    });
+
+    testWidgets('a malformed backup file shows an error and no dialog', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+      fakePicker.pickResult = FilePickerResult([
+        PlatformFile(
+          name: 'backup.json',
+          size: 0,
+          bytes: Uint8List.fromList(utf8.encode('not json')),
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Import'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Import'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('This backup file is corrupted or unreadable.'),
+        findsOneWidget,
+      );
+      expect(find.text('Import backup'), findsNothing);
+    });
+
+    testWidgets('Export shows a success snackbar once a save path is chosen', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+      fakePicker.savePath = '/tmp/backup.json';
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Backup saved'), findsOneWidget);
+    });
+
+    testWidgets('Export shows nothing when the save dialog is cancelled', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+      fakePicker.savePath = null;
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Backup saved'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }
