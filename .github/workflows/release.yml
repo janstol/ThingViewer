@@ -38,7 +38,7 @@ jobs:
           EOF
 
       - name: Build App Bundle
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
 
       - name: Extract changelog section
         run: |
@@ -61,6 +61,13 @@ jobs:
           name: release-aab
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
+
+      - name: Upload debug symbols artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-symbols-${{ github.ref_name }}
+          path: build/symbols
+          retention-days: 90
 
   publish-internal:
     needs: build

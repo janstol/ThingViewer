@@ -31,4 +31,4 @@ jobs:
         run: flutter test
 
       - name: Build app bundle (smoke)
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
