@@ -51,4 +51,4 @@ flutter:
   generate: true
 
   assets:
-    - res/images/
+    - res/images/thingviewer_icon_150.png
