@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/thingspeak_api.dart';
+import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../storage/field_settings_storage.dart';
+import '../../storage/settings_storage.dart';
 import '../../theme.dart';
 import '../channel_add/channel_add_screen.dart';
 import '../field_chart/field_chart_screen.dart';
@@ -26,6 +30,21 @@ String? _safeUrl(String? raw) {
   final uri = Uri.tryParse(raw?.trim() ?? '');
   if (uri == null || !uri.hasAuthority) return null;
   return uri.scheme == 'http' || uri.scheme == 'https' ? uri.toString() : null;
+}
+
+String _lastEntryText(
+  AppLocalizations l10n,
+  SettingsNotifier settings,
+  DateTime lastUpdated,
+  DateTime now,
+) {
+  final absolute = settings.formatDateTime(lastUpdated);
+  final age = formatEntryAge(l10n, now.difference(lastUpdated));
+  return switch (settings.entryTimeDisplay) {
+    EntryTimeDisplay.absolute => absolute,
+    EntryTimeDisplay.age => age,
+    EntryTimeDisplay.both => '$absolute ($age)',
+  };
 }
 
 bool _hasHeader(Channel channel) =>
@@ -128,6 +147,8 @@ class ChannelDetailScreen extends StatefulWidget {
 class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
   late final ChannelDetailNotifier _notifier;
   late Channel _channel;
+  DateTime _now = DateTime.now();
+  late final Timer _ageTicker;
 
   @override
   void initState() {
@@ -138,10 +159,15 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
       widget.channel,
       onChannelUpdated: widget.onChannelUpdated,
     );
+    _ageTicker = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => setState(() => _now = DateTime.now()),
+    );
   }
 
   @override
   void dispose() {
+    _ageTicker.cancel();
     _notifier.dispose();
     super.dispose();
   }
@@ -226,6 +252,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
               api: widget.api,
               settings: widget.settings,
               fieldSettingsStorage: widget.fieldSettingsStorage,
+              now: _now,
             ),
           },
         ),
@@ -240,6 +267,7 @@ class _FieldList extends StatelessWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final DateTime now;
 
   const _FieldList({
     required this.channel,
@@ -247,6 +275,7 @@ class _FieldList extends StatelessWidget {
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
+    required this.now,
   });
 
   @override
@@ -281,7 +310,8 @@ class _FieldList extends StatelessWidget {
               title: Text(field.displayLabel),
               subtitle: lastUpdated != null
                   ? Text(
-                      '${l10n.channelDetailLastEntry}: ${settings.formatDateTime(lastUpdated)}',
+                      '${l10n.channelDetailLastEntry}: '
+                      '${_lastEntryText(l10n, settings, lastUpdated, now)}',
                     )
                   : null,
               trailing: field.lastValue != null

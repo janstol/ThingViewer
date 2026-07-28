@@ -208,6 +208,42 @@ abstract class AppLocalizations {
   /// **'Source code'**
   String get channelDetailSource;
 
+  /// No description provided for @entryAgeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get entryAgeJustNow;
+
+  /// No description provided for @entryAgeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String entryAgeMinutes(num count);
+
+  /// No description provided for @entryAgeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String entryAgeHours(num count);
+
+  /// No description provided for @entryAgeDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day ago} other{{count} days ago}}'**
+  String entryAgeDays(num count);
+
+  /// No description provided for @entryAgeMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month ago} other{{count} months ago}}'**
+  String entryAgeMonths(num count);
+
+  /// No description provided for @entryAgeYears.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 year ago} other{{count} years ago}}'**
+  String entryAgeYears(num count);
+
   /// No description provided for @fieldChartNoValues.
   ///
   /// In en, this message translates to:
@@ -345,6 +381,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name'**
   String get settingsTimezoneName;
+
+  /// No description provided for @settingsEntryTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Last entry time'**
+  String get settingsEntryTime;
+
+  /// No description provided for @settingsEntryTimeChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose last entry time display'**
+  String get settingsEntryTimeChoose;
+
+  /// No description provided for @settingsEntryTimeAbsolute.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get settingsEntryTimeAbsolute;
+
+  /// No description provided for @settingsEntryTimeAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Relative age'**
+  String get settingsEntryTimeAge;
+
+  /// No description provided for @settingsEntryTimeBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get settingsEntryTimeBoth;
 
   /// No description provided for @settingsStartScreen.
   ///

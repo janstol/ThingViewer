@@ -9,6 +9,7 @@ const _kTimeFormatKey = 'timeFormat';
 const _kStartChannelIdKey = 'startChannelId';
 const _kStartChannelServerUrlKey = 'startChannelServerUrl';
 const _kTimezoneDisplayKey = 'timezoneDisplay';
+const _kEntryTimeDisplayKey = 'entryTimeDisplay';
 
 const defaultDateFormat = 'dd.MM.yyyy';
 const defaultTimeFormat = 'HH:mm';
@@ -16,6 +17,10 @@ const defaultTimeFormat = 'HH:mm';
 enum TimezoneDisplay { off, offset, name }
 
 const defaultTimezoneDisplay = TimezoneDisplay.off;
+
+enum EntryTimeDisplay { absolute, age, both }
+
+const defaultEntryTimeDisplay = EntryTimeDisplay.both;
 
 /// Persists user preferences using SharedPreferences.
 class SettingsStorage {
@@ -56,6 +61,16 @@ class SettingsStorage {
     await _prefs.setInt(_kTimezoneDisplayKey, value.index);
   }
 
+  EntryTimeDisplay get entryTimeDisplay =>
+      EntryTimeDisplay.values.elementAtOrNull(
+        _prefs.getInt(_kEntryTimeDisplayKey) ?? defaultEntryTimeDisplay.index,
+      ) ??
+      defaultEntryTimeDisplay;
+
+  Future<void> saveEntryTimeDisplay(EntryTimeDisplay value) async {
+    await _prefs.setInt(_kEntryTimeDisplayKey, value.index);
+  }
+
   int? get startChannelId => _prefs.getInt(_kStartChannelIdKey);
 
   String? get startChannelServerUrl =>
@@ -76,6 +91,7 @@ class SettingsStorage {
     _kDateFormatKey: dateFormat,
     _kTimeFormatKey: timeFormat,
     _kTimezoneDisplayKey: timezoneDisplay.index,
+    _kEntryTimeDisplayKey: entryTimeDisplay.index,
     if (startChannelId != null) _kStartChannelIdKey: startChannelId,
     if (startChannelServerUrl != null)
       _kStartChannelServerUrlKey: startChannelServerUrl,
@@ -102,6 +118,13 @@ class SettingsStorage {
       await _prefs.setInt(
         _kTimezoneDisplayKey,
         timezoneDisplayValue.clamp(0, TimezoneDisplay.values.length - 1),
+      );
+    }
+    final entryTimeDisplayValue = json[_kEntryTimeDisplayKey];
+    if (entryTimeDisplayValue is int) {
+      await _prefs.setInt(
+        _kEntryTimeDisplayKey,
+        entryTimeDisplayValue.clamp(0, EntryTimeDisplay.values.length - 1),
       );
     }
     final startChannelIdValue = json[_kStartChannelIdKey];

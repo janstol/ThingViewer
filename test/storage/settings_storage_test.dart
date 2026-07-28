@@ -21,6 +21,7 @@ void main() {
       await storage.saveDateFormat('yyyy-MM-dd');
       await storage.saveTimeFormat('HH:mm:ss');
       await storage.saveTimezoneDisplay(TimezoneDisplay.name);
+      await storage.saveEntryTimeDisplay(EntryTimeDisplay.age);
       await storage.saveStartChannel(_channel);
 
       final exported = storage.exportJson();
@@ -33,6 +34,7 @@ void main() {
       expect(target.dateFormat, 'yyyy-MM-dd');
       expect(target.timeFormat, 'HH:mm:ss');
       expect(target.timezoneDisplay, TimezoneDisplay.name);
+      expect(target.entryTimeDisplay, EntryTimeDisplay.age);
       expect(target.startChannelId, _channel.id);
       expect(target.startChannelServerUrl, _channel.serverUrl);
     });
@@ -65,6 +67,21 @@ void main() {
         await storage.importJson({'timezoneDisplay': -5});
 
         expect(storage.timezoneDisplay, TimezoneDisplay.values[0]);
+      },
+    );
+
+    test(
+      'clamps an out-of-range entryTimeDisplay instead of crashing',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final storage = SettingsStorage(await SharedPreferences.getInstance());
+
+        await storage.importJson({'entryTimeDisplay': 99});
+
+        expect(
+          storage.entryTimeDisplay,
+          EntryTimeDisplay.values[EntryTimeDisplay.values.length - 1],
+        );
       },
     );
 

@@ -67,6 +67,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelDetailSource => 'Source code';
 
   @override
+  String get entryAgeJustNow => 'just now';
+
+  @override
+  String entryAgeMinutes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String entryAgeHours(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours ago',
+      one: '1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String entryAgeDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days ago',
+      one: '1 day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String entryAgeMonths(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months ago',
+      one: '1 month ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String entryAgeYears(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count years ago',
+      one: '1 year ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get fieldChartNoValues => 'No values for the selected date range.';
 
   @override
@@ -143,6 +201,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTimezoneName => 'Name';
+
+  @override
+  String get settingsEntryTime => 'Last entry time';
+
+  @override
+  String get settingsEntryTimeChoose => 'Choose last entry time display';
+
+  @override
+  String get settingsEntryTimeAbsolute => 'Timestamp';
+
+  @override
+  String get settingsEntryTimeAge => 'Relative age';
+
+  @override
+  String get settingsEntryTimeBoth => 'Both';
 
   @override
   String get settingsStartScreen => 'Start screen';

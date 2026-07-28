@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- A "Last entry time" setting controls whether each field's "Last entry" line on the channel detail screen shows the timestamp, a relative age ("5 min ago"), or both (default). The age updates while the screen is open.
+
 ### Changed
 
 - Field chart pinch-zoom and panning are smoother, especially on dense channels: derived chart data is now cached instead of being recomputed on every frame.

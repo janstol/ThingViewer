@@ -19,6 +19,37 @@
   "channelDetailNoFields": "No fields found for this channel.",
   "channelDetailWebsite": "Website",
   "channelDetailSource": "Source code",
+  "entryAgeJustNow": "just now",
+  "entryAgeMinutes": "{count, plural, =1{1 min ago} other{{count} min ago}}",
+  "@entryAgeMinutes": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "entryAgeHours": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@entryAgeHours": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "entryAgeDays": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@entryAgeDays": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "entryAgeMonths": "{count, plural, =1{1 month ago} other{{count} months ago}}",
+  "@entryAgeMonths": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "entryAgeYears": "{count, plural, =1{1 year ago} other{{count} years ago}}",
+  "@entryAgeYears": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
   "fieldChartNoValues": "No values for the selected date range.",
   "fieldChartNoValuesInZoom": "No data at this zoom level.",
   "fieldChartTruncated": "Only part of this range could be loaded — the channel has more data than a single request can return.",
@@ -47,6 +78,11 @@
   "settingsTimezoneOff": "Off",
   "settingsTimezoneOffset": "UTC offset",
   "settingsTimezoneName": "Name",
+  "settingsEntryTime": "Last entry time",
+  "settingsEntryTimeChoose": "Choose last entry time display",
+  "settingsEntryTimeAbsolute": "Timestamp",
+  "settingsEntryTimeAge": "Relative age",
+  "settingsEntryTimeBoth": "Both",
   "settingsStartScreen": "Start screen",
   "settingsStartScreenChoose": "Choose start screen",
   "settingsStartScreenChannelList": "Channel list",

@@ -11,6 +11,7 @@ class SettingsNotifier extends ChangeNotifier {
   late String _dateFormat;
   late String _timeFormat;
   late TimezoneDisplay _timezoneDisplay;
+  late EntryTimeDisplay _entryTimeDisplay;
   late int? _startChannelId;
   late String? _startChannelServerUrl;
 
@@ -22,6 +23,7 @@ class SettingsNotifier extends ChangeNotifier {
     _dateFormat = _storage.dateFormat;
     _timeFormat = _storage.timeFormat;
     _timezoneDisplay = _storage.timezoneDisplay;
+    _entryTimeDisplay = _storage.entryTimeDisplay;
     _startChannelId = _storage.startChannelId;
     _startChannelServerUrl = _storage.startChannelServerUrl;
   }
@@ -32,6 +34,7 @@ class SettingsNotifier extends ChangeNotifier {
     _dateFormat = _storage.dateFormat;
     _timeFormat = _storage.timeFormat;
     _timezoneDisplay = _storage.timezoneDisplay;
+    _entryTimeDisplay = _storage.entryTimeDisplay;
     _startChannelId = _storage.startChannelId;
     _startChannelServerUrl = _storage.startChannelServerUrl;
     _cachedDateFmt = null;
@@ -43,6 +46,7 @@ class SettingsNotifier extends ChangeNotifier {
   String get dateFormat => _dateFormat;
   String get timeFormat => _timeFormat;
   TimezoneDisplay get timezoneDisplay => _timezoneDisplay;
+  EntryTimeDisplay get entryTimeDisplay => _entryTimeDisplay;
 
   Future<void> setThemeMode(ThemeMode mode) async {
     final previous = _themeMode;
@@ -127,6 +131,18 @@ class SettingsNotifier extends ChangeNotifier {
     final hours = abs.inHours.toString().padLeft(2, '0');
     final minutes = (abs.inMinutes % 60).toString().padLeft(2, '0');
     return '$sign$hours:$minutes';
+  }
+
+  Future<void> setEntryTimeDisplay(EntryTimeDisplay value) async {
+    final previous = _entryTimeDisplay;
+    _entryTimeDisplay = value;
+    notifyListeners();
+    try {
+      await _storage.saveEntryTimeDisplay(value);
+    } catch (_) {
+      _entryTimeDisplay = previous;
+      notifyListeners();
+    }
   }
 
   Future<void> setStartChannel(Channel? channel) async {

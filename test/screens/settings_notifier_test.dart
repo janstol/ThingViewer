@@ -23,6 +23,7 @@ class _FakeSettingsStorage implements SettingsStorage {
   String _dateFormat;
   String _timeFormat;
   TimezoneDisplay _timezoneDisplay;
+  EntryTimeDisplay _entryTimeDisplay;
   int? _startChannelId;
   String? _startChannelServerUrl;
   bool throwOnSave;
@@ -32,6 +33,7 @@ class _FakeSettingsStorage implements SettingsStorage {
     String dateFormat = defaultDateFormat,
     String timeFormat = defaultTimeFormat,
     TimezoneDisplay timezoneDisplay = defaultTimezoneDisplay,
+    EntryTimeDisplay entryTimeDisplay = defaultEntryTimeDisplay,
     int? startChannelId,
     String? startChannelServerUrl,
     this.throwOnSave = false,
@@ -39,6 +41,7 @@ class _FakeSettingsStorage implements SettingsStorage {
        _dateFormat = dateFormat,
        _timeFormat = timeFormat,
        _timezoneDisplay = timezoneDisplay,
+       _entryTimeDisplay = entryTimeDisplay,
        _startChannelId = startChannelId,
        _startChannelServerUrl = startChannelServerUrl;
 
@@ -79,6 +82,15 @@ class _FakeSettingsStorage implements SettingsStorage {
   }
 
   @override
+  EntryTimeDisplay get entryTimeDisplay => _entryTimeDisplay;
+
+  @override
+  Future<void> saveEntryTimeDisplay(EntryTimeDisplay value) async {
+    if (throwOnSave) throw Exception('storage error');
+    _entryTimeDisplay = value;
+  }
+
+  @override
   int? get startChannelId => _startChannelId;
 
   @override
@@ -97,6 +109,7 @@ class _FakeSettingsStorage implements SettingsStorage {
     'dateFormat': _dateFormat,
     'timeFormat': _timeFormat,
     'timezoneDisplay': _timezoneDisplay.index,
+    'entryTimeDisplay': _entryTimeDisplay.index,
     if (_startChannelId != null) 'startChannelId': _startChannelId,
     if (_startChannelServerUrl != null)
       'startChannelServerUrl': _startChannelServerUrl,
@@ -119,6 +132,14 @@ class _FakeSettingsStorage implements SettingsStorage {
           TimezoneDisplay.values[timezoneDisplayValue.clamp(
             0,
             TimezoneDisplay.values.length - 1,
+          )];
+    }
+    final entryTimeDisplayValue = json['entryTimeDisplay'];
+    if (entryTimeDisplayValue is int) {
+      _entryTimeDisplay =
+          EntryTimeDisplay.values[entryTimeDisplayValue.clamp(
+            0,
+            EntryTimeDisplay.values.length - 1,
           )];
     }
     final startChannelIdValue = json['startChannelId'];
@@ -269,6 +290,30 @@ void main() {
       await notifier.setTimezoneDisplay(TimezoneDisplay.name);
 
       expect(notifier.timezoneDisplay, original);
+      notifier.dispose();
+    });
+  });
+
+  group('setEntryTimeDisplay', () {
+    test('updates and persists', () async {
+      final storage = _FakeSettingsStorage();
+      final notifier = SettingsNotifier(storage);
+
+      await notifier.setEntryTimeDisplay(EntryTimeDisplay.age);
+
+      expect(notifier.entryTimeDisplay, EntryTimeDisplay.age);
+      expect(storage.entryTimeDisplay, EntryTimeDisplay.age);
+      notifier.dispose();
+    });
+
+    test('reverts when storage throws', () async {
+      final storage = _FakeSettingsStorage(throwOnSave: true);
+      final notifier = SettingsNotifier(storage);
+      final original = notifier.entryTimeDisplay;
+
+      await notifier.setEntryTimeDisplay(EntryTimeDisplay.absolute);
+
+      expect(notifier.entryTimeDisplay, original);
       notifier.dispose();
     });
   });
@@ -446,6 +491,7 @@ void main() {
         'dateFormat': 'yyyy-MM-dd',
         'timeFormat': 'hh:mm a',
         'timezoneDisplay': TimezoneDisplay.offset.index,
+        'entryTimeDisplay': EntryTimeDisplay.age.index,
         'startChannelId': _channel.id,
         'startChannelServerUrl': _channel.serverUrl,
       });
@@ -455,6 +501,7 @@ void main() {
       expect(notifier.dateFormat, 'yyyy-MM-dd');
       expect(notifier.timeFormat, 'hh:mm a');
       expect(notifier.timezoneDisplay, TimezoneDisplay.offset);
+      expect(notifier.entryTimeDisplay, EntryTimeDisplay.age);
       expect(notifier.startChannel([_channel]), _channel);
       notifier.dispose();
     });

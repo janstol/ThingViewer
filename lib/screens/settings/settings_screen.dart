@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../backup/backup_service.dart';
+import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../storage/settings_storage.dart';
@@ -62,6 +63,7 @@ class SettingsScreen extends StatelessWidget {
               onSelected: settings.setTimeFormat,
             ),
             _TimezoneTile(settings: settings),
+            _EntryTimeTile(settings: settings),
             SectionHeader(title: l10n.settingsSectionBackup),
             _ExportTile(backupService: backupService),
             _ImportTile(backupService: backupService, onImported: onImported),
@@ -315,6 +317,79 @@ class _TimezoneTile extends StatelessWidget {
         }
       },
     );
+  }
+}
+
+class _EntryTimeTile extends StatelessWidget {
+  final SettingsNotifier settings;
+
+  const _EntryTimeTile({required this.settings});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final options = [
+      (EntryTimeDisplay.absolute, l10n.settingsEntryTimeAbsolute),
+      (EntryTimeDisplay.age, l10n.settingsEntryTimeAge),
+      (EntryTimeDisplay.both, l10n.settingsEntryTimeBoth),
+    ];
+    final current = options
+        .firstWhere((e) => e.$1 == settings.entryTimeDisplay)
+        .$2;
+    final now = DateTime.now();
+    final sample = now.subtract(const Duration(minutes: 5));
+    final preview = _preview(l10n, settings, sample, now);
+
+    return ListTile(
+      leading: const Icon(Icons.history_outlined),
+      title: Text(l10n.settingsEntryTime),
+      subtitle: Text('$current  ·  $preview'),
+      onTap: () async {
+        final selected = await showDialog<EntryTimeDisplay>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: Text(l10n.settingsEntryTimeChoose),
+            children: [
+              RadioGroup<EntryTimeDisplay>(
+                groupValue: settings.entryTimeDisplay,
+                onChanged: (v) {
+                  if (v != null) Navigator.pop(context, v);
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: options
+                      .map(
+                        (e) => RadioListTile<EntryTimeDisplay>(
+                          title: Text(e.$2),
+                          value: e.$1,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (selected != null && context.mounted) {
+          settings.setEntryTimeDisplay(selected);
+        }
+      },
+    );
+  }
+
+  static String _preview(
+    AppLocalizations l10n,
+    SettingsNotifier settings,
+    DateTime lastUpdated,
+    DateTime now,
+  ) {
+    final absolute = settings.formatDateTime(lastUpdated);
+    final age = formatEntryAge(l10n, now.difference(lastUpdated));
+    return switch (settings.entryTimeDisplay) {
+      EntryTimeDisplay.absolute => absolute,
+      EntryTimeDisplay.age => age,
+      EntryTimeDisplay.both => '$absolute ($age)',
+    };
   }
 }
 
