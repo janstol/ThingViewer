@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -303,5 +305,48 @@ void main() {
       expect(notifier.state, isA<FieldChartEmpty>());
       notifier.dispose();
     });
+
+    test(
+      'drops a stale result when a newer applyFilter call resolves first',
+      () async {
+        final notifier = await settleNotifier(
+          const Field(id: 1, label: 'Temp'),
+        );
+
+        final firstCompleter = Completer<FieldRange>();
+        var callCount = 0;
+        when(anyReadFieldRange()).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) return firstCompleter.future;
+          return Future.value(
+            FieldRange(field: fieldWithValues([yesterday]), truncated: false),
+          );
+        });
+
+        final rangeA = DateTimeRange(start: twoDaysAgo, end: now);
+        final rangeB = DateTimeRange(start: yesterday, end: now);
+
+        // rangeA's fetch is left pending on the completer; rangeB's fetch
+        // resolves immediately and should win.
+        final firstFuture = notifier.applyFilter(rangeA);
+        await notifier.applyFilter(rangeB);
+
+        expect(notifier.state, isA<FieldChartLoaded>());
+        expect((notifier.state as FieldChartLoaded).range, rangeB);
+
+        // Now let the stale rangeA fetch resolve — it must not clobber the
+        // newer rangeB state.
+        firstCompleter.complete(
+          FieldRange(field: fieldWithValues([twoDaysAgo]), truncated: false),
+        );
+        await firstFuture;
+        await pumpEventQueue();
+
+        expect(notifier.state, isA<FieldChartLoaded>());
+        expect((notifier.state as FieldChartLoaded).range, rangeB);
+
+        notifier.dispose();
+      },
+    );
   });
 }

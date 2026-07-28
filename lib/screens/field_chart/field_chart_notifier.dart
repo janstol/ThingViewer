@@ -61,6 +61,11 @@ class FieldChartNotifier extends ChangeNotifier {
   FieldChartState _state = FieldChartLoading();
   FieldChartState get state => _state;
 
+  /// Bumped on every [applyFilter] call so a result from a superseded
+  /// request (e.g. rapid range changes) can be dropped instead of
+  /// overwriting a newer one that resolved first.
+  int _requestGeneration = 0;
+
   FieldChartNotifier(this._api, this._channel, this._field)
     : _cache = List.of(_field.values),
       _invalidCache = Set.of(_field.invalidAt) {
@@ -77,11 +82,14 @@ class FieldChartNotifier extends ChangeNotifier {
   }
 
   Future<void> applyFilter(DateTimeRange range) async {
+    final generation = ++_requestGeneration;
     _state = FieldChartLoading();
     notifyListeners();
 
-    _state = await _getData(range);
-    if (!_disposed) notifyListeners();
+    final result = await _getData(range);
+    if (_disposed || generation != _requestGeneration) return;
+    _state = result;
+    notifyListeners();
   }
 
   Future<FieldChartState> _getData(DateTimeRange range) async {
