@@ -60,14 +60,16 @@ List<FieldValue> bucketAverage(List<FieldValue> values, int maxPoints) {
   for (var i = 0; i < maxPoints; i++) {
     final start = i * values.length ~/ maxPoints;
     final end = (i + 1) * values.length ~/ maxPoints;
-    final bucket = values.sublist(start, end);
-    final sum = bucket.fold<double>(0, (acc, v) => acc + v.value);
-    final firstMs = bucket.first.createdAt.millisecondsSinceEpoch;
-    final lastMs = bucket.last.createdAt.millisecondsSinceEpoch;
+    var sum = 0.0;
+    for (var j = start; j < end; j++) {
+      sum += values[j].value;
+    }
+    final firstMs = values[start].createdAt.millisecondsSinceEpoch;
+    final lastMs = values[end - 1].createdAt.millisecondsSinceEpoch;
     result.add(
       FieldValue(
         createdAt: DateTime.fromMillisecondsSinceEpoch((firstMs + lastMs) ~/ 2),
-        value: sum / bucket.length,
+        value: sum / (end - start),
       ),
     );
   }

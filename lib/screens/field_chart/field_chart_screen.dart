@@ -272,21 +272,52 @@ class _ChartState extends State<_Chart> {
 
   // A 1-point series deltas to zero points, so this can be shorter than
   // widget.values — never call .first/.last on it without checking length.
-  List<FieldValue> get _displayValues => widget.chartSettings.showDelta
-      ? deltaValues(widget.values)
-      : widget.values;
+  late List<FieldValue> _displayValues;
+  late double _fullMinX;
+  late double _fullMaxX;
+  late double _fullRange;
+  late bool _isSinglePoint;
+  late List<FlSpot> _cachedSpots;
 
-  double get _fullMinX =>
-      _displayValues.first.createdAt.millisecondsSinceEpoch.toDouble();
-  double get _fullMaxX =>
-      _displayValues.last.createdAt.millisecondsSinceEpoch.toDouble();
-  double get _fullRange => _fullMaxX - _fullMinX;
+  /// Recomputes [_displayValues] and the derived full-range fields. These
+  /// are read repeatedly per gesture frame during pinch-zoom, so they are
+  /// computed once here rather than on every access.
+  void _recomputeDisplayValues() {
+    _displayValues = widget.chartSettings.showDelta
+        ? deltaValues(widget.values)
+        : widget.values;
+    _isSinglePoint = _displayValues.length < 2;
+    if (_isSinglePoint) {
+      _fullMinX = 0;
+      _fullMaxX = 0;
+      _fullRange = 0;
+    } else {
+      _fullMinX = _displayValues.first.createdAt.millisecondsSinceEpoch
+          .toDouble();
+      _fullMaxX = _displayValues.last.createdAt.millisecondsSinceEpoch
+          .toDouble();
+      _fullRange = _fullMaxX - _fullMinX;
+    }
+  }
 
-  bool get _isSinglePoint => _displayValues.length < 2;
+  /// Recomputes the rendered line-chart spot list. Depends on
+  /// [_displayValues], [FieldChartScreen.invalidAt] and
+  /// [FieldChartSettings.gapOnInvalid] only, so it stays fixed across
+  /// gesture frames and only needs to change when one of those does.
+  void _recomputeSpots() {
+    _cachedSpots = widget.chartSettings.gapOnInvalid
+        ? _spotsWithGaps()
+        : [
+            for (final v in _displayValues)
+              FlSpot(v.createdAt.millisecondsSinceEpoch.toDouble(), v.value),
+          ];
+  }
 
   @override
   void initState() {
     super.initState();
+    _recomputeDisplayValues();
+    _recomputeSpots();
     if (_isSinglePoint) {
       final displayValues = _displayValues;
       final anchor = displayValues.isNotEmpty
@@ -300,6 +331,21 @@ class _ChartState extends State<_Chart> {
       _minX = _fullMinX;
       _maxX = _fullMaxX;
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant _Chart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final valuesChanged =
+        oldWidget.values != widget.values ||
+        oldWidget.chartSettings.showDelta != widget.chartSettings.showDelta;
+    final spotsInputsChanged =
+        valuesChanged ||
+        oldWidget.invalidAt != widget.invalidAt ||
+        oldWidget.chartSettings.gapOnInvalid !=
+            widget.chartSettings.gapOnInvalid;
+    if (valuesChanged) _recomputeDisplayValues();
+    if (spotsInputsChanged) _recomputeSpots();
   }
 
   void _pointerDown(PointerDownEvent e) {
@@ -439,16 +485,7 @@ class _ChartState extends State<_Chart> {
     FieldChartSettings chartSettings,
   ) {
     final isScatter = chartSettings.type == ChartType.scatter;
-    final spots = chartSettings.gapOnInvalid
-        ? _spotsWithGaps()
-        : _displayValues
-              .map(
-                (v) => FlSpot(
-                  v.createdAt.millisecondsSinceEpoch.toDouble(),
-                  v.value,
-                ),
-              )
-              .toList();
+    final spots = _cachedSpots;
 
     return LineChart(
       LineChartData(
