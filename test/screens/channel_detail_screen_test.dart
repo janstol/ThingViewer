@@ -31,7 +31,7 @@ final _fields = [
 const _emptyFields = [Field(id: 1, label: 'Temp')];
 
 Widget _wrap(Widget child) => MaterialApp(
-  theme: AppTheme.light(),
+  theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: child,

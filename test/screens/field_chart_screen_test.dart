@@ -37,7 +37,7 @@ final _field = Field(
 );
 
 Widget _wrap(Widget child) => MaterialApp(
-  theme: AppTheme.light(),
+  theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: child,

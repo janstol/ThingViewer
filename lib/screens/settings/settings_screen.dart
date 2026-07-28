@@ -331,7 +331,7 @@ class _ExportTile extends StatelessWidget {
       title: Text(l10n.settingsExport),
       subtitle: Text(l10n.settingsExportSubtitle),
       onTap: () async {
-        final json = backupService.export();
+        final json = await backupService.export();
         final bytes = Uint8List.fromList(utf8.encode(json));
         final fileName =
             'thingviewer-backup-'

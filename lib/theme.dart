@@ -37,8 +37,8 @@ class BrandColors extends ThemeExtension<BrandColors> {
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light() => _theme(Brightness.light);
-  static ThemeData dark() => _theme(Brightness.dark);
+  static final ThemeData light = _theme(Brightness.light);
+  static final ThemeData dark = _theme(Brightness.dark);
 
   static ThemeData _theme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;

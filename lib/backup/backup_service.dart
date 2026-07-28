@@ -50,21 +50,28 @@ class BackupService {
   final ChannelStorage _channelStorage;
   final SettingsStorage _settingsStorage;
   final FieldSettingsStorage _fieldSettingsStorage;
-  final String appVersion;
+
+  /// Resolved lazily, only when [export] actually needs it, so constructing
+  /// a [BackupService] at app startup doesn't have to wait on a
+  /// platform-channel round trip nobody may ever need.
+  final Future<String> Function() appVersion;
 
   BackupService(
     this._channelStorage,
     this._settingsStorage,
     this._fieldSettingsStorage, {
-    this.appVersion = '',
+    this.appVersion = _noAppVersion,
   });
 
-  String export() {
+  static Future<String> _noAppVersion() async => '';
+
+  Future<String> export() async {
+    final version = await appVersion();
     final json = {
       'app': _kBackupApp,
       'version': _kBackupVersion,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      if (appVersion.isNotEmpty) 'appVersion': appVersion,
+      if (version.isNotEmpty) 'appVersion': version,
       'channels': _channelStorage
           .loadChannels()
           .map((c) => c.toJson())

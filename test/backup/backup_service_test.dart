@@ -31,7 +31,7 @@ Future<BackupService> _service() async {
     ChannelStorage(prefs),
     SettingsStorage(prefs),
     FieldSettingsStorage(prefs),
-    appVersion: '0.9.0',
+    appVersion: () async => '0.9.0',
   );
 }
 
@@ -61,9 +61,9 @@ void main() {
         channelStorage,
         settingsStorage,
         fieldSettingsStorage,
-        appVersion: '0.9.0',
+        appVersion: () async => '0.9.0',
       );
-      final raw = service.export();
+      final raw = await service.export();
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       expect(decoded['app'], 'thingviewer');
       expect(decoded['version'], 1);

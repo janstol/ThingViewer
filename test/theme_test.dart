@@ -20,7 +20,7 @@ double _contrastRatio(Color a, Color b) {
 
 void main() {
   group('AppTheme light', () {
-    final theme = AppTheme.light();
+    final theme = AppTheme.light;
     final scheme = theme.colorScheme;
 
     test('brand colours land in the intended roles', () {
@@ -48,7 +48,7 @@ void main() {
   });
 
   group('AppTheme dark', () {
-    final theme = AppTheme.dark();
+    final theme = AppTheme.dark;
     final scheme = theme.colorScheme;
 
     test('brand colours land in the intended roles', () {

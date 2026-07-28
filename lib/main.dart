@@ -20,12 +20,11 @@ void main() async {
   final channelStorage = ChannelStorage(prefs);
   final settingsStorage = SettingsStorage(prefs);
   final fieldSettingsStorage = FieldSettingsStorage(prefs);
-  final packageInfo = await PackageInfo.fromPlatform();
   final backupService = BackupService(
     channelStorage,
     settingsStorage,
     fieldSettingsStorage,
-    appVersion: packageInfo.version,
+    appVersion: () async => (await PackageInfo.fromPlatform()).version,
   );
 
   runApp(

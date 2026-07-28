@@ -60,8 +60,8 @@ class _AppState extends State<App> {
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         themeMode: _settings.themeMode,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
         home: ChannelListScreen(
           api: widget.api,
           channelStorage: widget.channelStorage,
