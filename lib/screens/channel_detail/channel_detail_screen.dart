@@ -282,23 +282,12 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
               _ScrollableCenter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(switch (errorCode) {
-                        ApiErrorCode.network => l10n.errorNetwork,
-                        ApiErrorCode.credentials =>
-                          l10n.errorApiCredentialsDetail,
-                        ApiErrorCode.general =>
-                          serverMessage ?? l10n.errorGeneral,
-                      }, textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      FilledButton.tonal(
-                        onPressed: _notifier.load,
-                        child: Text(l10n.channelDetailRefresh),
-                      ),
-                    ],
-                  ),
+                  child: Text(switch (errorCode) {
+                    ApiErrorCode.network => l10n.errorNetwork,
+                    ApiErrorCode.credentials =>
+                      l10n.errorApiCredentialsDetail,
+                    ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
+                  }, textAlign: TextAlign.center),
                 ),
               ),
             ChannelDetailLoaded(

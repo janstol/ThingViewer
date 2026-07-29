@@ -207,7 +207,7 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count points',
       one: '1 point',
     );
-    return '$title chart. $_temp0, ranging from $min to $max. Latest value $latest at $latestTime. Use the table view button to browse individual readings.';
+    return '$title chart. $_temp0, ranging from $min to $max. Latest value $latest at $latestTime. Use Table view to browse individual readings.';
   }
 
   @override
@@ -450,7 +450,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorApiCredentialsDetail =>
-      'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, tap Edit above to update it here.';
+      'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, use Edit channel to update it.';
 
   @override
   String get errorGeneral => 'An error occurred.';

@@ -361,7 +361,7 @@ abstract class AppLocalizations {
   /// No description provided for @fieldChartSemantics.
   ///
   /// In en, this message translates to:
-  /// **'{title} chart. {count, plural, =1{1 point} other{{count} points}}, ranging from {min} to {max}. Latest value {latest} at {latestTime}. Use the table view button to browse individual readings.'**
+  /// **'{title} chart. {count, plural, =1{1 point} other{{count} points}}, ranging from {min} to {max}. Latest value {latest} at {latestTime}. Use Table view to browse individual readings.'**
   String fieldChartSemantics(
     String title,
     num count,
@@ -800,7 +800,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorApiCredentialsDetail.
   ///
   /// In en, this message translates to:
-  /// **'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, tap Edit above to update it here.'**
+  /// **'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, use Edit channel to update it.'**
   String get errorApiCredentialsDetail;
 
   /// No description provided for @errorGeneral.

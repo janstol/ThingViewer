@@ -14,10 +14,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Accessibility
 
-- Screen reader support: channel list tiles, field list rows, and field table rows now announce as single items instead of separate fragments; the swipe-to-delete channel action is reachable as a screen reader action; decorative icons are hidden from screen readers; section headings are announced as headers.
+- Screen reader support: channel list tiles, field list rows, field table rows, field settings rows, and the channel status row now announce as single items instead of separate fragments; the swipe-to-delete channel action is reachable as a screen reader action; decorative icons are hidden from screen readers; section headings are announced as headers.
 - Field chart now exposes a single spoken summary (title, point count, range, latest value) instead of a stream of raw axis numbers; the underlying data stays available in the table view.
 - Chart axis labels and other fixed-width text no longer clip at large system text sizes.
 - Loading spinners and icon-only buttons that previously had no accessible name now do.
+- The About dialog's link to the ThingSpeak website now meets the minimum touch target size and text contrast.
+- Removed a duplicate Refresh control on the channel error screen, and reworded copy that assumed touch/visual context (e.g. "tap Edit above") or referenced a control by its generic type instead of its name.
 
 ### Changed
 
