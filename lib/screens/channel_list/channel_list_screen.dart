@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../backup/backup_service.dart';
@@ -359,6 +360,30 @@ class _SettingsButton extends StatelessWidget {
   }
 }
 
+Future<bool?> _confirmDelete(BuildContext context, Channel channel) {
+  final l10n = AppLocalizations.of(context)!;
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.removeChannelTitle),
+      content: Text(l10n.removeChannelText(channel.displayName)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(l10n.labelCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(
+            l10n.labelDelete,
+            style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _ChannelListBody extends StatelessWidget {
   final ChannelListNotifier notifier;
   final AppLocalizations l10n;
@@ -379,8 +404,8 @@ class _ChannelListBody extends StatelessWidget {
     return ListenableBuilder(
       listenable: notifier,
       builder: (context, _) => switch (notifier.state) {
-        ChannelListLoading() => const Center(
-          child: CircularProgressIndicator(),
+        ChannelListLoading() => Center(
+          child: CircularProgressIndicator(semanticsLabel: l10n.labelLoading),
         ),
         ChannelListError(:final message) => Center(child: Text(message)),
         ChannelListLoaded(:final channels) =>
@@ -394,44 +419,35 @@ class _ChannelListBody extends StatelessWidget {
                     return Dismissible(
                       key: ValueKey(channel),
                       direction: DismissDirection.endToStart,
-                      confirmDismiss: (_) => showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: Text(l10n.removeChannelTitle),
-                          content: Text(
-                            l10n.removeChannelText(channel.displayName),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: Text(l10n.labelCancel),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: Text(
-                                l10n.labelDelete,
-                                style: TextStyle(
-                                  color: Theme.of(ctx).colorScheme.error,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      confirmDismiss: (_) => _confirmDelete(context, channel),
                       onDismissed: (_) => onDelete(channel),
                       background: Container(
                         color: Theme.of(context).colorScheme.error,
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Icon(
-                          Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.onError,
+                        child: ExcludeSemantics(
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: Theme.of(context).colorScheme.onError,
+                          ),
                         ),
                       ),
-                      child: _ChannelTile(
-                        channel: channel,
-                        isSelected: channel == selectedChannel,
-                        onTap: () => onTap(channel),
+                      child: Semantics(
+                        customSemanticsActions: {
+                          CustomSemanticsAction(
+                            label: l10n.channelListDeleteSemantics,
+                          ): () async {
+                            if (await _confirmDelete(context, channel) ==
+                                true) {
+                              onDelete(channel);
+                            }
+                          },
+                        },
+                        child: _ChannelTile(
+                          channel: channel,
+                          isSelected: channel == selectedChannel,
+                          onTap: () => onTap(channel),
+                        ),
                       ),
                     );
                   },
@@ -456,42 +472,51 @@ class _ChannelTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final errorColor = Theme.of(context).colorScheme.error;
-    return ListTile(
-      leading: Icon(
-        channel.isPublic ? Icons.lock_open_outlined : Icons.lock_outline,
-      ),
-      title: Text(channel.displayName),
-      subtitle: channel.authError
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${channel.serverUrl} · ${channel.id}'),
-                Row(
-                  children: [
-                    Icon(Icons.error_outline, size: 14, color: errorColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.channelListAuthError,
-                      style: TextStyle(color: errorColor),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Text('${channel.serverUrl} · ${channel.id}'),
-      isThreeLine: channel.authError,
-      selected: isSelected,
-      // ListTile.selected defaults its text/icon colour to colorScheme.primary
-      // (brandGreen), which is only 2.43:1 on white — fails WCAG AA. Selection
-      // is already conveyed by selectedTileColor, so keep the foreground plain.
-      selectedColor: Theme.of(context).colorScheme.onSurface,
-      selectedTileColor: Theme.of(
-        context,
-      ).colorScheme.secondaryContainer.withValues(alpha: 0.4),
-      onTap: onTap,
-      trailing: Icon(
-        Icons.drag_handle,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return MergeSemantics(
+      child: ListTile(
+        leading: Icon(
+          channel.isPublic ? Icons.lock_open_outlined : Icons.lock_outline,
+          semanticLabel: channel.isPublic
+              ? l10n.channelListPublicSemantics
+              : l10n.channelListPrivateSemantics,
+        ),
+        title: Text(channel.displayName),
+        subtitle: channel.authError
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${channel.serverUrl} · ${channel.id}'),
+                  Row(
+                    children: [
+                      Icon(Icons.error_outline, size: 14, color: errorColor),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          l10n.channelListAuthError,
+                          style: TextStyle(color: errorColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : Text('${channel.serverUrl} · ${channel.id}'),
+        isThreeLine: channel.authError,
+        selected: isSelected,
+        // ListTile.selected defaults its text/icon colour to colorScheme.primary
+        // (brandGreen), which is only 2.43:1 on white — fails WCAG AA. Selection
+        // is already conveyed by selectedTileColor, so keep the foreground plain.
+        selectedColor: Theme.of(context).colorScheme.onSurface,
+        selectedTileColor: Theme.of(
+          context,
+        ).colorScheme.secondaryContainer.withValues(alpha: 0.4),
+        onTap: onTap,
+        trailing: ExcludeSemantics(
+          child: Icon(
+            Icons.drag_handle,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }

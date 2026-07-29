@@ -117,10 +117,13 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
             FilledButton(
               onPressed: _isSaving ? null : _submit,
               child: _isSaving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        semanticsLabel: l10n.labelSaving,
+                      ),
                     )
                   : Text(l10n.labelSave),
             ),

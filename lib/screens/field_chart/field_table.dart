@@ -68,24 +68,27 @@ class _FieldTableState extends State<FieldTable> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.fieldTableColumnTime,
-                  style: Theme.of(context).textTheme.labelLarge,
+        Semantics(
+          header: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.fieldTableColumnTime,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Text(
-                  l10n.fieldTableColumnValue,
-                  textAlign: TextAlign.end,
-                  style: Theme.of(context).textTheme.labelLarge,
+                Expanded(
+                  child: Text(
+                    l10n.fieldTableColumnValue,
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         const Divider(height: 1),
@@ -98,32 +101,34 @@ class _FieldTableState extends State<FieldTable> {
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, i) {
                 final v = pageValues[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.settings.formatDateTime(v.createdAt),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          formatFieldValue(
-                            v.value,
-                            decimals: widget.chartSettings.decimals,
-                          ),
-                          textAlign: TextAlign.end,
-                          style: TextStyle(
-                            color: dataAccent,
-                            fontWeight: FontWeight.bold,
+                return MergeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.settings.formatDateTime(v.createdAt),
                           ),
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: Text(
+                            formatFieldValue(
+                              v.value,
+                              decimals: widget.chartSettings.decimals,
+                            ),
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              color: dataAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -138,6 +143,7 @@ class _FieldTableState extends State<FieldTable> {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left),
+                tooltip: l10n.fieldTablePreviousPage,
                 onPressed: _page > 0 ? () => setState(() => _page--) : null,
               ),
               Text(
@@ -145,6 +151,7 @@ class _FieldTableState extends State<FieldTable> {
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
+                tooltip: l10n.fieldTableNextPage,
                 onPressed: _page < pageCount - 1
                     ? () => setState(() => _page++)
                     : null,

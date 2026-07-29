@@ -8,6 +8,9 @@
   "editChannelTitle": "Edit Channel",
   "editChannelTooltip": "Edit channel",
   "channelListAuthError": "Authentication failed",
+  "channelListPublicSemantics": "Public channel",
+  "channelListPrivateSemantics": "Private channel",
+  "channelListDeleteSemantics": "Delete channel",
   "fieldServerUrl": "Server URL",
   "fieldChannelId": "Channel ID",
   "fieldPublic": "Public",
@@ -73,6 +76,19 @@
     "placeholders": {
       "page": { "type": "int" },
       "pages": { "type": "int" }
+    }
+  },
+  "fieldTablePreviousPage": "Previous page",
+  "fieldTableNextPage": "Next page",
+  "fieldChartSemantics": "{title} chart. {count, plural, =1{1 point} other{{count} points}}, ranging from {min} to {max}. Latest value {latest} at {latestTime}. Use the table view button to browse individual readings.",
+  "@fieldChartSemantics": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "count": { "type": "num" },
+      "min": { "type": "String" },
+      "max": { "type": "String" },
+      "latest": { "type": "String" },
+      "latestTime": { "type": "String" }
     }
   },
   "filterTitle": "Filter",
@@ -150,6 +166,8 @@
   "labelNa": "N/A",
   "labelDelete": "DELETE",
   "labelSave": "Save",
+  "labelSaving": "Saving",
+  "labelLoading": "Loading",
   "labelApply": "Apply",
   "labelCancel": "Cancel",
   "errorServerUrl": "Enter a server URL",

@@ -157,7 +157,9 @@ class _StatusSection extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(formatTimestamp(l10n, settings, latest.createdAt, now)),
+          subtitle: Text(
+            formatTimestamp(l10n, settings, latest.createdAt, now),
+          ),
           onTap: () => _openStatusLog(context, statuses, settings),
         ),
       ],
@@ -262,8 +264,10 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
         child: ListenableBuilder(
           listenable: _notifier,
           builder: (context, _) => switch (_notifier.state) {
-            ChannelDetailLoading() => const Center(
-              child: CircularProgressIndicator(),
+            ChannelDetailLoading() => Center(
+              child: CircularProgressIndicator(
+                semanticsLabel: l10n.labelLoading,
+              ),
             ),
             ChannelDetailEmpty(:final channel, :final statuses) => _EmptyState(
               channel: channel,
@@ -295,7 +299,11 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                   ),
                 ),
               ),
-            ChannelDetailLoaded(:final channel, :final fields, :final statuses) =>
+            ChannelDetailLoaded(
+              :final channel,
+              :final fields,
+              :final statuses,
+            ) =>
               _FieldList(
                 channel: channel,
                 fields: fields,
@@ -369,32 +377,35 @@ class _FieldList extends StatelessWidget {
             final decimals = fieldSettingsStorage
                 .settingsFor(channel, field.id)
                 .decimals;
-            return ListTile(
-              title: Text(field.displayLabel),
-              subtitle: lastUpdated != null
-                  ? Text(
-                      '${l10n.channelDetailLastEntry}: '
-                      '${formatTimestamp(l10n, settings, lastUpdated, now)}',
-                    )
-                  : null,
-              trailing: field.lastValue != null
-                  ? Text(
-                      formatFieldValue(field.lastValue!, decimals: decimals),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: dataAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FieldChartScreen(
-                    channel: channel,
-                    field: field,
-                    api: api,
-                    settings: settings,
-                    fieldSettingsStorage: fieldSettingsStorage,
+            return MergeSemantics(
+              child: ListTile(
+                title: Text(field.displayLabel),
+                subtitle: lastUpdated != null
+                    ? Text(
+                        '${l10n.channelDetailLastEntry}: '
+                        '${formatTimestamp(l10n, settings, lastUpdated, now)}',
+                      )
+                    : null,
+                trailing: field.lastValue != null
+                    ? Text(
+                        formatFieldValue(field.lastValue!, decimals: decimals),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: dataAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      )
+                    : const ExcludeSemantics(child: Icon(Icons.chevron_right)),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FieldChartScreen(
+                      channel: channel,
+                      field: field,
+                      api: api,
+                      settings: settings,
+                      fieldSettingsStorage: fieldSettingsStorage,
+                    ),
                   ),
                 ),
               ),

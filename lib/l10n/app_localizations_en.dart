@@ -33,6 +33,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelListAuthError => 'Authentication failed';
 
   @override
+  String get channelListPublicSemantics => 'Public channel';
+
+  @override
+  String get channelListPrivateSemantics => 'Private channel';
+
+  @override
+  String get channelListDeleteSemantics => 'Delete channel';
+
+  @override
   String get fieldServerUrl => 'Server URL';
 
   @override
@@ -175,6 +184,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String fieldTablePage(int page, int pages) {
     return 'Page $page of $pages';
+  }
+
+  @override
+  String get fieldTablePreviousPage => 'Previous page';
+
+  @override
+  String get fieldTableNextPage => 'Next page';
+
+  @override
+  String fieldChartSemantics(
+    String title,
+    num count,
+    String min,
+    String max,
+    String latest,
+    String latestTime,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count points',
+      one: '1 point',
+    );
+    return '$title chart. $_temp0, ranging from $min to $max. Latest value $latest at $latestTime. Use the table view button to browse individual readings.';
   }
 
   @override
@@ -380,6 +413,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelSave => 'Save';
+
+  @override
+  String get labelSaving => 'Saving';
+
+  @override
+  String get labelLoading => 'Loading';
 
   @override
   String get labelApply => 'Apply';

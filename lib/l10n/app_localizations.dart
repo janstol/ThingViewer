@@ -142,6 +142,24 @@ abstract class AppLocalizations {
   /// **'Authentication failed'**
   String get channelListAuthError;
 
+  /// No description provided for @channelListPublicSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Public channel'**
+  String get channelListPublicSemantics;
+
+  /// No description provided for @channelListPrivateSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Private channel'**
+  String get channelListPrivateSemantics;
+
+  /// No description provided for @channelListDeleteSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete channel'**
+  String get channelListDeleteSemantics;
+
   /// No description provided for @fieldServerUrl.
   ///
   /// In en, this message translates to:
@@ -327,6 +345,31 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Page {page} of {pages}'**
   String fieldTablePage(int page, int pages);
+
+  /// No description provided for @fieldTablePreviousPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get fieldTablePreviousPage;
+
+  /// No description provided for @fieldTableNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get fieldTableNextPage;
+
+  /// No description provided for @fieldChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} chart. {count, plural, =1{1 point} other{{count} points}}, ranging from {min} to {max}. Latest value {latest} at {latestTime}. Use the table view button to browse individual readings.'**
+  String fieldChartSemantics(
+    String title,
+    num count,
+    String min,
+    String max,
+    String latest,
+    String latestTime,
+  );
 
   /// No description provided for @filterTitle.
   ///
@@ -687,6 +730,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get labelSave;
+
+  /// No description provided for @labelSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get labelSaving;
+
+  /// No description provided for @labelLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get labelLoading;
 
   /// No description provided for @labelApply.
   ///
