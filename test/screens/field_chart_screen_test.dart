@@ -9,6 +9,7 @@ import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
 import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
+import 'package:thingviewer/screens/field_chart/field_table.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
@@ -379,12 +380,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final center = tester.getRect(find.byType(LineChart)).center;
-      final pointerA = await tester.startGesture(
-        center - const Offset(300, 0),
-      );
-      final pointerB = await tester.startGesture(
-        center + const Offset(300, 0),
-      );
+      final pointerA = await tester.startGesture(center - const Offset(300, 0));
+      final pointerB = await tester.startGesture(center + const Offset(300, 0));
       await tester.pump();
 
       await pointerA.moveTo(center - const Offset(1, 0));
@@ -558,8 +555,7 @@ void main() {
 
       final data = tester.widget<BarChart>(find.byType(BarChart)).data;
       // 20 bars => labelStep = (20 / 5).ceil() = 4.
-      final getTitles = data.titlesData.bottomTitles.sideTitles
-          .getTitlesWidget;
+      final getTitles = data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
       final meta = TitleMeta(
         min: 0,
         max: 20,
@@ -709,6 +705,240 @@ void main() {
         59,
       );
       expect(find.text(settings.formatDateTime(unclamped)), findsNothing);
+    });
+  });
+
+  group('table view', () {
+    testWidgets('tapping the toggle swaps the chart for the table and back', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LineChart), findsOneWidget);
+      expect(find.byType(FieldTable), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.table_rows));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LineChart), findsNothing);
+      expect(find.byType(FieldTable), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.show_chart));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LineChart), findsOneWidget);
+      expect(find.byType(FieldTable), findsNothing);
+    });
+
+    testWidgets('rows are newest first and honour the decimals setting', (
+      tester,
+    ) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(decimals: 2),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.table_rows));
+      await tester.pumpAndSettle();
+
+      final newestY = tester.getTopLeft(find.text('3.00')).dy;
+      final oldestY = tester.getTopLeft(find.text('1.00')).dy;
+      expect(newestY, lessThan(oldestY));
+    });
+
+    testWidgets('showDelta shows one fewer row, newest delta first', (
+      tester,
+    ) async {
+      final deltaField = Field(
+        id: 1,
+        label: 'Temp',
+        values: [
+          FieldValue(
+            createdAt: _now.subtract(const Duration(days: 2)),
+            value: 10,
+          ),
+          FieldValue(
+            createdAt: _now.subtract(const Duration(days: 1)),
+            value: 13,
+          ),
+          FieldValue(createdAt: _now, value: 17),
+        ],
+      );
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenAnswer(
+        (_) async => FieldRange(field: deltaField, truncated: false),
+      );
+
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        deltaField.id,
+        const FieldChartSettings(showDelta: true, decimals: 0),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: deltaField,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.table_rows));
+      await tester.pumpAndSettle();
+
+      // Only the two deltas (4 = 17-13, 3 = 13-10) are shown, not the raw values.
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('17'), findsNothing);
+
+      final newestDeltaY = tester.getTopLeft(find.text('4')).dy;
+      final olderDeltaY = tester.getTopLeft(find.text('3')).dy;
+      expect(newestDeltaY, lessThan(olderDeltaY));
+    });
+
+    group('pagination', () {
+      final manyValuesField = Field(
+        id: 1,
+        label: 'Temp',
+        values: [
+          for (var i = 0; i < 120; i++)
+            FieldValue(
+              createdAt: _now.subtract(Duration(minutes: 72 * (119 - i))),
+              value: i.toDouble(),
+            ),
+        ],
+      );
+
+      Future<void> pumpTableAtPage1(WidgetTester tester) async {
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async => FieldRange(field: manyValuesField, truncated: false),
+        );
+
+        final fieldSettingsStorage = await _fieldSettingsStorage();
+        await fieldSettingsStorage.save(
+          _channel,
+          manyValuesField.id,
+          const FieldChartSettings(decimals: 0),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            FieldChartScreen(
+              channel: _channel,
+              field: manyValuesField,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: fieldSettingsStorage,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.table_rows));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('page 1 shows the newest 50, prev disabled, next advances, '
+          'next disabled on the last page', (tester) async {
+        await pumpTableAtPage1(tester);
+
+        // 120 values, 50 per page => 3 pages.
+        expect(find.text('Page 1 of 3'), findsOneWidget);
+        IconButton prevButton() => tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.chevron_left),
+        );
+        IconButton nextButton() => tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.chevron_right),
+        );
+        expect(prevButton().onPressed, isNull);
+        expect(nextButton().onPressed, isNotNull);
+
+        // Newest value (index 119) should be visible on page 1.
+        expect(find.text('119'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.chevron_right));
+        await tester.pumpAndSettle();
+        expect(find.text('Page 2 of 3'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.chevron_right));
+        await tester.pumpAndSettle();
+        expect(find.text('Page 3 of 3'), findsOneWidget);
+        expect(nextButton().onPressed, isNull);
+        expect(prevButton().onPressed, isNotNull);
+
+        // Oldest value (index 0) is on the last page, at the bottom of the
+        // list — scroll down to bring it into the (lazily built) viewport.
+        await tester.dragUntilVisible(
+          find.text('0'),
+          find.byType(Scrollable),
+          const Offset(0, -300),
+        );
+        expect(find.text('0'), findsOneWidget);
+      });
+
+      testWidgets('applying a new filter while on page 2 resets to page 1', (
+        tester,
+      ) async {
+        await pumpTableAtPage1(tester);
+
+        await tester.tap(find.byIcon(Icons.chevron_right));
+        await tester.pumpAndSettle();
+        expect(find.text('Page 2 of 3'), findsOneWidget);
+
+        await tester.tap(find.text('Filter'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Apply'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Page 1 of 3'), findsOneWidget);
+      });
     });
   });
 }

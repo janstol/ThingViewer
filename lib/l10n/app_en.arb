@@ -64,6 +64,17 @@
       "count": { "type": "num" }
     }
   },
+  "fieldTableTooltip": "Table view",
+  "fieldChartTooltip": "Chart view",
+  "fieldTableColumnTime": "Time",
+  "fieldTableColumnValue": "Value",
+  "fieldTablePage": "Page {page} of {pages}",
+  "@fieldTablePage": {
+    "placeholders": {
+      "page": { "type": "int" },
+      "pages": { "type": "int" }
+    }
+  },
   "filterTitle": "Filter",
   "filterFrom": "From",
   "filterTo": "To",

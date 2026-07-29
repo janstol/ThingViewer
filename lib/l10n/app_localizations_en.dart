@@ -161,6 +161,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get fieldTableTooltip => 'Table view';
+
+  @override
+  String get fieldChartTooltip => 'Chart view';
+
+  @override
+  String get fieldTableColumnTime => 'Time';
+
+  @override
+  String get fieldTableColumnValue => 'Value';
+
+  @override
+  String fieldTablePage(int page, int pages) {
+    return 'Page $page of $pages';
+  }
+
+  @override
   String get filterTitle => 'Filter';
 
   @override

@@ -11,6 +11,7 @@ import '../../theme.dart';
 import '../field_settings/field_settings_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'field_chart_notifier.dart';
+import 'field_table.dart';
 
 /// Fixed padding applied around a lone data point so the chart doesn't get
 /// a zero-width x-range (minX == maxX).
@@ -43,6 +44,7 @@ class FieldChartScreen extends StatefulWidget {
 class _FieldChartScreenState extends State<FieldChartScreen> {
   late final FieldChartNotifier _notifier;
   late FieldChartSettings _chartSettings;
+  bool _showTable = false;
 
   @override
   void initState() {
@@ -89,6 +91,13 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
         title: Text(_chartSettings.title ?? widget.field.displayLabel),
         actions: [
           IconButton(
+            icon: Icon(_showTable ? Icons.show_chart : Icons.table_rows),
+            tooltip: _showTable
+                ? l10n.fieldChartTooltip
+                : l10n.fieldTableTooltip,
+            onPressed: () => setState(() => _showTable = !_showTable),
+          ),
+          IconButton(
             icon: const Icon(Icons.tune),
             tooltip: l10n.fieldSettingsTooltip,
             onPressed: _openSettings,
@@ -133,6 +142,12 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                     Expanded(
                       child: cachedValues.isEmpty
                           ? Center(child: Text(message))
+                          : _showTable
+                          ? FieldTable(
+                              values: cachedValues,
+                              settings: widget.settings,
+                              chartSettings: _chartSettings,
+                            )
                           : _Chart(
                               values: cachedValues,
                               invalidAt: const [],
@@ -183,12 +198,18 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                     ),
                   ),
                 Expanded(
-                  child: _Chart(
-                    values: values,
-                    invalidAt: invalidAt,
-                    settings: widget.settings,
-                    chartSettings: _chartSettings,
-                  ),
+                  child: _showTable
+                      ? FieldTable(
+                          values: values,
+                          settings: widget.settings,
+                          chartSettings: _chartSettings,
+                        )
+                      : _Chart(
+                          values: values,
+                          invalidAt: invalidAt,
+                          settings: widget.settings,
+                          chartSettings: _chartSettings,
+                        ),
                 ),
                 _FilterButton(
                   onPressed: () => _showFilterSheet(context),

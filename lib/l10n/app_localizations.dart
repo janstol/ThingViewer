@@ -298,6 +298,36 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Showing 1 value} other{Showing {count} values}}'**
   String fieldChartShowingValues(num count);
 
+  /// No description provided for @fieldTableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Table view'**
+  String get fieldTableTooltip;
+
+  /// No description provided for @fieldChartTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart view'**
+  String get fieldChartTooltip;
+
+  /// No description provided for @fieldTableColumnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get fieldTableColumnTime;
+
+  /// No description provided for @fieldTableColumnValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get fieldTableColumnValue;
+
+  /// No description provided for @fieldTablePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {pages}'**
+  String fieldTablePage(int page, int pages);
+
   /// No description provided for @filterTitle.
   ///
   /// In en, this message translates to:
