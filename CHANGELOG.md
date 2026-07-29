@@ -23,6 +23,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - API requests now time out after 20 seconds instead of leaving the chart or detail screen on a spinner indefinitely on a stalled connection.
 - Rapidly changing a field chart's date range no longer occasionally leaves a stale, older result on screen if a newer range finishes fetching first.
 - Backup import and export now work on macOS instead of failing to open a file dialog.
+- The web and macOS builds now use the ThingViewer icon instead of the default Flutter logo.
 
 ## [0.10.0] - 2026-07-27
 
