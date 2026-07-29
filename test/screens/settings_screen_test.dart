@@ -15,6 +15,7 @@ import 'package:thingviewer/screens/settings/settings_screen.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
+import 'package:thingviewer/theme.dart';
 
 const _channel = Channel(
   id: 1,
@@ -31,6 +32,7 @@ const _otherChannel = Channel(
 );
 
 Widget _wrap(Widget child) => MaterialApp(
+  theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: child,
