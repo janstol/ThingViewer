@@ -86,9 +86,10 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final chartTitle = _chartSettings.title ?? widget.field.displayLabel;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_chartSettings.title ?? widget.field.displayLabel),
+        title: Text(chartTitle),
         actions: [
           IconButton(
             icon: Icon(_showTable ? Icons.show_chart : Icons.table_rows),
@@ -107,8 +108,8 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       body: ListenableBuilder(
         listenable: _notifier,
         builder: (context, _) => switch (_notifier.state) {
-          FieldChartLoading() => const Center(
-            child: CircularProgressIndicator(),
+          FieldChartLoading() => Center(
+            child: CircularProgressIndicator(semanticsLabel: l10n.labelLoading),
           ),
           FieldChartEmpty() => Center(
             child: Column(
@@ -153,6 +154,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                               invalidAt: const [],
                               settings: widget.settings,
                               chartSettings: _chartSettings,
+                              title: chartTitle,
                             ),
                     ),
                     Padding(
@@ -209,6 +211,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                           invalidAt: invalidAt,
                           settings: widget.settings,
                           chartSettings: _chartSettings,
+                          title: chartTitle,
                         ),
                 ),
                 _FilterButton(
@@ -268,12 +271,14 @@ class _Chart extends StatefulWidget {
   final List<DateTime> invalidAt;
   final SettingsNotifier settings;
   final FieldChartSettings chartSettings;
+  final String title;
 
   const _Chart({
     required this.values,
     required this.invalidAt,
     required this.settings,
     required this.chartSettings,
+    required this.title,
   });
 
   @override
@@ -438,11 +443,17 @@ class _ChartState extends State<_Chart> {
 
   String _dateText(DateTime dt) => widget.settings.formatDateTime(dt);
 
+  /// Scales a fixed axis-gutter size by the system text scale factor, so
+  /// enlarged axis label text doesn't clip against a gutter sized for the
+  /// default scale.
+  double _scaledReservedSize(double base) =>
+      MediaQuery.textScalerOf(context).scale(base);
+
   AxisTitles _leftTitles(FieldChartSettings chartSettings) => AxisTitles(
     axisNameWidget: _axisName(chartSettings.yAxisLabel),
     sideTitles: SideTitles(
       showTitles: true,
-      reservedSize: 48,
+      reservedSize: _scaledReservedSize(48),
       getTitlesWidget: (value, meta) => SideTitleWidget(
         meta: meta,
         child: Text(
@@ -453,32 +464,67 @@ class _ChartState extends State<_Chart> {
     ),
   );
 
+  /// Values used for the chart's semantics summary — falls back to the raw
+  /// values when the delta series is too short to summarise (e.g. a single
+  /// raw point deltas to zero points).
+  List<FieldValue> get _statsValues =>
+      _displayValues.isNotEmpty ? _displayValues : widget.values;
+
+  String _semanticsLabel(
+    BuildContext context,
+    FieldChartSettings chartSettings,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final values = _statsValues;
+    if (values.isEmpty) return widget.title;
+    var min = values.first.value;
+    var max = values.first.value;
+    for (final v in values) {
+      if (v.value < min) min = v.value;
+      if (v.value > max) max = v.value;
+    }
+    final latest = values.last;
+    return l10n.fieldChartSemantics(
+      widget.title,
+      values.length,
+      _valueText(min, chartSettings),
+      _valueText(max, chartSettings),
+      _valueText(latest.value, chartSettings),
+      _dateText(latest.createdAt),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = Theme.of(context).extension<BrandColors>()!.dataAccent;
     final chartSettings = widget.chartSettings;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 24, 24, 8),
-      child: ListenableBuilder(
-        listenable: widget.settings,
-        builder: (context, _) {
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              _constraints = constraints;
-              return Listener(
-                onPointerDown: _pointerDown,
-                onPointerMove: _pointerMove,
-                onPointerUp: _pointerUp,
-                onPointerCancel: _pointerCancel,
-                child: chartSettings.type == ChartType.column
-                    ? _buildBarChart(colorScheme, color, chartSettings)
-                    : _buildLineChart(colorScheme, color, chartSettings),
+    return Semantics(
+      label: _semanticsLabel(context, chartSettings),
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 24, 24, 8),
+          child: ListenableBuilder(
+            listenable: widget.settings,
+            builder: (context, _) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  _constraints = constraints;
+                  return Listener(
+                    onPointerDown: _pointerDown,
+                    onPointerMove: _pointerMove,
+                    onPointerUp: _pointerUp,
+                    onPointerCancel: _pointerCancel,
+                    child: chartSettings.type == ChartType.column
+                        ? _buildBarChart(colorScheme, color, chartSettings)
+                        : _buildLineChart(colorScheme, color, chartSettings),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -545,7 +591,7 @@ class _ChartState extends State<_Chart> {
             axisNameWidget: _axisName(chartSettings.xAxisLabel),
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 52,
+              reservedSize: _scaledReservedSize(52),
               getTitlesWidget: (value, meta) {
                 final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
                 return SideTitleWidget(
@@ -664,7 +710,7 @@ class _ChartState extends State<_Chart> {
             axisNameWidget: _axisName(chartSettings.xAxisLabel),
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 52,
+              reservedSize: _scaledReservedSize(52),
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 if (index < 0 ||

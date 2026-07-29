@@ -57,6 +57,17 @@ Widget _wrap24(Widget child) => MaterialApp(
   home: child,
 );
 
+Widget _wrapScaled(Widget child, double scale) => MaterialApp(
+  theme: AppTheme.light,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+    child: child!,
+  ),
+  home: child,
+);
+
 String _compactDate(DateTime d) =>
     '${d.month.toString().padLeft(2, '0')}/'
     '${d.day.toString().padLeft(2, '0')}/'
@@ -940,5 +951,24 @@ void main() {
         expect(find.text('Page 1 of 3'), findsOneWidget);
       });
     });
+  });
+
+  testWidgets('chart axes do not overflow at 2x text scale', (tester) async {
+    await tester.pumpWidget(
+      _wrapScaled(
+        FieldChartScreen(
+          channel: _channel,
+          field: _field,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+        2,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LineChart), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

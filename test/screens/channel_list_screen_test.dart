@@ -30,6 +30,15 @@ const _otherChannel = Channel(
   name: 'Other Channel',
 );
 
+const _authErrorChannel = Channel(
+  id: 3,
+  serverUrl: 'https://api.thingspeak.com',
+  isPublic: false,
+  apiKey: 'bad-key',
+  name: 'Broken Channel',
+  authError: true,
+);
+
 final _fields = [
   Field(
     id: 1,
@@ -42,6 +51,17 @@ Widget _wrap(Widget child) => MaterialApp(
   theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
+
+Widget _wrapScaled(Widget child, double scale) => MaterialApp(
+  theme: AppTheme.light,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+    child: child!,
+  ),
   home: child,
 );
 
@@ -243,5 +263,31 @@ void main() {
 
       expect(find.text('Other Channel'), findsOneWidget);
     });
+  });
+
+  testWidgets('the auth-error subtitle does not overflow at 2x text scale', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'channels': Channel.listToJson([_authErrorChannel]),
+    });
+    final storage = ChannelStorage(await SharedPreferences.getInstance());
+
+    await tester.pumpWidget(
+      _wrapScaled(
+        ChannelListScreen(
+          api: mockApi,
+          channelStorage: storage,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          backupService: await _backupService(),
+        ),
+        2,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Broken Channel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
