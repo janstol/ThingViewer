@@ -12,6 +12,7 @@ import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../storage/settings_storage.dart';
+import '../../theme.dart';
 import '../../widgets/section_header.dart';
 import 'settings_notifier.dart';
 
@@ -416,9 +417,9 @@ class _ExportTile extends StatelessWidget {
           path = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
         } on PlatformException {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.backupErrorFilePicker)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
           return;
         }
         if (path == null || !context.mounted) return;
@@ -478,9 +479,9 @@ class _ImportTile extends StatelessWidget {
           );
         } on PlatformException {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.backupErrorFilePicker)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
           return;
         }
         final files = result?.files;
@@ -579,7 +580,7 @@ class _AboutTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeData = Theme.of(context);
     final linkStyle = themeData.textTheme.bodyMedium?.copyWith(
-      color: themeData.colorScheme.primary,
+      color: themeData.extension<BrandColors>()!.dataAccent,
     );
     return FutureBuilder<PackageInfo>(
       future: PackageInfo.fromPlatform(),
@@ -604,7 +605,10 @@ class _AboutTile extends StatelessWidget {
                 Uri.parse(l10n.aboutThingSpeakUrl),
                 mode: LaunchMode.externalApplication,
               ),
-              child: Text(l10n.aboutThingSpeakUrl, style: linkStyle),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Text(l10n.aboutThingSpeakUrl, style: linkStyle),
+              ),
             ),
           ],
           child: Text(l10n.aboutTitle),

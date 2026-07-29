@@ -60,6 +60,14 @@ class AppTheme {
         backgroundColor: brandGreen,
         foregroundColor: Colors.black,
       ),
+      // colorScheme.primary (brandGreen) is only 2.43:1 on white, too low
+      // for text (see BrandColors.dataAccent above) — TextButton defaults
+      // to colorScheme.primary, so route it through dataAccent instead.
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: isDark ? _dataAccentDark : _dataAccentLight,
+        ),
+      ),
     );
   }
 

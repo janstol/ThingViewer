@@ -326,6 +326,33 @@ void main() {
         await _checkA11y(tester);
       });
 
+      testWidgets('settings - about dialog', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+
+        await tester.pumpWidget(
+          _wrap(
+            SettingsScreen(
+              settings: await _settings(),
+              channels: const [_channel, _otherChannel],
+              backupService: await _backupService(),
+              onImported: () {},
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.byType(AboutListTile),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.byType(AboutListTile));
+        await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
       testWidgets('status log', (tester) async {
         SharedPreferences.setMockInitialValues({});
 
