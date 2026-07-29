@@ -147,6 +147,9 @@ void main() {
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
+    when(
+      mockApi.readLastFieldEntry(any, any),
+    ).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
       _wrap(
@@ -175,6 +178,9 @@ void main() {
       when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
+      when(
+        mockApi.readLastFieldEntry(any, any),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         _wrap(

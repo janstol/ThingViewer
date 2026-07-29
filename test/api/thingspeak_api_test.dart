@@ -434,6 +434,72 @@ void main() {
     );
   });
 
+  group('readLastFieldEntry', () {
+    test('parses the value and timestamp from a bare entry object', () async {
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('fields_last.json')));
+
+      final result = await api.readLastFieldEntry(publicChannel, 1);
+
+      expect(result, isNotNull);
+      expect(result!.value, 3646.0);
+      expect(result.createdAt, DateTime.parse('2026-07-20T08:15:30Z').toLocal());
+    });
+
+    test('returns null on a 404 with body -1 (field never written)', () async {
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => http.Response('-1', 404));
+
+      final result = await api.readLastFieldEntry(publicChannel, 3);
+
+      expect(result, isNull);
+    });
+
+    test('returns null when the field value is non-numeric', () async {
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(
+          jsonEncode({'created_at': '2026-07-20T08:15:30Z', 'field1': 'oops'}),
+        ),
+      );
+
+      final result = await api.readLastFieldEntry(publicChannel, 1);
+
+      expect(result, isNull);
+    });
+
+    test('returns null when the field value is non-finite', () async {
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(
+          jsonEncode({'created_at': '2026-07-20T08:15:30Z', 'field1': 'NaN'}),
+        ),
+      );
+
+      final result = await api.readLastFieldEntry(publicChannel, 1);
+
+      expect(result, isNull);
+    });
+
+    test('includes api_key in the request URI', () async {
+      const privateChannel = Channel(
+        id: 42,
+        serverUrl: 'https://api.thingspeak.com',
+        isPublic: false,
+        apiKey: 'SECRET123',
+      );
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('fields_last.json')));
+
+      await api.readLastFieldEntry(privateChannel, 1);
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.path, '/channels/42/fields/1/last.json');
+      expect(uri.queryParameters['api_key'], 'SECRET123');
+    });
+  });
+
   group('_buildUri', () {
     test('defaults to https://api.thingspeak.com', () async {
       when(

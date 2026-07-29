@@ -81,9 +81,33 @@ class ChannelDetailNotifier extends ChangeNotifier {
       _channel = updated.copyWith(authError: false);
       onChannelUpdated?.call(_channel);
 
-      final nonEmpty = feedData.fields
-          .where((f) => f.lastValue != null)
-          .toList();
+      var fields = feedData.fields;
+      final gaps = fields.where((f) => f.values.isEmpty).toList();
+      if (gaps.isNotEmpty) {
+        final recovered = await Future.wait(
+          gaps.map((f) => _api.readLastFieldEntry(_channel, f.id)),
+        );
+        final recoveredById = {
+          for (var i = 0; i < gaps.length; i++)
+            if (recovered[i] != null) gaps[i].id: recovered[i]!,
+        };
+        if (recoveredById.isNotEmpty) {
+          fields = fields
+              .map(
+                (f) => recoveredById.containsKey(f.id)
+                    ? Field(
+                        id: f.id,
+                        label: f.label,
+                        values: [recoveredById[f.id]!],
+                        invalidAt: f.invalidAt,
+                      )
+                    : f,
+              )
+              .toList();
+        }
+      }
+
+      final nonEmpty = fields.where((f) => f.lastValue != null).toList();
       _state = nonEmpty.isEmpty
           ? ChannelDetailEmpty(_channel, feedData.statuses)
           : ChannelDetailLoaded(_channel, nonEmpty, feedData.statuses);

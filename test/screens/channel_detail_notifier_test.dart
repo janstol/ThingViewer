@@ -65,6 +65,9 @@ void main() {
       when(
         mockApi.readFeed(any, any),
       ).thenAnswer((_) async => FeedData(fields: emptyFields, statuses: []));
+      when(
+        mockApi.readLastFieldEntry(any, any),
+      ).thenAnswer((_) async => null);
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       await Future<void>.delayed(Duration.zero);
@@ -151,6 +154,9 @@ void main() {
       when(mockApi.readFeed(any, any)).thenAnswer(
         (_) async => FeedData(fields: emptyFields, statuses: statuses),
       );
+      when(
+        mockApi.readLastFieldEntry(any, any),
+      ).thenAnswer((_) async => null);
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       await Future<void>.delayed(Duration.zero);
@@ -205,6 +211,132 @@ void main() {
         await notifier.load();
 
         expect(reported?.authError, isFalse);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'does not call readLastFieldEntry when no field is empty',
+      () async {
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+
+        final notifier = ChannelDetailNotifier(mockApi, channel);
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(mockApi.readLastFieldEntry(any, any));
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'recovers a sparse field via readLastFieldEntry and keeps id order',
+      () async {
+        final sparseFields = [
+          Field(
+            id: 1,
+            label: 'Temp',
+            values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
+          ),
+          const Field(id: 2, label: 'Humidity'),
+        ];
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: sparseFields, statuses: []));
+        final recovered = FieldValue(createdAt: DateTime(2023), value: 60.0);
+        when(
+          mockApi.readLastFieldEntry(any, 2),
+        ).thenAnswer((_) async => recovered);
+
+        final notifier = ChannelDetailNotifier(mockApi, channel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.state, isA<ChannelDetailLoaded>());
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.fields.map((f) => f.id).toList(), [1, 2]);
+        expect(loaded.fields[1].lastValue, 60.0);
+        expect(loaded.fields[1].label, 'Humidity');
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'a field whose readLastFieldEntry returns null stays filtered out',
+      () async {
+        final sparseFields = [
+          Field(
+            id: 1,
+            label: 'Temp',
+            values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
+          ),
+          const Field(id: 2, label: 'Humidity'),
+        ];
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: sparseFields, statuses: []));
+        when(
+          mockApi.readLastFieldEntry(any, 2),
+        ).thenAnswer((_) async => null);
+
+        final notifier = ChannelDetailNotifier(mockApi, channel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.state, isA<ChannelDetailLoaded>());
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.fields.map((f) => f.id).toList(), [1]);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'an all-sparse channel that recovers at least one value yields Loaded',
+      () async {
+        final emptyFields = [
+          const Field(id: 1, label: 'Temp'),
+          const Field(id: 2, label: 'Humidity'),
+        ];
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: emptyFields, statuses: []));
+        when(mockApi.readLastFieldEntry(any, 1)).thenAnswer((_) async => null);
+        when(mockApi.readLastFieldEntry(any, 2)).thenAnswer(
+          (_) async => FieldValue(createdAt: DateTime(2023), value: 5.0),
+        );
+
+        final notifier = ChannelDetailNotifier(mockApi, channel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.state, isA<ChannelDetailLoaded>());
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.fields.map((f) => f.id).toList(), [2]);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'an all-sparse-and-unrecoverable channel still yields Empty',
+      () async {
+        final emptyFields = [
+          const Field(id: 1, label: 'Temp'),
+          const Field(id: 2, label: 'Humidity'),
+        ];
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: emptyFields, statuses: []));
+        when(
+          mockApi.readLastFieldEntry(any, any),
+        ).thenAnswer((_) async => null);
+
+        final notifier = ChannelDetailNotifier(mockApi, channel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.state, isA<ChannelDetailEmpty>());
         notifier.dispose();
       },
     );

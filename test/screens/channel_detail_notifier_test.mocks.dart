@@ -97,6 +97,17 @@ class MockThingSpeakApi extends _i1.Mock implements _i3.ThingSpeakApi {
           as _i5.Future<_i4.Field>);
 
   @override
+  _i5.Future<_i4.FieldValue?> readLastFieldEntry(
+    _i2.Channel? channel,
+    int? fieldId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#readLastFieldEntry, [channel, fieldId]),
+            returnValue: _i5.Future<_i4.FieldValue?>.value(),
+          )
+          as _i5.Future<_i4.FieldValue?>);
+
+  @override
   _i5.Future<_i3.FieldRange> readFieldRange(
     _i2.Channel? channel,
     int? fieldId, {

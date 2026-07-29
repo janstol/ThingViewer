@@ -177,6 +177,28 @@ class ThingSpeakApi {
     return await compute(_parseSingleField, _ParseFieldArgs(raw, fieldId));
   }
 
+  /// Reads the single most recent value for one field, for fields whose
+  /// readings are sparser than the detail screen's feed window.
+  ///
+  /// `https://api.thingspeak.com/channels/{id}/fields/{field_id}/last.json`
+  ///
+  /// Best effort: ThingSpeak answers 404/`-1` for a field that has never been
+  /// written, so any failure is reported as "no value" rather than an error.
+  Future<FieldValue?> readLastFieldEntry(Channel channel, int fieldId) async {
+    final uri = _buildUri(
+      baseUrl: channel.serverUrl,
+      path: '/channels/${channel.id}/fields/$fieldId/last.json',
+      params: ApiParameters(apiKey: channel.apiKey),
+    );
+
+    final raw = await _trySendRequest(uri);
+    if (raw == null) return null;
+    return await compute(
+      _parseLastFieldEntry,
+      _ParseFieldArgs(raw, fieldId),
+    );
+  }
+
   /// Reads all data for a single field over [start]..[end], paginating
   /// backwards past ThingSpeak's [_maxResultsPerRequest]-entry-per-request cap.
   ///
@@ -453,6 +475,24 @@ class ThingSpeakApi {
       ),
       rawEntryCount: feeds.length,
     );
+  }
+
+  /// The `last.json` response is a bare entry object (no `channel` wrapper),
+  /// so it carries no field label — unlike [_parseSingleField].
+  static FieldValue? _parseLastFieldEntry(_ParseFieldArgs args) {
+    try {
+      final feed = jsonDecode(args.raw) as Map<String, dynamic>;
+      final createdAt = DateTime.tryParse(
+        feed['created_at'] as String? ?? '',
+      )?.toLocal();
+      final rawValue = feed['field${args.fieldId}'];
+      if (createdAt == null || rawValue == null) return null;
+      final value = double.tryParse('$rawValue');
+      if (value == null || !value.isFinite) return null;
+      return FieldValue(createdAt: createdAt, value: value);
+    } catch (_) {
+      return null;
+    }
   }
 }
 
