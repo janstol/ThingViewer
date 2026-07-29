@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -411,10 +411,16 @@ class _ExportTile extends StatelessWidget {
         final fileName =
             'thingviewer-backup-'
             '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
-        final path = await FilePicker.saveFile(
-          fileName: fileName,
-          bytes: bytes,
-        );
+        final String? path;
+        try {
+          path = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+        } on PlatformException {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.backupErrorFilePicker)),
+          );
+          return;
+        }
         if (path == null || !context.mounted) return;
         ScaffoldMessenger.of(
           context,
@@ -464,10 +470,19 @@ class _ImportTile extends StatelessWidget {
       leading: const Icon(Icons.download_outlined),
       title: Text(l10n.settingsImport),
       onTap: () async {
-        final result = await FilePicker.pickFiles(
-          type: FileType.any,
-          withData: true,
-        );
+        final FilePickerResult? result;
+        try {
+          result = await FilePicker.pickFiles(
+            type: FileType.any,
+            withData: true,
+          );
+        } on PlatformException {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.backupErrorFilePicker)),
+          );
+          return;
+        }
         final files = result?.files;
         if (files == null || files.isEmpty || !context.mounted) return;
         final bytes = files.first.bytes;

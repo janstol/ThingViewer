@@ -316,6 +316,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'This backup file is corrupted or unreadable.';
 
   @override
+  String get backupErrorFilePicker => 'Couldn\'t open the file picker.';
+
+  @override
   String get backupExportSuccess => 'Backup saved';
 
   @override

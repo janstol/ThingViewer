@@ -562,6 +562,12 @@ abstract class AppLocalizations {
   /// **'This backup file is corrupted or unreadable.'**
   String get backupErrorMalformed;
 
+  /// No description provided for @backupErrorFilePicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the file picker.'**
+  String get backupErrorFilePicker;
+
   /// No description provided for @backupExportSuccess.
   ///
   /// In en, this message translates to:

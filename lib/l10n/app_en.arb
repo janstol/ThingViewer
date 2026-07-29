@@ -123,6 +123,7 @@
   "backupErrorNotABackup": "This file isn't a ThingViewer backup.",
   "backupErrorNewerVersion": "This backup was created by a newer version of the app.",
   "backupErrorMalformed": "This backup file is corrupted or unreadable.",
+  "backupErrorFilePicker": "Couldn't open the file picker.",
   "backupExportSuccess": "Backup saved",
   "backupImportSuccess": "Backup imported",
   "privacyPolicy": "Privacy Policy",

@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,6 +52,7 @@ class _FakeFilePickerPlatform extends FilePickerPlatform
     with MockPlatformInterfaceMixin {
   FilePickerResult? pickResult;
   String? savePath;
+  Object? error;
 
   @override
   Future<FilePickerResult?> pickFiles({
@@ -67,7 +68,10 @@ class _FakeFilePickerPlatform extends FilePickerPlatform
     bool lockParentWindow = false,
     bool readSequential = false,
     bool cancelUploadOnWindowBlur = true,
-  }) async => pickResult;
+  }) async {
+    if (error != null) throw error!;
+    return pickResult;
+  }
 
   @override
   Future<String?> saveFile({
@@ -78,7 +82,10 @@ class _FakeFilePickerPlatform extends FilePickerPlatform
     List<String>? allowedExtensions,
     Uint8List? bytes,
     bool lockParentWindow = false,
-  }) async => savePath;
+  }) async {
+    if (error != null) throw error!;
+    return savePath;
+  }
 }
 
 Uint8List _backupBytes(List<Channel> channels) => Uint8List.fromList(
@@ -562,5 +569,75 @@ void main() {
       expect(find.text('Backup saved'), findsNothing);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('Export shows an error snackbar when the picker throws', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+      fakePicker.error = PlatformException(code: 'ENTITLEMENT_REQUIRED_WRITE');
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+
+      expect(find.text("Couldn't open the file picker."), findsOneWidget);
+    });
+
+    testWidgets(
+      'Import shows an error snackbar and no dialog when the picker throws',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({});
+        final settings = SettingsNotifier(
+          SettingsStorage(await SharedPreferences.getInstance()),
+        );
+        fakePicker.error = PlatformException(code: 'ENTITLEMENT_NOT_FOUND');
+
+        await tester.pumpWidget(
+          _wrap(
+            SettingsScreen(
+              settings: settings,
+              channels: const [],
+              backupService: await _backupService(),
+              onImported: () {},
+            ),
+          ),
+        );
+        await tester.scrollUntilVisible(
+          find.text('Import'),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Import'));
+        await tester.pumpAndSettle();
+
+        expect(find.text("Couldn't open the file picker."), findsOneWidget);
+        expect(find.text('Import backup'), findsNothing);
+      },
+    );
   });
 }
