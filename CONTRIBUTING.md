@@ -49,6 +49,19 @@ Run `flutter analyze` and fix all warnings before opening a PR.
 
 ---
 
+## Accessibility
+
+New interactive widgets and screens should ship accessible by default:
+
+- Icon-only buttons need a `tooltip`; standalone informational icons need a `semanticLabel`.
+- Multi-part list rows (label + subtitle + trailing icon describing one item) should be wrapped in `MergeSemantics`.
+- Section headings should use `Semantics(header: true)`.
+- Custom gestures with no visible equivalent (e.g. swipe-to-dismiss) need a matching `CustomSemanticsAction`.
+- New colour pairs need a WCAG contrast check added to `test/theme_test.dart`.
+- New screens need a case added to `test/a11y_test.dart`, which checks tap target size, labeling, and contrast in both light and dark theme.
+
+---
+
 ## Architecture
 
 The app uses a flat, minimal architecture — no BLoC, no get_it, no repository interfaces.

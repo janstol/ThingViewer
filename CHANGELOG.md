@@ -12,6 +12,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A field whose readings are sparser than the channel detail screen's feed window (e.g. one value per few hundred entries) now still shows up, instead of being silently dropped.
 - Field chart screen can now toggle to a paginated table view of the same data (timestamp and value, newest first).
 
+### Accessibility
+
+- Screen reader support: channel list tiles, field list rows, and field table rows now announce as single items instead of separate fragments; the swipe-to-delete channel action is reachable as a screen reader action; decorative icons are hidden from screen readers; section headings are announced as headers.
+- Field chart now exposes a single spoken summary (title, point count, range, latest value) instead of a stream of raw axis numbers; the underlying data stays available in the table view.
+- Chart axis labels and other fixed-width text no longer clip at large system text sizes.
+- Loading spinners and icon-only buttons that previously had no accessible name now do.
+
 ### Changed
 
 - Field chart pinch-zoom and panning are smoother, especially on dense channels: derived chart data is now cached instead of being recomputed on every frame.
@@ -24,6 +31,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Rapidly changing a field chart's date range no longer occasionally leaves a stale, older result on screen if a newer range finishes fetching first.
 - Backup import and export now work on macOS instead of failing to open a file dialog.
 - The web and macOS builds now use the ThingViewer icon instead of the default Flutter logo.
+- Section headings (Settings, field settings, channel detail) now use a green shade with sufficient contrast against their background instead of one that failed WCAG AA (2.43:1 on white).
 
 ## [0.10.0] - 2026-07-27
 
