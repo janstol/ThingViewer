@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
@@ -149,7 +150,9 @@ void main() {
   group('start channel', () {
     setUp(() {
       when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => _fields);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: _fields, statuses: []));
     });
 
     testWidgets(

@@ -208,6 +208,36 @@ abstract class AppLocalizations {
   /// **'Source code'**
   String get channelDetailSource;
 
+  /// No description provided for @channelDetailStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get channelDetailStatus;
+
+  /// No description provided for @channelDetailFieldsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields'**
+  String get channelDetailFieldsSection;
+
+  /// No description provided for @channelStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status log'**
+  String get channelStatusTitle;
+
+  /// No description provided for @channelStatusEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No status messages for this channel.'**
+  String get channelStatusEmpty;
+
+  /// No description provided for @channelStatusViewLog.
+  ///
+  /// In en, this message translates to:
+  /// **'View log'**
+  String get channelStatusViewLog;
+
   /// No description provided for @entryAgeJustNow.
   ///
   /// In en, this message translates to:

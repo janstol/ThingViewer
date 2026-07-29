@@ -19,6 +19,11 @@
   "channelDetailNoFields": "No fields found for this channel.",
   "channelDetailWebsite": "Website",
   "channelDetailSource": "Source code",
+  "channelDetailStatus": "Status",
+  "channelDetailFieldsSection": "Fields",
+  "channelStatusTitle": "Status log",
+  "channelStatusEmpty": "No status messages for this channel.",
+  "channelStatusViewLog": "View log",
   "entryAgeJustNow": "just now",
   "entryAgeMinutes": "{count, plural, =1{1 min ago} other{{count} min ago}}",
   "@entryAgeMinutes": {

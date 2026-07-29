@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/screens/channel_detail/channel_detail_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
@@ -53,7 +54,9 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     mockApi = MockThingSpeakApi();
-    when(mockApi.readFeed(any, any)).thenAnswer((_) async => _fields);
+    when(
+      mockApi.readFeed(any, any),
+    ).thenAnswer((_) async => FeedData(fields: _fields, statuses: []));
   });
 
   testWidgets('renders the description above the field list', (tester) async {
@@ -141,7 +144,9 @@ void main() {
       fieldCount: 1,
     );
     when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-    when(mockApi.readFeed(any, any)).thenAnswer((_) async => _emptyFields);
+    when(
+      mockApi.readFeed(any, any),
+    ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
 
     await tester.pumpWidget(
       _wrap(
@@ -167,7 +172,9 @@ void main() {
         fieldCount: 1,
       );
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => _emptyFields);
+      when(
+      mockApi.readFeed(any, any),
+    ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
 
       await tester.pumpWidget(
         _wrap(
@@ -426,5 +433,80 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Temp'), findsOneWidget);
+  });
+
+  testWidgets('shows the newest status message and opens the log on tap', (
+    tester,
+  ) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      fieldCount: 1,
+    );
+    final statuses = [
+      ChannelStatus(createdAt: DateTime(2024, 1, 1), message: 'older status'),
+      ChannelStatus(
+        createdAt: DateTime(2024, 1, 2),
+        message: 'BU_10:06:39: 1s 3524L (125ms) 0err recal.required',
+      ),
+    ];
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+    when(
+      mockApi.readFeed(any, any),
+    ).thenAnswer((_) async => FeedData(fields: _fields, statuses: statuses));
+
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('BU_10:06:39: 1s 3524L (125ms) 0err recal.required'),
+      findsOneWidget,
+    );
+    expect(find.text('older status'), findsNothing);
+    expect(find.text('Status'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Status log'), findsOneWidget);
+    expect(find.text('older status'), findsOneWidget);
+    expect(
+      find.text('BU_10:06:39: 1s 3524L (125ms) 0err recal.required'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows no status section when the channel has no statuses', (
+    tester,
+  ) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Status'), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(find.byType(Divider), findsNothing);
   });
 }

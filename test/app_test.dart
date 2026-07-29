@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/app.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/models/channel.dart';
@@ -91,7 +92,9 @@ void main() {
 
       final mockApi = MockThingSpeakApi();
       when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => []);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => const FeedData(fields: [], statuses: []));
 
       final channelStorage = ChannelStorage(prefs);
       final settingsStorage = SettingsStorage(prefs);

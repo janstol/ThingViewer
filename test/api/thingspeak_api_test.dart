@@ -96,15 +96,15 @@ void main() {
         mockClient.get(any),
       ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
 
-      final fields = await api.readFeed(
+      final feedData = await api.readFeed(
         publicChannel,
         const ApiParameters(results: 3),
       );
 
-      expect(fields.length, 8);
-      expect(fields.first.label, 'Field1');
-      expect(fields.first.values.length, 3);
-      expect(fields.first.lastValue, closeTo(10.9, 0.01));
+      expect(feedData.fields.length, 8);
+      expect(feedData.fields.first.label, 'Field1');
+      expect(feedData.fields.first.values.length, 3);
+      expect(feedData.fields.first.lastValue, closeTo(10.9, 0.01));
     });
 
     test('returns fields with no values for empty feed', () async {
@@ -112,15 +112,82 @@ void main() {
         mockClient.get(any),
       ).thenAnswer((_) async => ok(fixture('channel_feed_empty.json')));
 
-      final fields = await api.readFeed(
+      final feedData = await api.readFeed(
         publicChannel,
         const ApiParameters(results: 0),
       );
 
       // Channel has 8 fields defined but no feed entries
-      expect(fields.length, 8);
-      expect(fields.every((f) => f.values.isEmpty), isTrue);
+      expect(feedData.fields.length, 8);
+      expect(feedData.fields.every((f) => f.values.isEmpty), isTrue);
+      expect(feedData.statuses, isEmpty);
     });
+
+    test('status=true appears in the request URI when set', () async {
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
+
+      await api.readFeed(publicChannel, const ApiParameters(status: true));
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.queryParameters['status'], 'true');
+    });
+
+    test('status is absent from the request URI by default', () async {
+      when(
+        mockClient.get(any),
+      ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
+
+      await api.readFeed(publicChannel, const ApiParameters());
+
+      final uri = verify(mockClient.get(captureAny)).captured.single as Uri;
+      expect(uri.queryParameters.containsKey('status'), isFalse);
+    });
+
+    test(
+      'parses statuses, skips null/blank ones, and sorts them ascending',
+      () async {
+        when(
+          mockClient.get(any),
+        ).thenAnswer((_) async => ok(fixture('channel_feed_status.json')));
+
+        final feedData = await api.readFeed(
+          publicChannel,
+          const ApiParameters(status: true),
+        );
+
+        expect(feedData.statuses.length, 2);
+        expect(
+          feedData.statuses[0].message,
+          'BU_10:06:39: 1s 3524L (125ms) 0err recal.required',
+        );
+        expect(
+          feedData.statuses[0].createdAt,
+          DateTime.parse('2026-07-25T10:06:40Z').toLocal(),
+        );
+        expect(
+          feedData.statuses[1].message,
+          'BU_10:16:39: 1s 3525L (120ms) 0err',
+        );
+      },
+    );
+
+    test(
+      'returns an empty status list for a channel that posts none',
+      () async {
+        when(
+          mockClient.get(any),
+        ).thenAnswer((_) async => ok(fixture('channel_feed.json')));
+
+        final feedData = await api.readFeed(
+          publicChannel,
+          const ApiParameters(status: true),
+        );
+
+        expect(feedData.statuses, isEmpty);
+      },
+    );
   });
 
   group('readFeed parser hardening', () {
@@ -150,14 +217,17 @@ void main() {
               ok(feedWithFieldValues(['NaN', null, 20, '10.5', '-Infinity'])),
         );
 
-        final fields = await api.readFeed(publicChannel, const ApiParameters());
+        final feedData = await api.readFeed(
+          publicChannel,
+          const ApiParameters(),
+        );
 
-        final values = fields.single.values;
+        final values = feedData.fields.single.values;
         expect(values.length, 2);
         expect(values[0].value, 20.0);
         expect(values[1].value, 10.5);
 
-        final invalidAt = fields.single.invalidAt;
+        final invalidAt = feedData.fields.single.invalidAt;
         expect(invalidAt.length, 2);
         expect(invalidAt[0], DateTime.utc(2024, 1, 1).toLocal());
         expect(
@@ -173,13 +243,13 @@ void main() {
         mockClient.get(any),
       ).thenAnswer((_) async => ok(fixture('channel_feed_sparse.json')));
 
-      final fields = await api.readFeed(
+      final feedData = await api.readFeed(
         publicChannel,
         const ApiParameters(results: 100),
       );
 
-      expect(fields.length, 4);
-      final byId = {for (final f in fields) f.id: f};
+      expect(feedData.fields.length, 4);
+      final byId = {for (final f in feedData.fields) f.id: f};
 
       // field1 ("Sine"): newest entry (7) sets it to null, but its last
       // real value from entry 6 is retained rather than being dropped.
@@ -207,9 +277,9 @@ void main() {
       });
       when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
 
-      final fields = await api.readFeed(publicChannel, const ApiParameters());
+      final feedData = await api.readFeed(publicChannel, const ApiParameters());
 
-      final values = fields.single.values;
+      final values = feedData.fields.single.values;
       expect(values.map((v) => v.value).toList(), [1.0, 2.0, 3.0]);
     });
   });

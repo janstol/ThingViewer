@@ -67,6 +67,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelDetailSource => 'Source code';
 
   @override
+  String get channelDetailStatus => 'Status';
+
+  @override
+  String get channelDetailFieldsSection => 'Fields';
+
+  @override
+  String get channelStatusTitle => 'Status log';
+
+  @override
+  String get channelStatusEmpty => 'No status messages for this channel.';
+
+  @override
+  String get channelStatusViewLog => 'View log';
+
+  @override
   String get entryAgeJustNow => 'just now';
 
   @override

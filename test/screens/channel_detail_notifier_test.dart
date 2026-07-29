@@ -3,6 +3,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/screens/channel_detail/channel_detail_notifier.dart';
 
@@ -40,7 +41,9 @@ void main() {
   group('load', () {
     test('is ChannelDetailLoaded on success', () async {
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       // Constructor calls load(); wait for it to settle.
@@ -59,7 +62,9 @@ void main() {
         const Field(id: 2, label: 'Humidity'),
       ];
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => emptyFields);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: emptyFields, statuses: []));
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       await Future<void>.delayed(Duration.zero);
@@ -106,7 +111,9 @@ void main() {
     test('requests 100 results, not just the latest entry, so a field with no '
         'value in the newest entry is not dropped', () async {
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       await Future<void>.delayed(Duration.zero);
@@ -114,6 +121,42 @@ void main() {
       final captured = verify(mockApi.readFeed(any, captureAny)).captured;
       final params = captured.single as ApiParameters;
       expect(params.results, 100);
+      expect(params.status, true);
+      notifier.dispose();
+    });
+
+    test('carries statuses through to ChannelDetailLoaded', () async {
+      final statuses = [
+        ChannelStatus(createdAt: DateTime(2024), message: 'BU_10:06:39'),
+      ];
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: statuses));
+
+      final notifier = ChannelDetailNotifier(mockApi, channel);
+      await Future<void>.delayed(Duration.zero);
+
+      final loaded = notifier.state as ChannelDetailLoaded;
+      expect(loaded.statuses, statuses);
+      notifier.dispose();
+    });
+
+    test('carries statuses through to ChannelDetailEmpty', () async {
+      final statuses = [
+        ChannelStatus(createdAt: DateTime(2024), message: 'BU_10:06:39'),
+      ];
+      final emptyFields = [const Field(id: 1, label: 'Temp')];
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(mockApi.readFeed(any, any)).thenAnswer(
+        (_) async => FeedData(fields: emptyFields, statuses: statuses),
+      );
+
+      final notifier = ChannelDetailNotifier(mockApi, channel);
+      await Future<void>.delayed(Duration.zero);
+
+      final empty = notifier.state as ChannelDetailEmpty;
+      expect(empty.statuses, statuses);
       notifier.dispose();
     });
 
@@ -156,7 +199,9 @@ void main() {
         expect(reported?.authError, isTrue);
 
         when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-        when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
+        when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
         await notifier.load();
 
         expect(reported?.authError, isFalse);
@@ -166,7 +211,9 @@ void main() {
 
     test('does not call notifyListeners after dispose', () async {
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-      when(mockApi.readFeed(any, any)).thenAnswer((_) async => fields);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
       final notifier = ChannelDetailNotifier(mockApi, channel);
       // Dispose before the async load completes.

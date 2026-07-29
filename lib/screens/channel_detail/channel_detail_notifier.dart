@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../models/channel.dart';
+import '../../models/channel_status.dart';
 import '../../models/field.dart';
 
 sealed class ChannelDetailState {}
@@ -11,12 +12,14 @@ class ChannelDetailLoading extends ChannelDetailState {}
 class ChannelDetailLoaded extends ChannelDetailState {
   final Channel channel;
   final List<Field> fields;
-  ChannelDetailLoaded(this.channel, this.fields);
+  final List<ChannelStatus> statuses;
+  ChannelDetailLoaded(this.channel, this.fields, this.statuses);
 }
 
 class ChannelDetailEmpty extends ChannelDetailState {
   final Channel channel;
-  ChannelDetailEmpty(this.channel);
+  final List<ChannelStatus> statuses;
+  ChannelDetailEmpty(this.channel, this.statuses);
 }
 
 class ChannelDetailError extends ChannelDetailState {
@@ -64,20 +67,26 @@ class ChannelDetailNotifier extends ChangeNotifier {
 
   Future<void> _fetch() async {
     try {
-      final params = ApiParameters(apiKey: _channel.apiKey, results: 100);
+      final params = ApiParameters(
+        apiKey: _channel.apiKey,
+        results: 100,
+        status: true,
+      );
       final results = await Future.wait([
         _api.readChannel(_channel),
         _api.readFeed(_channel, params),
       ]);
       final updated = results[0] as Channel;
-      final fields = results[1] as List<Field>;
+      final feedData = results[1] as FeedData;
       _channel = updated.copyWith(authError: false);
       onChannelUpdated?.call(_channel);
 
-      final nonEmpty = fields.where((f) => f.lastValue != null).toList();
+      final nonEmpty = feedData.fields
+          .where((f) => f.lastValue != null)
+          .toList();
       _state = nonEmpty.isEmpty
-          ? ChannelDetailEmpty(_channel)
-          : ChannelDetailLoaded(_channel, nonEmpty);
+          ? ChannelDetailEmpty(_channel, feedData.statuses)
+          : ChannelDetailLoaded(_channel, nonEmpty, feedData.statuses);
     } on ApiException catch (e) {
       if (e.code == ApiErrorCode.credentials && !_channel.authError) {
         _channel = _channel.copyWith(authError: true);

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/channel.dart';
+import '../models/channel_status.dart';
 import '../models/field.dart';
 
 /// Error categories for API failures.
@@ -32,6 +33,7 @@ class ApiParameters {
   final DateTime? startDate;
   final DateTime? endDate;
   final bool? location;
+  final bool? status;
 
   const ApiParameters({
     this.apiKey,
@@ -39,6 +41,7 @@ class ApiParameters {
     this.startDate,
     this.endDate,
     this.location,
+    this.status,
   });
 
   Map<String, String> toQueryParameters() {
@@ -48,6 +51,7 @@ class ApiParameters {
     if (startDate != null) params['start'] = _formatDate(startDate!);
     if (endDate != null) params['end'] = _formatDate(endDate!);
     if (location == true) params['location'] = '1';
+    if (status == true) params['status'] = 'true';
     return params;
   }
 
@@ -63,6 +67,15 @@ class FieldRange {
   final bool truncated;
 
   const FieldRange({required this.field, required this.truncated});
+}
+
+/// The result of [ThingSpeakApi.readFeed]: field values and channel statuses
+/// parsed from the same response, so status comes at no extra request cost.
+class FeedData {
+  final List<Field> fields;
+  final List<ChannelStatus> statuses;
+
+  const FeedData({required this.fields, required this.statuses});
 }
 
 /// HTTP client for the ThingSpeak REST API.
@@ -119,10 +132,11 @@ class ThingSpeakApi {
     );
   }
 
-  /// Reads the latest feed data for all fields in a channel.
+  /// Reads the latest feed data for all fields in a channel, plus any
+  /// per-entry status messages when `params.status` is set.
   ///
   /// `https://api.thingspeak.com/channels/{id}/feeds.json`
-  Future<List<Field>> readFeed(Channel channel, ApiParameters params) async {
+  Future<FeedData> readFeed(Channel channel, ApiParameters params) async {
     final uri = _buildUri(
       baseUrl: channel.serverUrl,
       path: '/channels/${channel.id}/feeds.json',
@@ -337,7 +351,7 @@ class ThingSpeakApi {
     );
   }
 
-  static List<Field> _parseFields(String raw) {
+  static FeedData _parseFields(String raw) {
     final json = jsonDecode(raw) as Map<String, dynamic>;
     final channelJson = json['channel'] as Map<String, dynamic>? ?? {};
     final feeds = json['feeds'] as List<dynamic>? ?? [];
@@ -357,6 +371,8 @@ class ThingSpeakApi {
       );
     }
 
+    final statuses = <ChannelStatus>[];
+
     for (final entry in feeds) {
       final feed = entry as Map<String, dynamic>;
       final createdAt = DateTime.tryParse(
@@ -375,9 +391,14 @@ class ThingSpeakApi {
         }
         fields[id]!.values.add(FieldValue(createdAt: createdAt, value: value));
       }
+
+      final status = feed['status'] as String?;
+      if (status != null && status.trim().isNotEmpty) {
+        statuses.add(ChannelStatus(createdAt: createdAt, message: status));
+      }
     }
 
-    return fields.entries.map((e) {
+    final parsedFields = fields.entries.map((e) {
       final values = e.value.values
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
       final invalidAt = e.value.invalidAt..sort();
@@ -388,6 +409,10 @@ class ThingSpeakApi {
         invalidAt: invalidAt,
       );
     }).toList();
+
+    statuses.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    return FeedData(fields: parsedFields, statuses: statuses);
   }
 
   static ({Field field, int rawEntryCount}) _parseSingleField(

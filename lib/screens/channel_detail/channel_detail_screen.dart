@@ -7,11 +7,13 @@ import '../../api/thingspeak_api.dart';
 import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../models/channel_status.dart';
 import '../../models/field.dart';
 import '../../storage/field_settings_storage.dart';
-import '../../storage/settings_storage.dart';
 import '../../theme.dart';
+import '../../widgets/section_header.dart';
 import '../channel_add/channel_add_screen.dart';
+import '../channel_status/channel_status_screen.dart';
 import '../field_chart/field_chart_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'channel_detail_notifier.dart';
@@ -32,25 +34,24 @@ String? _safeUrl(String? raw) {
   return uri.scheme == 'http' || uri.scheme == 'https' ? uri.toString() : null;
 }
 
-String _lastEntryText(
-  AppLocalizations l10n,
-  SettingsNotifier settings,
-  DateTime lastUpdated,
-  DateTime now,
-) {
-  final absolute = settings.formatDateTime(lastUpdated);
-  final age = formatEntryAge(l10n, now.difference(lastUpdated));
-  return switch (settings.entryTimeDisplay) {
-    EntryTimeDisplay.absolute => absolute,
-    EntryTimeDisplay.age => age,
-    EntryTimeDisplay.both => '$absolute ($age)',
-  };
-}
-
-bool _hasHeader(Channel channel) =>
+bool _hasTopHeader(Channel channel) =>
     _trimmedDescription(channel) != null ||
     _safeUrl(channel.url) != null ||
     _safeUrl(channel.githubUrl) != null;
+
+bool _hasHeader(Channel channel, List<ChannelStatus> statuses) =>
+    _hasTopHeader(channel) || statuses.isNotEmpty;
+
+void _openStatusLog(
+  BuildContext context,
+  List<ChannelStatus> statuses,
+  SettingsNotifier settings,
+) => Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (_) => ChannelStatusScreen(statuses: statuses, settings: settings),
+  ),
+);
 
 class _ChannelHeader extends StatelessWidget {
   final Channel channel;
@@ -104,7 +105,7 @@ class _ChannelHeader extends StatelessWidget {
               16,
               (websiteUrl != null || sourceUrl != null) ? 4 : 16,
               16,
-              12,
+              16,
             ),
             child: SelectableText(
               description,
@@ -114,6 +115,51 @@ class _ChannelHeader extends StatelessWidget {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Latest status message under its own section header, with a button to the
+/// full log — kept separate from [_ChannelHeader] so the description and the
+/// status feed read as distinct sections rather than one mixed block.
+class _StatusSection extends StatelessWidget {
+  final List<ChannelStatus> statuses;
+  final SettingsNotifier settings;
+  final DateTime now;
+
+  const _StatusSection({
+    required this.statuses,
+    required this.settings,
+    required this.now,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final latest = statuses.last;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SectionHeader(
+          title: l10n.channelDetailStatus,
+          trailing: IconButton(
+            icon: const Icon(Icons.chevron_right),
+            tooltip: l10n.channelStatusViewLog,
+            onPressed: () => _openStatusLog(context, statuses, settings),
+          ),
+        ),
+        ListTile(
+          title: Text(
+            latest.message,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(formatTimestamp(l10n, settings, latest.createdAt, now)),
+          onTap: () => _openStatusLog(context, statuses, settings),
+        ),
       ],
     );
   }
@@ -219,8 +265,11 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
             ChannelDetailLoading() => const Center(
               child: CircularProgressIndicator(),
             ),
-            ChannelDetailEmpty(:final channel) => _EmptyState(
+            ChannelDetailEmpty(:final channel, :final statuses) => _EmptyState(
               channel: channel,
+              statuses: statuses,
+              settings: widget.settings,
+              now: _now,
               message: l10n.channelDetailNoFields,
             ),
             ChannelDetailError(:final errorCode, :final serverMessage) =>
@@ -246,14 +295,16 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                   ),
                 ),
               ),
-            ChannelDetailLoaded(:final channel, :final fields) => _FieldList(
-              channel: channel,
-              fields: fields,
-              api: widget.api,
-              settings: widget.settings,
-              fieldSettingsStorage: widget.fieldSettingsStorage,
-              now: _now,
-            ),
+            ChannelDetailLoaded(:final channel, :final fields, :final statuses) =>
+              _FieldList(
+                channel: channel,
+                fields: fields,
+                statuses: statuses,
+                api: widget.api,
+                settings: widget.settings,
+                fieldSettingsStorage: widget.fieldSettingsStorage,
+                now: _now,
+              ),
           },
         ),
       ),
@@ -264,6 +315,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
 class _FieldList extends StatelessWidget {
   final Channel channel;
   final List<Field> fields;
+  final List<ChannelStatus> statuses;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
@@ -272,6 +324,7 @@ class _FieldList extends StatelessWidget {
   const _FieldList({
     required this.channel,
     required this.fields,
+    required this.statuses,
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
@@ -287,17 +340,27 @@ class _FieldList extends StatelessWidget {
         final dataAccent = Theme.of(
           context,
         ).extension<BrandColors>()!.dataAccent;
-        final hasHeader = _hasHeader(channel);
+        final hasHeader = _hasHeader(channel, statuses);
         return ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: fields.length + (hasHeader ? 1 : 0),
           itemBuilder: (context, i) {
             if (hasHeader && i == 0) {
+              final hasTopHeader = _hasTopHeader(channel);
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _ChannelHeader(channel: channel),
+                  if (hasTopHeader) _ChannelHeader(channel: channel),
+                  if (statuses.isNotEmpty) ...[
+                    if (hasTopHeader) const Divider(height: 1),
+                    _StatusSection(
+                      statuses: statuses,
+                      settings: settings,
+                      now: now,
+                    ),
+                  ],
                   const Divider(height: 1),
+                  SectionHeader(title: l10n.channelDetailFieldsSection),
                 ],
               );
             }
@@ -311,7 +374,7 @@ class _FieldList extends StatelessWidget {
               subtitle: lastUpdated != null
                   ? Text(
                       '${l10n.channelDetailLastEntry}: '
-                      '${_lastEntryText(l10n, settings, lastUpdated, now)}',
+                      '${formatTimestamp(l10n, settings, lastUpdated, now)}',
                     )
                   : null,
               trailing: field.lastValue != null
@@ -345,21 +408,33 @@ class _FieldList extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final Channel channel;
+  final List<ChannelStatus> statuses;
+  final SettingsNotifier settings;
+  final DateTime now;
   final String message;
 
-  const _EmptyState({required this.channel, required this.message});
+  const _EmptyState({
+    required this.channel,
+    required this.statuses,
+    required this.settings,
+    required this.now,
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hasHeader = _hasHeader(channel);
     return _ScrollableCenter(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (hasHeader) ...[
+            if (_hasTopHeader(channel)) ...[
               _ChannelHeader(channel: channel, centered: true),
+              const SizedBox(height: 16),
+            ],
+            if (statuses.isNotEmpty) ...[
+              _StatusSection(statuses: statuses, settings: settings, now: now),
               const SizedBox(height: 16),
             ],
             Text(message),

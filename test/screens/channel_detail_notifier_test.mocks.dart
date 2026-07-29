@@ -6,9 +6,9 @@
 import 'dart:async' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:thingviewer/api/thingspeak_api.dart' as _i4;
+import 'package:thingviewer/api/thingspeak_api.dart' as _i3;
 import 'package:thingviewer/models/channel.dart' as _i2;
-import 'package:thingviewer/models/field.dart' as _i3;
+import 'package:thingviewer/models/field.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -30,20 +30,25 @@ class _FakeChannel_0 extends _i1.SmartFake implements _i2.Channel {
     : super(parent, parentInvocation);
 }
 
-class _FakeField_1 extends _i1.SmartFake implements _i3.Field {
-  _FakeField_1(Object parent, Invocation parentInvocation)
+class _FakeFeedData_1 extends _i1.SmartFake implements _i3.FeedData {
+  _FakeFeedData_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeFieldRange_2 extends _i1.SmartFake implements _i4.FieldRange {
-  _FakeFieldRange_2(Object parent, Invocation parentInvocation)
+class _FakeField_2 extends _i1.SmartFake implements _i4.Field {
+  _FakeField_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeFieldRange_3 extends _i1.SmartFake implements _i3.FieldRange {
+  _FakeFieldRange_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
 /// A class which mocks [ThingSpeakApi].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockThingSpeakApi extends _i1.Mock implements _i4.ThingSpeakApi {
+class MockThingSpeakApi extends _i1.Mock implements _i3.ThingSpeakApi {
   MockThingSpeakApi() {
     _i1.throwOnMissingStub(this);
   }
@@ -59,35 +64,40 @@ class MockThingSpeakApi extends _i1.Mock implements _i4.ThingSpeakApi {
           as _i5.Future<_i2.Channel>);
 
   @override
-  _i5.Future<List<_i3.Field>> readFeed(
+  _i5.Future<_i3.FeedData> readFeed(
     _i2.Channel? channel,
-    _i4.ApiParameters? params,
+    _i3.ApiParameters? params,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#readFeed, [channel, params]),
-            returnValue: _i5.Future<List<_i3.Field>>.value(<_i3.Field>[]),
+            returnValue: _i5.Future<_i3.FeedData>.value(
+              _FakeFeedData_1(
+                this,
+                Invocation.method(#readFeed, [channel, params]),
+              ),
+            ),
           )
-          as _i5.Future<List<_i3.Field>>);
+          as _i5.Future<_i3.FeedData>);
 
   @override
-  _i5.Future<_i3.Field> readField(
+  _i5.Future<_i4.Field> readField(
     _i2.Channel? channel,
     int? fieldId,
-    _i4.ApiParameters? params,
+    _i3.ApiParameters? params,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#readField, [channel, fieldId, params]),
-            returnValue: _i5.Future<_i3.Field>.value(
-              _FakeField_1(
+            returnValue: _i5.Future<_i4.Field>.value(
+              _FakeField_2(
                 this,
                 Invocation.method(#readField, [channel, fieldId, params]),
               ),
             ),
           )
-          as _i5.Future<_i3.Field>);
+          as _i5.Future<_i4.Field>);
 
   @override
-  _i5.Future<_i4.FieldRange> readFieldRange(
+  _i5.Future<_i3.FieldRange> readFieldRange(
     _i2.Channel? channel,
     int? fieldId, {
     String? apiKey,
@@ -106,8 +116,8 @@ class MockThingSpeakApi extends _i1.Mock implements _i4.ThingSpeakApi {
                 #onProgress: onProgress,
               },
             ),
-            returnValue: _i5.Future<_i4.FieldRange>.value(
-              _FakeFieldRange_2(
+            returnValue: _i5.Future<_i3.FieldRange>.value(
+              _FakeFieldRange_3(
                 this,
                 Invocation.method(
                   #readFieldRange,
@@ -122,5 +132,5 @@ class MockThingSpeakApi extends _i1.Mock implements _i4.ThingSpeakApi {
               ),
             ),
           )
-          as _i5.Future<_i4.FieldRange>);
+          as _i5.Future<_i3.FieldRange>);
 }
