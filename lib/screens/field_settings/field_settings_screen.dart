@@ -188,38 +188,40 @@ class _TypeTile extends StatelessWidget {
         )
         .$2;
 
-    return ListTile(
-      leading: const Icon(Icons.show_chart),
-      title: Text(l10n.fieldSettingsType),
-      subtitle: Text(label),
-      onTap: () async {
-        final selected = await showDialog<ChartType>(
-          context: context,
-          builder: (context) => SimpleDialog(
-            title: Text(l10n.fieldSettingsTypeChoose),
-            children: [
-              RadioGroup<ChartType>(
-                groupValue: current,
-                onChanged: (v) {
-                  if (v != null) Navigator.pop(context, v);
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: options
-                      .map(
-                        (e) => RadioListTile<ChartType>(
-                          title: Text(e.$2),
-                          value: e.$1,
-                        ),
-                      )
-                      .toList(),
+    return MergeSemantics(
+      child: ListTile(
+        leading: const Icon(Icons.show_chart),
+        title: Text(l10n.fieldSettingsType),
+        subtitle: Text(label),
+        onTap: () async {
+          final selected = await showDialog<ChartType>(
+            context: context,
+            builder: (context) => SimpleDialog(
+              title: Text(l10n.fieldSettingsTypeChoose),
+              children: [
+                RadioGroup<ChartType>(
+                  groupValue: current,
+                  onChanged: (v) {
+                    if (v != null) Navigator.pop(context, v);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: options
+                        .map(
+                          (e) => RadioListTile<ChartType>(
+                            title: Text(e.$2),
+                            value: e.$1,
+                          ),
+                        )
+                        .toList(),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-        if (selected != null) onChanged(selected);
-      },
+              ],
+            ),
+          );
+          if (selected != null) onChanged(selected);
+        },
+      ),
     );
   }
 }
@@ -242,33 +244,35 @@ class _TextTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(value ?? placeholder),
-      onTap: () async {
-        final controller = TextEditingController(text: value ?? '');
-        final result = await showDialog<String>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(title),
-            content: TextField(controller: controller, autofocus: true),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.labelCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, controller.text),
-                child: Text(l10n.labelApply),
-              ),
-            ],
-          ),
-        );
-        if (result != null) {
-          onChanged(result.trim().isEmpty ? null : result.trim());
-        }
-      },
+    return MergeSemantics(
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(title),
+        subtitle: Text(value ?? placeholder),
+        onTap: () async {
+          final controller = TextEditingController(text: value ?? '');
+          final result = await showDialog<String>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(title),
+              content: TextField(controller: controller, autofocus: true),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.labelCancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, controller.text),
+                  child: Text(l10n.labelApply),
+                ),
+              ],
+            ),
+          );
+          if (result != null) {
+            onChanged(result.trim().isEmpty ? null : result.trim());
+          }
+        },
+      ),
     );
   }
 }
@@ -291,47 +295,49 @@ class _NumberTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(value != null ? _formatNumber(value!) : placeholder),
-      onTap: () async {
-        final controller = TextEditingController(
-          text: value != null ? _formatNumber(value!) : '',
-        );
-        final result = await showDialog<String>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(title),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
+    return MergeSemantics(
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(title),
+        subtitle: Text(value != null ? _formatNumber(value!) : placeholder),
+        onTap: () async {
+          final controller = TextEditingController(
+            text: value != null ? _formatNumber(value!) : '',
+          );
+          final result = await showDialog<String>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(title),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.labelCancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, controller.text),
+                  child: Text(l10n.labelApply),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.labelCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, controller.text),
-                child: Text(l10n.labelApply),
-              ),
-            ],
-          ),
-        );
-        if (result == null) return;
-        final trimmed = result.trim();
-        if (trimmed.isEmpty) {
-          onChanged(null);
-          return;
-        }
-        final parsed = double.tryParse(trimmed);
-        if (parsed != null) onChanged(parsed);
-      },
+          );
+          if (result == null) return;
+          final trimmed = result.trim();
+          if (trimmed.isEmpty) {
+            onChanged(null);
+            return;
+          }
+          final parsed = double.tryParse(trimmed);
+          if (parsed != null) onChanged(parsed);
+        },
+      ),
     );
   }
 
@@ -357,36 +363,39 @@ class _RoundingTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final label = current == null ? l10n.fieldSettingsRoundingAuto : '$current';
 
-    return ListTile(
-      leading: const Icon(Icons.pin_outlined),
-      title: Text(l10n.fieldSettingsRounding),
-      subtitle: Text(label),
-      onTap: () async {
-        final selected = await showDialog<_RoundingChoice>(
-          context: context,
-          builder: (context) => SimpleDialog(
-            title: Text(l10n.fieldSettingsRounding),
-            children: [
-              RadioGroup<int?>(
-                groupValue: current,
-                onChanged: (v) => Navigator.pop(context, _RoundingChoice(v)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    RadioListTile<int?>(
-                      title: Text(l10n.fieldSettingsRoundingAuto),
-                      value: null,
-                    ),
-                    for (var i = 0; i <= 6; i++)
-                      RadioListTile<int?>(title: Text('$i'), value: i),
-                  ],
+    return MergeSemantics(
+      child: ListTile(
+        leading: const Icon(Icons.pin_outlined),
+        title: Text(l10n.fieldSettingsRounding),
+        subtitle: Text(label),
+        onTap: () async {
+          final selected = await showDialog<_RoundingChoice>(
+            context: context,
+            builder: (context) => SimpleDialog(
+              title: Text(l10n.fieldSettingsRounding),
+              children: [
+                RadioGroup<int?>(
+                  groupValue: current,
+                  onChanged: (v) =>
+                      Navigator.pop(context, _RoundingChoice(v)),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RadioListTile<int?>(
+                        title: Text(l10n.fieldSettingsRoundingAuto),
+                        value: null,
+                      ),
+                      for (var i = 0; i <= 6; i++)
+                        RadioListTile<int?>(title: Text('$i'), value: i),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-        if (selected != null) onChanged(selected.decimals);
-      },
+              ],
+            ),
+          );
+          if (selected != null) onChanged(selected.decimals);
+        },
+      ),
     );
   }
 }

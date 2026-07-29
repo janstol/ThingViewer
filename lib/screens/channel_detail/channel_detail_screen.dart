@@ -151,16 +151,18 @@ class _StatusSection extends StatelessWidget {
             onPressed: () => _openStatusLog(context, statuses, settings),
           ),
         ),
-        ListTile(
-          title: Text(
-            latest.message,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        MergeSemantics(
+          child: ListTile(
+            title: Text(
+              latest.message,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              formatTimestamp(l10n, settings, latest.createdAt, now),
+            ),
+            onTap: () => _openStatusLog(context, statuses, settings),
           ),
-          subtitle: Text(
-            formatTimestamp(l10n, settings, latest.createdAt, now),
-          ),
-          onTap: () => _openStatusLog(context, statuses, settings),
         ),
       ],
     );
