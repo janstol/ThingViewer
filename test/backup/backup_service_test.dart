@@ -6,8 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
+import 'package:thingviewer/models/pinned_field.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
+import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 
 const _channel = Channel(
@@ -31,6 +33,7 @@ Future<BackupService> _service() async {
     ChannelStorage(prefs),
     SettingsStorage(prefs),
     FieldSettingsStorage(prefs),
+    PinnedFieldsStorage(prefs),
     appVersion: () async => '0.9.0',
   );
 }
@@ -39,61 +42,71 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('export → parse → restore round trip', () {
-    test('preserves channels, settings, and field chart settings', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final channelStorage = ChannelStorage(prefs);
-      final settingsStorage = SettingsStorage(prefs);
-      final fieldSettingsStorage = FieldSettingsStorage(prefs);
+    test(
+      'preserves channels, settings, field chart settings, and pinned fields',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final channelStorage = ChannelStorage(prefs);
+        final settingsStorage = SettingsStorage(prefs);
+        final fieldSettingsStorage = FieldSettingsStorage(prefs);
+        final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
 
-      await channelStorage.saveChannels([_channel, _otherChannel]);
-      await settingsStorage.saveThemeMode(ThemeMode.dark);
-      await settingsStorage.saveDateFormat('yyyy-MM-dd');
-      await settingsStorage.saveTimezoneDisplay(TimezoneDisplay.offset);
-      await settingsStorage.saveStartChannel(_channel);
-      const chartSettings = FieldChartSettings(
-        type: ChartType.step,
-        showDelta: true,
-      );
-      await fieldSettingsStorage.save(_channel, 1, chartSettings);
+        await channelStorage.saveChannels([_channel, _otherChannel]);
+        await settingsStorage.saveThemeMode(ThemeMode.dark);
+        await settingsStorage.saveDateFormat('yyyy-MM-dd');
+        await settingsStorage.saveTimezoneDisplay(TimezoneDisplay.offset);
+        await settingsStorage.saveStartChannel(_channel);
+        const chartSettings = FieldChartSettings(
+          type: ChartType.step,
+          showDelta: true,
+        );
+        await fieldSettingsStorage.save(_channel, 1, chartSettings);
+        await pinnedFieldsStorage.toggle(_channel, 1);
 
-      final service = BackupService(
-        channelStorage,
-        settingsStorage,
-        fieldSettingsStorage,
-        appVersion: () async => '0.9.0',
-      );
-      final raw = await service.export();
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      expect(decoded['app'], 'thingviewer');
-      expect(decoded['version'], 1);
-      expect(decoded['appVersion'], '0.9.0');
+        final service = BackupService(
+          channelStorage,
+          settingsStorage,
+          fieldSettingsStorage,
+          pinnedFieldsStorage,
+          appVersion: () async => '0.9.0',
+        );
+        final raw = await service.export();
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        expect(decoded['app'], 'thingviewer');
+        expect(decoded['version'], 2);
+        expect(decoded['appVersion'], '0.9.0');
 
-      // Restore into fresh, empty storage to prove the round trip carries
-      // everything, not just whatever was already there.
-      SharedPreferences.setMockInitialValues({});
-      final freshPrefs = await SharedPreferences.getInstance();
-      final freshService = BackupService(
-        ChannelStorage(freshPrefs),
-        SettingsStorage(freshPrefs),
-        FieldSettingsStorage(freshPrefs),
-      );
-      final contents = freshService.parse(raw);
-      await freshService.restore(contents, ImportMode.replace);
+        // Restore into fresh, empty storage to prove the round trip carries
+        // everything, not just whatever was already there.
+        SharedPreferences.setMockInitialValues({});
+        final freshPrefs = await SharedPreferences.getInstance();
+        final freshService = BackupService(
+          ChannelStorage(freshPrefs),
+          SettingsStorage(freshPrefs),
+          FieldSettingsStorage(freshPrefs),
+          PinnedFieldsStorage(freshPrefs),
+        );
+        final contents = freshService.parse(raw);
+        await freshService.restore(contents, ImportMode.replace);
 
-      final restoredChannels = ChannelStorage(freshPrefs).loadChannels();
-      expect(restoredChannels, [_channel, _otherChannel]);
+        final restoredChannels = ChannelStorage(freshPrefs).loadChannels();
+        expect(restoredChannels, [_channel, _otherChannel]);
 
-      final restoredSettings = SettingsStorage(freshPrefs);
-      expect(restoredSettings.themeMode, ThemeMode.dark);
-      expect(restoredSettings.dateFormat, 'yyyy-MM-dd');
-      expect(restoredSettings.timezoneDisplay, TimezoneDisplay.offset);
-      expect(restoredSettings.startChannelId, _channel.id);
-      expect(restoredSettings.startChannelServerUrl, _channel.serverUrl);
+        final restoredSettings = SettingsStorage(freshPrefs);
+        expect(restoredSettings.themeMode, ThemeMode.dark);
+        expect(restoredSettings.dateFormat, 'yyyy-MM-dd');
+        expect(restoredSettings.timezoneDisplay, TimezoneDisplay.offset);
+        expect(restoredSettings.startChannelId, _channel.id);
+        expect(restoredSettings.startChannelServerUrl, _channel.serverUrl);
 
-      final restoredFieldSettings = FieldSettingsStorage(freshPrefs);
-      expect(restoredFieldSettings.settingsFor(_channel, 1), chartSettings);
-    });
+        final restoredFieldSettings = FieldSettingsStorage(freshPrefs);
+        expect(restoredFieldSettings.settingsFor(_channel, 1), chartSettings);
+
+        final restoredPinnedFields = PinnedFieldsStorage(freshPrefs);
+        expect(restoredPinnedFields.isPinned(_channel, 1), isTrue);
+      },
+    );
   });
 
   group('ImportMode.addChannels', () {
@@ -108,6 +121,7 @@ void main() {
           channelStorage,
           SettingsStorage(prefs),
           FieldSettingsStorage(prefs),
+          PinnedFieldsStorage(prefs),
         );
 
         const thirdChannel = Channel(
@@ -140,6 +154,7 @@ void main() {
         channelStorage,
         settingsStorage,
         FieldSettingsStorage(prefs),
+        PinnedFieldsStorage(prefs),
       );
 
       final contents = BackupContents(
@@ -163,6 +178,7 @@ void main() {
         channelStorage,
         SettingsStorage(prefs),
         FieldSettingsStorage(prefs),
+        PinnedFieldsStorage(prefs),
       );
 
       final contents = BackupContents(channels: [_channel]);
@@ -180,6 +196,7 @@ void main() {
         channelStorage,
         SettingsStorage(prefs),
         FieldSettingsStorage(prefs),
+        PinnedFieldsStorage(prefs),
       );
 
       // No `channels` section in this payload.
@@ -222,7 +239,7 @@ void main() {
 
     test('throws BackupException for a newer version', () async {
       final service = await _service();
-      final raw = jsonEncode({'app': 'thingviewer', 'version': 2});
+      final raw = jsonEncode({'app': 'thingviewer', 'version': 3});
       expect(
         () => service.parse(raw),
         throwsA(
@@ -248,6 +265,26 @@ void main() {
       expect(contents.channels, [_channel]);
       expect(contents.settings, isNull);
       expect(contents.fieldChartSettings, isNull);
+      expect(contents.pinnedFields, isNull);
+    });
+
+    test('parses a pinnedFields section', () async {
+      final service = await _service();
+      final raw = jsonEncode({
+        'app': 'thingviewer',
+        'version': 2,
+        'pinnedFields': [
+          const PinnedField(
+            serverUrl: 'https://api.thingspeak.com',
+            channelId: 1,
+            fieldId: 1,
+          ).toJson(),
+        ],
+      });
+
+      final contents = service.parse(raw);
+
+      expect(contents.pinnedFields, hasLength(1));
     });
   });
 }

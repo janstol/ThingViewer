@@ -542,4 +542,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fieldSettingsReset => 'Reset to defaults';
+
+  @override
+  String get pinnedSectionTitle => 'Pinned fields';
+
+  @override
+  String get channelListSectionTitle => 'Channels';
+
+  @override
+  String get pinnedSectionEditTooltip => 'Edit pinned fields';
+
+  @override
+  String get pinnedFieldUnavailable => 'Unavailable';
+
+  @override
+  String get pinFieldTooltip => 'Pin field';
+
+  @override
+  String get unpinFieldTooltip => 'Unpin field';
+
+  @override
+  String get pinnedEditTitle => 'Pinned fields';
+
+  @override
+  String get pinnedEditEmpty =>
+      'No saved channels. Add a channel first to pin its fields.';
+
+  @override
+  String get pinnedEditChannelLoadFailed =>
+      'Couldn\'t load fields for this channel.';
+
+  @override
+  String get settingsPinnedFields => 'Pinned fields';
+
+  @override
+  String backupSummaryPinnedFields(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pinned fields',
+      one: '1 pinned field',
+    );
+    return '$_temp0';
+  }
 }

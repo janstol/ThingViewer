@@ -976,6 +976,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset to defaults'**
   String get fieldSettingsReset;
+
+  /// No description provided for @pinnedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned fields'**
+  String get pinnedSectionTitle;
+
+  /// No description provided for @channelListSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get channelListSectionTitle;
+
+  /// No description provided for @pinnedSectionEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit pinned fields'**
+  String get pinnedSectionEditTooltip;
+
+  /// No description provided for @pinnedFieldUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get pinnedFieldUnavailable;
+
+  /// No description provided for @pinFieldTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin field'**
+  String get pinFieldTooltip;
+
+  /// No description provided for @unpinFieldTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin field'**
+  String get unpinFieldTooltip;
+
+  /// No description provided for @pinnedEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned fields'**
+  String get pinnedEditTitle;
+
+  /// No description provided for @pinnedEditEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved channels. Add a channel first to pin its fields.'**
+  String get pinnedEditEmpty;
+
+  /// No description provided for @pinnedEditChannelLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load fields for this channel.'**
+  String get pinnedEditChannelLoadFailed;
+
+  /// No description provided for @settingsPinnedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned fields'**
+  String get settingsPinnedFields;
+
+  /// No description provided for @backupSummaryPinnedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 pinned field} other{{count} pinned fields}}'**
+  String backupSummaryPinnedFields(num count);
 }
 
 class _AppLocalizationsDelegate

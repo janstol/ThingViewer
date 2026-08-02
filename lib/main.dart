@@ -9,6 +9,7 @@ import 'backup/backup_service.dart';
 import 'migration/migration_service.dart';
 import 'storage/channel_storage.dart';
 import 'storage/field_settings_storage.dart';
+import 'storage/pinned_fields_storage.dart';
 import 'storage/settings_storage.dart';
 
 void main() async {
@@ -20,10 +21,12 @@ void main() async {
   final channelStorage = ChannelStorage(prefs);
   final settingsStorage = SettingsStorage(prefs);
   final fieldSettingsStorage = FieldSettingsStorage(prefs);
+  final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
   final backupService = BackupService(
     channelStorage,
     settingsStorage,
     fieldSettingsStorage,
+    pinnedFieldsStorage,
     appVersion: () async => (await PackageInfo.fromPlatform()).version,
   );
 
@@ -33,6 +36,7 @@ void main() async {
       channelStorage: channelStorage,
       settingsStorage: settingsStorage,
       fieldSettingsStorage: fieldSettingsStorage,
+      pinnedFieldsStorage: pinnedFieldsStorage,
       backupService: backupService,
     ),
   );

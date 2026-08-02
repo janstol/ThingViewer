@@ -8,6 +8,7 @@ import 'screens/channel_list/channel_list_screen.dart';
 import 'screens/settings/settings_notifier.dart';
 import 'storage/channel_storage.dart';
 import 'storage/field_settings_storage.dart';
+import 'storage/pinned_fields_storage.dart';
 import 'storage/settings_storage.dart';
 import 'theme.dart';
 
@@ -16,6 +17,7 @@ class App extends StatefulWidget {
   final ChannelStorage channelStorage;
   final SettingsStorage settingsStorage;
   final FieldSettingsStorage fieldSettingsStorage;
+  final PinnedFieldsStorage pinnedFieldsStorage;
   final BackupService backupService;
 
   const App({
@@ -24,6 +26,7 @@ class App extends StatefulWidget {
     required this.channelStorage,
     required this.settingsStorage,
     required this.fieldSettingsStorage,
+    required this.pinnedFieldsStorage,
     required this.backupService,
   });
 
@@ -67,6 +70,7 @@ class _AppState extends State<App> {
           channelStorage: widget.channelStorage,
           settings: _settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
+          pinnedFieldsStorage: widget.pinnedFieldsStorage,
           backupService: widget.backupService,
         ),
       ),

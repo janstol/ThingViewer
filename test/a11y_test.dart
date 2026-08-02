@@ -15,10 +15,12 @@ import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/channel_status/channel_status_screen.dart';
 import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
 import 'package:thingviewer/screens/field_settings/field_settings_screen.dart';
+import 'package:thingviewer/screens/pinned_edit/pinned_edit_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/screens/settings/settings_screen.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
+import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 import 'package:thingviewer/theme.dart';
 
@@ -75,12 +77,18 @@ Future<FieldSettingsStorage> _fieldSettingsStorage() async {
   return FieldSettingsStorage(prefs);
 }
 
+Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return PinnedFieldsStorage(prefs);
+}
+
 Future<BackupService> _backupService() async {
   final prefs = await SharedPreferences.getInstance();
   return BackupService(
     ChannelStorage(prefs),
     SettingsStorage(prefs),
     FieldSettingsStorage(prefs),
+    PinnedFieldsStorage(prefs),
   );
 }
 
@@ -140,6 +148,7 @@ void main() {
               channelStorage: storage,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
@@ -164,6 +173,7 @@ void main() {
               channelStorage: storage,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
@@ -194,12 +204,47 @@ void main() {
               channelStorage: storage,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
           ),
         );
         await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
+      testWidgets('channel list - pins present', (tester) async {
+        _setNarrowSurface(tester);
+        when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: _fields, statuses: []));
+        SharedPreferences.setMockInitialValues({
+          'channels': Channel.listToJson([_channel, _otherChannel]),
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final storage = ChannelStorage(prefs);
+        final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+        await pinnedFieldsStorage.toggle(_channel, 1);
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelListScreen(
+              api: mockApi,
+              channelStorage: storage,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: pinnedFieldsStorage,
+              backupService: await _backupService(),
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Temp'), findsOneWidget);
 
         await _checkA11y(tester);
       });
@@ -217,6 +262,7 @@ void main() {
               api: mockApi,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
             ),
             themeMode,
           ),
@@ -237,6 +283,7 @@ void main() {
               api: mockApi,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
             ),
             themeMode,
           ),
@@ -257,6 +304,7 @@ void main() {
               api: mockApi,
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
             ),
             themeMode,
           ),
@@ -307,6 +355,24 @@ void main() {
         await _checkA11y(tester);
       });
 
+      testWidgets('pinned fields picker', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+
+        await tester.pumpWidget(
+          _wrap(
+            PinnedEditScreen(
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channels: const [_channel, _otherChannel],
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
       testWidgets('settings', (tester) async {
         SharedPreferences.setMockInitialValues({});
 
@@ -315,6 +381,8 @@ void main() {
             SettingsScreen(
               settings: await _settings(),
               channels: const [_channel, _otherChannel],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: await _backupService(),
               onImported: () {},
             ),
@@ -334,6 +402,8 @@ void main() {
             SettingsScreen(
               settings: await _settings(),
               channels: const [_channel, _otherChannel],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: await _backupService(),
               onImported: () {},
             ),

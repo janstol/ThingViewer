@@ -3,10 +3,11 @@ import 'dart:convert';
 import '../models/channel.dart';
 import '../storage/channel_storage.dart';
 import '../storage/field_settings_storage.dart';
+import '../storage/pinned_fields_storage.dart';
 import '../storage/settings_storage.dart';
 
 const _kBackupApp = 'thingviewer';
-const _kBackupVersion = 1;
+const _kBackupVersion = 2;
 
 enum ImportMode { replace, addChannels }
 
@@ -30,12 +31,14 @@ class BackupContents {
   final List<Channel>? channels;
   final Map<String, dynamic>? settings;
   final Map<String, dynamic>? fieldChartSettings;
+  final List<dynamic>? pinnedFields;
   final DateTime? exportedAt;
 
   const BackupContents({
     this.channels,
     this.settings,
     this.fieldChartSettings,
+    this.pinnedFields,
     this.exportedAt,
   });
 }
@@ -50,6 +53,7 @@ class BackupService {
   final ChannelStorage _channelStorage;
   final SettingsStorage _settingsStorage;
   final FieldSettingsStorage _fieldSettingsStorage;
+  final PinnedFieldsStorage _pinnedFieldsStorage;
 
   /// Resolved lazily, only when [export] actually needs it, so constructing
   /// a [BackupService] at app startup doesn't have to wait on a
@@ -59,7 +63,8 @@ class BackupService {
   BackupService(
     this._channelStorage,
     this._settingsStorage,
-    this._fieldSettingsStorage, {
+    this._fieldSettingsStorage,
+    this._pinnedFieldsStorage, {
     this.appVersion = _noAppVersion,
   });
 
@@ -78,6 +83,7 @@ class BackupService {
           .toList(),
       'settings': _settingsStorage.exportJson(),
       'fieldChartSettings': _fieldSettingsStorage.exportJson(),
+      'pinnedFields': _pinnedFieldsStorage.exportJson(),
     };
     return const JsonEncoder.withIndent('  ').convert(json);
   }
@@ -119,6 +125,7 @@ class BackupService {
           : null;
       final settings = decoded['settings'];
       final fieldChartSettings = decoded['fieldChartSettings'];
+      final pinnedFields = decoded['pinnedFields'];
       final exportedAtValue = decoded['exportedAt'];
       return BackupContents(
         channels: channels,
@@ -126,6 +133,7 @@ class BackupService {
         fieldChartSettings: fieldChartSettings is Map<String, dynamic>
             ? fieldChartSettings
             : null,
+        pinnedFields: pinnedFields is List ? pinnedFields : null,
         exportedAt: exportedAtValue is String
             ? DateTime.tryParse(exportedAtValue)
             : null,
@@ -149,6 +157,10 @@ class BackupService {
         final fieldChartSettings = contents.fieldChartSettings;
         if (fieldChartSettings != null) {
           await _fieldSettingsStorage.importJson(fieldChartSettings);
+        }
+        final pinnedFields = contents.pinnedFields;
+        if (pinnedFields != null) {
+          await _pinnedFieldsStorage.importJson(pinnedFields);
         }
       case ImportMode.addChannels:
         final incoming = contents.channels;

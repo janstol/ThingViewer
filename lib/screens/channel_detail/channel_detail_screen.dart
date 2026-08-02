@@ -10,6 +10,7 @@ import '../../models/channel.dart';
 import '../../models/channel_status.dart';
 import '../../models/field.dart';
 import '../../storage/field_settings_storage.dart';
+import '../../storage/pinned_fields_storage.dart';
 import '../../theme.dart';
 import '../../widgets/section_header.dart';
 import '../channel_add/channel_add_screen.dart';
@@ -174,10 +175,12 @@ class ChannelDetailScreen extends StatefulWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final PinnedFieldsStorage pinnedFieldsStorage;
   final List<Channel> existingChannels;
   final void Function(Channel)? onChannelUpdated;
   final Future<void> Function(Channel original, Channel updated)?
   onChannelEdited;
+  final VoidCallback? onPinnedChanged;
 
   const ChannelDetailScreen({
     super.key,
@@ -185,9 +188,11 @@ class ChannelDetailScreen extends StatefulWidget {
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
+    required this.pinnedFieldsStorage,
     this.existingChannels = const [],
     this.onChannelUpdated,
     this.onChannelEdited,
+    this.onPinnedChanged,
   });
 
   @override
@@ -302,6 +307,8 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                 api: widget.api,
                 settings: widget.settings,
                 fieldSettingsStorage: widget.fieldSettingsStorage,
+                pinnedFieldsStorage: widget.pinnedFieldsStorage,
+                onPinnedChanged: widget.onPinnedChanged,
                 now: _now,
               ),
           },
@@ -318,6 +325,8 @@ class _FieldList extends StatelessWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final PinnedFieldsStorage pinnedFieldsStorage;
+  final VoidCallback? onPinnedChanged;
   final DateTime now;
 
   const _FieldList({
@@ -327,6 +336,8 @@ class _FieldList extends StatelessWidget {
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
+    required this.pinnedFieldsStorage,
+    this.onPinnedChanged,
     required this.now,
   });
 
@@ -396,6 +407,8 @@ class _FieldList extends StatelessWidget {
                       api: api,
                       settings: settings,
                       fieldSettingsStorage: fieldSettingsStorage,
+                      pinnedFieldsStorage: pinnedFieldsStorage,
+                      onPinnedChanged: onPinnedChanged,
                     ),
                   ),
                 ),

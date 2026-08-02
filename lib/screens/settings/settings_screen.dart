@@ -7,28 +7,35 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../api/thingspeak_api.dart';
 import '../../backup/backup_service.dart';
 import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../storage/pinned_fields_storage.dart';
 import '../../storage/settings_storage.dart';
 import '../../theme.dart';
 import '../../widgets/section_header.dart';
+import '../pinned_edit/pinned_edit_screen.dart';
 import 'settings_notifier.dart';
 
 const _dateFormats = ['dd.MM.yyyy', 'dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'];
 const _timeFormats = ['HH:mm', 'HH:mm:ss', 'hh:mm a', 'hh:mm:ss a'];
 
 class SettingsScreen extends StatelessWidget {
+  final ThingSpeakApi api;
   final SettingsNotifier settings;
   final List<Channel> channels;
+  final PinnedFieldsStorage pinnedFieldsStorage;
   final BackupService backupService;
   final VoidCallback onImported;
 
   const SettingsScreen({
     super.key,
+    required this.api,
     required this.settings,
     required this.channels,
+    required this.pinnedFieldsStorage,
     required this.backupService,
     required this.onImported,
   });
@@ -46,6 +53,20 @@ class SettingsScreen extends StatelessWidget {
             _ThemeTile(settings: settings),
             SectionHeader(title: l10n.settingsSectionGeneral),
             _StartScreenTile(settings: settings, channels: channels),
+            ListTile(
+              leading: const Icon(Icons.push_pin_outlined),
+              title: Text(l10n.settingsPinnedFields),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PinnedEditScreen(
+                    api: api,
+                    pinnedFieldsStorage: pinnedFieldsStorage,
+                    channels: channels,
+                  ),
+                ),
+              ),
+            ),
             SectionHeader(title: l10n.settingsSectionDateTime),
             _FormatTile(
               icon: Icons.calendar_today_outlined,

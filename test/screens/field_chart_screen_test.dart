@@ -12,6 +12,7 @@ import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
 import 'package:thingviewer/screens/field_chart/field_table.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
+import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 import 'package:thingviewer/theme.dart';
 
@@ -83,6 +84,11 @@ Future<FieldSettingsStorage> _fieldSettingsStorage() async {
   return FieldSettingsStorage(prefs);
 }
 
+Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return PinnedFieldsStorage(prefs);
+}
+
 void main() {
   late MockThingSpeakApi mockApi;
 
@@ -111,6 +117,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -149,6 +156,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -182,6 +190,7 @@ void main() {
           api: mockApi,
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
         ),
       ),
     );
@@ -211,6 +220,7 @@ void main() {
           api: mockApi,
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
         ),
       ),
     );
@@ -246,6 +256,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -300,6 +311,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -351,6 +363,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -385,6 +398,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -444,6 +458,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -509,6 +524,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -559,6 +575,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -599,6 +616,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -635,6 +653,7 @@ void main() {
             api: mockApi,
             settings: settings,
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -684,6 +703,7 @@ void main() {
             api: mockApi,
             settings: settings,
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -731,6 +751,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -770,6 +791,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -828,6 +850,7 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
         ),
       );
@@ -887,6 +910,7 @@ void main() {
               api: mockApi,
               settings: await _settings(),
               fieldSettingsStorage: fieldSettingsStorage,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
             ),
           ),
         );
@@ -962,6 +986,7 @@ void main() {
           api: mockApi,
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
         ),
         2,
       ),

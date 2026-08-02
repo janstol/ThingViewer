@@ -10,6 +10,7 @@ import 'package:thingviewer/screens/channel_detail/channel_detail_screen.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
+import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 
 import 'screens/channel_detail_notifier_test.mocks.dart';
@@ -26,15 +27,18 @@ Future<App> _buildApp() async {
   final channelStorage = ChannelStorage(prefs);
   final settingsStorage = SettingsStorage(prefs);
   final fieldSettingsStorage = FieldSettingsStorage(prefs);
+  final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
   return App(
     api: MockThingSpeakApi(),
     channelStorage: channelStorage,
     settingsStorage: settingsStorage,
     fieldSettingsStorage: fieldSettingsStorage,
+    pinnedFieldsStorage: pinnedFieldsStorage,
     backupService: BackupService(
       channelStorage,
       settingsStorage,
       fieldSettingsStorage,
+      pinnedFieldsStorage,
     ),
   );
 }
@@ -99,16 +103,19 @@ void main() {
       final channelStorage = ChannelStorage(prefs);
       final settingsStorage = SettingsStorage(prefs);
       final fieldSettingsStorage = FieldSettingsStorage(prefs);
+      final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
       await tester.pumpWidget(
         App(
           api: mockApi,
           channelStorage: channelStorage,
           settingsStorage: settingsStorage,
           fieldSettingsStorage: fieldSettingsStorage,
+          pinnedFieldsStorage: pinnedFieldsStorage,
           backupService: BackupService(
             channelStorage,
             settingsStorage,
             fieldSettingsStorage,
+            pinnedFieldsStorage,
           ),
         ),
       );

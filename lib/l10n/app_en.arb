@@ -211,5 +211,21 @@
   "fieldSettingsShowDeltaSubtitle": "Plot the difference between consecutive readings instead of raw values",
   "fieldSettingsGapOnInvalid": "Break line at invalid readings",
   "fieldSettingsGapOnInvalidSubtitle": "Show a gap for NaN readings instead of connecting the line across them",
-  "fieldSettingsReset": "Reset to defaults"
+  "fieldSettingsReset": "Reset to defaults",
+  "pinnedSectionTitle": "Pinned fields",
+  "channelListSectionTitle": "Channels",
+  "pinnedSectionEditTooltip": "Edit pinned fields",
+  "pinnedFieldUnavailable": "Unavailable",
+  "pinFieldTooltip": "Pin field",
+  "unpinFieldTooltip": "Unpin field",
+  "pinnedEditTitle": "Pinned fields",
+  "pinnedEditEmpty": "No saved channels. Add a channel first to pin its fields.",
+  "pinnedEditChannelLoadFailed": "Couldn't load fields for this channel.",
+  "settingsPinnedFields": "Pinned fields",
+  "backupSummaryPinnedFields": "{count, plural, =1{1 pinned field} other{{count} pinned fields}}",
+  "@backupSummaryPinnedFields": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  }
 }

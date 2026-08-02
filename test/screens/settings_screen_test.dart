@@ -14,8 +14,11 @@ import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/screens/settings/settings_screen.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
+import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 import 'package:thingviewer/theme.dart';
+
+import 'channel_detail_notifier_test.mocks.dart';
 
 const _channel = Channel(
   id: 1,
@@ -44,7 +47,13 @@ Future<BackupService> _backupService() async {
     ChannelStorage(prefs),
     SettingsStorage(prefs),
     FieldSettingsStorage(prefs),
+    PinnedFieldsStorage(prefs),
   );
+}
+
+Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return PinnedFieldsStorage(prefs);
 }
 
 // file_picker's static API delegates to FilePickerPlatform.instance, a
@@ -101,6 +110,8 @@ Uint8List _backupBytes(List<Channel> channels) => Uint8List.fromList(
 );
 
 void main() {
+  final mockApi = MockThingSpeakApi();
+
   testWidgets('tapping Theme opens the theme dialog', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final settings = SettingsNotifier(
@@ -112,6 +123,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -135,6 +148,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -162,6 +177,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [_channel, _otherChannel],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -183,6 +200,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [_channel, _otherChannel],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -208,6 +227,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -240,6 +261,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -265,6 +288,8 @@ void main() {
         SettingsScreen(
           settings: settings,
           channels: const [_channel, _otherChannel],
+          api: mockApi,
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -291,6 +316,8 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -302,6 +329,12 @@ void main() {
         scrollable: find.byType(Scrollable),
       );
       expect(find.text('Backup'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
       expect(find.text('Export'), findsOneWidget);
 
       await tester.scrollUntilVisible(
@@ -323,6 +356,8 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -376,10 +411,13 @@ void main() {
             SettingsScreen(
               settings: settings,
               channels: const [_channel],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: BackupService(
                 channelStorage,
                 SettingsStorage(prefs),
                 FieldSettingsStorage(prefs),
+                PinnedFieldsStorage(prefs),
               ),
               onImported: () {},
             ),
@@ -434,10 +472,13 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [_channel],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: BackupService(
               channelStorage,
               SettingsStorage(prefs),
               FieldSettingsStorage(prefs),
+              PinnedFieldsStorage(prefs),
             ),
             onImported: () {},
           ),
@@ -483,6 +524,8 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -521,6 +564,8 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -555,6 +600,8 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -590,6 +637,8 @@ void main() {
           SettingsScreen(
             settings: settings,
             channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -624,6 +673,8 @@ void main() {
             SettingsScreen(
               settings: settings,
               channels: const [],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
               backupService: await _backupService(),
               onImported: () {},
             ),

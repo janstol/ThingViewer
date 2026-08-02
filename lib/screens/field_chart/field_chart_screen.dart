@@ -7,6 +7,7 @@ import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../models/field_chart_settings.dart';
 import '../../storage/field_settings_storage.dart';
+import '../../storage/pinned_fields_storage.dart';
 import '../../theme.dart';
 import '../field_settings/field_settings_screen.dart';
 import '../settings/settings_notifier.dart';
@@ -27,6 +28,8 @@ class FieldChartScreen extends StatefulWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
+  final PinnedFieldsStorage pinnedFieldsStorage;
+  final VoidCallback? onPinnedChanged;
 
   const FieldChartScreen({
     super.key,
@@ -35,6 +38,8 @@ class FieldChartScreen extends StatefulWidget {
     required this.api,
     required this.settings,
     required this.fieldSettingsStorage,
+    required this.pinnedFieldsStorage,
+    this.onPinnedChanged,
   });
 
   @override
@@ -44,6 +49,7 @@ class FieldChartScreen extends StatefulWidget {
 class _FieldChartScreenState extends State<FieldChartScreen> {
   late final FieldChartNotifier _notifier;
   late FieldChartSettings _chartSettings;
+  late bool _pinned;
   bool _showTable = false;
 
   @override
@@ -54,12 +60,23 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       widget.channel,
       widget.field.id,
     );
+    _pinned = widget.pinnedFieldsStorage.isPinned(
+      widget.channel,
+      widget.field.id,
+    );
   }
 
   @override
   void dispose() {
     _notifier.dispose();
     super.dispose();
+  }
+
+  Future<void> _togglePin() async {
+    await widget.pinnedFieldsStorage.toggle(widget.channel, widget.field.id);
+    if (!mounted) return;
+    setState(() => _pinned = !_pinned);
+    widget.onPinnedChanged?.call();
   }
 
   void _openSettings() {
@@ -91,6 +108,11 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       appBar: AppBar(
         title: Text(chartTitle),
         actions: [
+          IconButton(
+            icon: Icon(_pinned ? Icons.push_pin : Icons.push_pin_outlined),
+            tooltip: _pinned ? l10n.unpinFieldTooltip : l10n.pinFieldTooltip,
+            onPressed: _togglePin,
+          ),
           IconButton(
             icon: Icon(_showTable ? Icons.show_chart : Icons.table_rows),
             tooltip: _showTable
