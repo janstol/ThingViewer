@@ -8,6 +8,7 @@ import '../../backup/backup_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
+import '../../storage/channel_snapshot_storage.dart';
 import '../../storage/channel_storage.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
@@ -30,6 +31,7 @@ class ChannelListScreen extends StatefulWidget {
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
 
   const ChannelListScreen({
@@ -39,6 +41,7 @@ class ChannelListScreen extends StatefulWidget {
     required this.settings,
     required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
   });
 
@@ -66,6 +69,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     _pinnedNotifier = PinnedNotifier(
       widget.api,
       widget.pinnedFieldsStorage,
+      widget.channelSnapshotStorage,
       _channels,
     );
     _pinnedNotifier.addListener(_syncAgeTicker);
@@ -89,6 +93,15 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
 
   void _refreshPinned() => _pinnedNotifier.setChannels(_channels);
 
+  void _removeChannel(Channel channel) {
+    if (_selectedChannel == channel) {
+      setState(() => _selectedChannel = null);
+    }
+    _notifier.removeChannel(channel);
+    widget.channelSnapshotStorage.remove(channel);
+    _refreshPinned();
+  }
+
   void _openPinnedEdit() async {
     await Navigator.push(
       context,
@@ -109,7 +122,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
       MaterialPageRoute(
         builder: (_) => FieldChartScreen(
           channel: entry.channel,
-          field: Field(id: entry.snapshot.fieldId, label: entry.snapshot.label),
+          field: Field(id: entry.pin.fieldId, label: entry.snapshot?.label),
           api: widget.api,
           settings: widget.settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
@@ -157,18 +170,13 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                     settings: widget.settings,
                     fieldSettingsStorage: widget.fieldSettingsStorage,
                     pinnedFieldsStorage: widget.pinnedFieldsStorage,
+                    channelSnapshotStorage: widget.channelSnapshotStorage,
                     backupService: widget.backupService,
                     onImported: _onImported,
                     selectedChannel: _selectedChannel,
                     onChannelSelected: (c) =>
                         setState(() => _selectedChannel = c),
-                    onChannelRemoved: (c) {
-                      if (_selectedChannel == c) {
-                        setState(() => _selectedChannel = null);
-                      }
-                      _notifier.removeChannel(c);
-                      _refreshPinned();
-                    },
+                    onChannelRemoved: _removeChannel,
                     onChannelEdited: _onChannelEdited,
                     onAddChannel: _openAddChannel,
                     onPinnedChanged: _refreshPinned,
@@ -187,6 +195,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                     backupService: widget.backupService,
                     onImported: _onImported,
                     onOpenChannel: _openChannel,
+                    onDeleteChannel: _removeChannel,
                     onAddChannel: _openAddChannel,
                     pinnedEntries: _pinnedNotifier.entries,
                     now: _now,
@@ -212,6 +221,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
           settings: widget.settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
           pinnedFieldsStorage: widget.pinnedFieldsStorage,
+          channelSnapshotStorage: widget.channelSnapshotStorage,
           existingChannels: existing,
           onChannelUpdated: _notifier.updateChannel,
           onChannelEdited: _onChannelEdited,
@@ -225,6 +235,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     if (original != updated) {
       await widget.fieldSettingsStorage.migrateChannel(original, updated);
       await widget.pinnedFieldsStorage.migrateChannel(original, updated);
+      await widget.channelSnapshotStorage.migrateChannel(original, updated);
       if (widget.settings.isStartChannel(original)) {
         await widget.settings.setStartChannel(updated);
       }
@@ -268,6 +279,7 @@ class _NarrowLayout extends StatelessWidget {
   final BackupService backupService;
   final VoidCallback onImported;
   final ValueChanged<Channel> onOpenChannel;
+  final ValueChanged<Channel> onDeleteChannel;
   final VoidCallback onAddChannel;
   final List<PinnedEntry> pinnedEntries;
   final DateTime now;
@@ -284,6 +296,7 @@ class _NarrowLayout extends StatelessWidget {
     required this.backupService,
     required this.onImported,
     required this.onOpenChannel,
+    required this.onDeleteChannel,
     required this.onAddChannel,
     required this.pinnedEntries,
     required this.now,
@@ -313,7 +326,7 @@ class _NarrowLayout extends StatelessWidget {
         notifier: notifier,
         l10n: l10n,
         onTap: onOpenChannel,
-        onDelete: notifier.removeChannel,
+        onDelete: onDeleteChannel,
         pinnedEntries: pinnedEntries,
         now: now,
         onEditPinned: onEditPinned,
@@ -337,6 +350,7 @@ class _WideLayout extends StatelessWidget {
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
   final VoidCallback onImported;
   final Channel? selectedChannel;
@@ -359,6 +373,7 @@ class _WideLayout extends StatelessWidget {
     required this.settings,
     required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
     required this.onImported,
     required this.selectedChannel,
@@ -425,6 +440,7 @@ class _WideLayout extends StatelessWidget {
                     settings: settings,
                     fieldSettingsStorage: fieldSettingsStorage,
                     pinnedFieldsStorage: pinnedFieldsStorage,
+                    channelSnapshotStorage: channelSnapshotStorage,
                     existingChannels: switch (notifier.state) {
                       ChannelListLoaded(:final channels) => channels,
                       _ => const <Channel>[],

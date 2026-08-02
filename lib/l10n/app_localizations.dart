@@ -238,6 +238,24 @@ abstract class AppLocalizations {
   /// **'Fields'**
   String get channelDetailFieldsSection;
 
+  /// No description provided for @channelDetailCachedData.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing data from {age}'**
+  String channelDetailCachedData(String age);
+
+  /// No description provided for @channelDetailRefreshFailedCached.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed. Showing data from {age}'**
+  String channelDetailRefreshFailedCached(String age);
+
+  /// No description provided for @channelDetailRefreshingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing'**
+  String get channelDetailRefreshingSemantics;
+
   /// No description provided for @channelStatusTitle.
   ///
   /// In en, this message translates to:

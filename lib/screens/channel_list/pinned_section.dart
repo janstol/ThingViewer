@@ -53,7 +53,11 @@ class _PinnedRow extends StatelessWidget {
   final DateTime now;
   final VoidCallback onTap;
 
-  const _PinnedRow({required this.entry, required this.now, required this.onTap});
+  const _PinnedRow({
+    required this.entry,
+    required this.now,
+    required this.onTap,
+  });
 
   String _displayLabel(String? label, int fieldId) =>
       label?.isNotEmpty == true ? label! : 'Field $fieldId';
@@ -62,9 +66,10 @@ class _PinnedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final dataAccent = Theme.of(context).extension<BrandColors>()!.dataAccent;
-    final valueStyle = Theme.of(
-      context,
-    ).textTheme.titleMedium?.copyWith(color: dataAccent, fontWeight: FontWeight.bold);
+    final valueStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+      color: dataAccent,
+      fontWeight: FontWeight.bold,
+    );
     final ageStyle = Theme.of(context).textTheme.bodySmall;
     final snapshot = entry.snapshot;
 
@@ -80,17 +85,30 @@ class _PinnedRow extends StatelessWidget {
           ),
         );
       case PinnedEntryError():
+        final value = snapshot?.value;
+        final valueAt = snapshot?.valueAt;
+        final errorAgeStyle = ageStyle?.copyWith(
+          color: Theme.of(context).colorScheme.error,
+        );
         trailing = Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(l10n.labelNa, style: valueStyle),
-            Text(l10n.pinnedFieldUnavailable, style: ageStyle),
+            Text(
+              value != null ? formatFieldValue(value) : l10n.labelNa,
+              style: valueStyle,
+            ),
+            Text(
+              valueAt != null
+                  ? formatEntryAge(l10n, now.difference(valueAt))
+                  : l10n.pinnedFieldUnavailable,
+              style: errorAgeStyle,
+            ),
           ],
         );
       case PinnedEntryValue():
-        final value = snapshot.value;
-        final valueAt = snapshot.valueAt;
+        final value = snapshot?.value;
+        final valueAt = snapshot?.valueAt;
         trailing = Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -100,14 +118,17 @@ class _PinnedRow extends StatelessWidget {
               style: valueStyle,
             ),
             if (valueAt != null)
-              Text(formatEntryAge(l10n, now.difference(valueAt)), style: ageStyle),
+              Text(
+                formatEntryAge(l10n, now.difference(valueAt)),
+                style: ageStyle,
+              ),
           ],
         );
     }
 
     return MergeSemantics(
       child: ListTile(
-        title: Text(_displayLabel(snapshot.label, snapshot.fieldId)),
+        title: Text(_displayLabel(snapshot?.label, entry.pin.fieldId)),
         subtitle: Text(entry.channel.displayName),
         trailing: trailing,
         onTap: onTap,

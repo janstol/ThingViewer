@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -6,6 +8,7 @@ import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
@@ -18,6 +21,7 @@ import 'package:thingviewer/screens/field_settings/field_settings_screen.dart';
 import 'package:thingviewer/screens/pinned_edit/pinned_edit_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/screens/settings/settings_screen.dart';
+import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
@@ -80,6 +84,11 @@ Future<FieldSettingsStorage> _fieldSettingsStorage() async {
 Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
   final prefs = await SharedPreferences.getInstance();
   return PinnedFieldsStorage(prefs);
+}
+
+Future<ChannelSnapshotStorage> _channelSnapshotStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return ChannelSnapshotStorage(prefs);
 }
 
 Future<BackupService> _backupService() async {
@@ -149,6 +158,7 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
@@ -174,6 +184,7 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
@@ -205,6 +216,7 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
@@ -237,6 +249,7 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: pinnedFieldsStorage,
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
             ),
             themeMode,
@@ -263,6 +276,89 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
+      testWidgets('channel detail - stale banner (refreshing)', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final pending = Completer<FeedData>();
+        when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
+        final prefs = await SharedPreferences.getInstance();
+        final snapshotStorage = ChannelSnapshotStorage(prefs);
+        await snapshotStorage.save(
+          _channel,
+          ChannelSnapshot(
+            fields: [
+              FieldSnapshot(
+                id: 1,
+                label: 'Temp',
+                value: 23.5,
+                valueAt: _now.subtract(const Duration(hours: 2)),
+              ),
+            ],
+            fetchedAt: _now.subtract(const Duration(hours: 2)),
+          ),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: snapshotStorage,
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pump();
+
+        await _checkA11y(tester);
+
+        pending.complete(FeedData(fields: _fields, statuses: []));
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('channel detail - refresh failed banner', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        when(
+          mockApi.readFeed(any, any),
+        ).thenThrow(ApiException(ApiErrorCode.network));
+        final prefs = await SharedPreferences.getInstance();
+        final snapshotStorage = ChannelSnapshotStorage(prefs);
+        await snapshotStorage.save(
+          _channel,
+          ChannelSnapshot(
+            fields: [
+              FieldSnapshot(
+                id: 1,
+                label: 'Temp',
+                value: 23.5,
+                valueAt: _now.subtract(const Duration(hours: 2)),
+              ),
+            ],
+            fetchedAt: _now.subtract(const Duration(hours: 2)),
+          ),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: snapshotStorage,
             ),
             themeMode,
           ),

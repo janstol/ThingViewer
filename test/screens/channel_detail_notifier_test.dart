@@ -1,17 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/screens/channel_detail/channel_detail_notifier.dart';
+import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 
 import 'channel_detail_notifier_test.mocks.dart';
 
 @GenerateMocks([ThingSpeakApi])
 void main() {
   late MockThingSpeakApi mockApi;
+  late ChannelSnapshotStorage storage;
 
   const channel = Channel(
     id: 1,
@@ -34,8 +40,10 @@ void main() {
     ),
   ];
 
-  setUp(() {
+  setUp(() async {
     mockApi = MockThingSpeakApi();
+    SharedPreferences.setMockInitialValues({});
+    storage = ChannelSnapshotStorage(await SharedPreferences.getInstance());
   });
 
   group('load', () {
@@ -45,7 +53,7 @@ void main() {
         mockApi.readFeed(any, any),
       ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       // Constructor calls load(); wait for it to settle.
       await Future<void>.delayed(Duration.zero);
 
@@ -65,11 +73,9 @@ void main() {
       when(
         mockApi.readFeed(any, any),
       ).thenAnswer((_) async => FeedData(fields: emptyFields, statuses: []));
-      when(
-        mockApi.readLastFieldEntry(any, any),
-      ).thenAnswer((_) async => null);
+      when(mockApi.readLastFieldEntry(any, any)).thenAnswer((_) async => null);
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       await Future<void>.delayed(Duration.zero);
 
       expect(notifier.state, isA<ChannelDetailEmpty>());
@@ -81,7 +87,7 @@ void main() {
         mockApi.readChannel(any),
       ).thenThrow(const ApiException(ApiErrorCode.network));
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       await Future<void>.delayed(Duration.zero);
 
       expect(notifier.state, isA<ChannelDetailError>());
@@ -98,7 +104,7 @@ void main() {
           mockApi.readFeed(any, any),
         ).thenThrow(const ApiException(ApiErrorCode.credentials));
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
         await Future<void>.delayed(Duration.zero);
 
         expect(notifier.state, isA<ChannelDetailError>());
@@ -118,7 +124,7 @@ void main() {
         mockApi.readFeed(any, any),
       ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       await Future<void>.delayed(Duration.zero);
 
       final captured = verify(mockApi.readFeed(any, captureAny)).captured;
@@ -137,7 +143,7 @@ void main() {
         mockApi.readFeed(any, any),
       ).thenAnswer((_) async => FeedData(fields: fields, statuses: statuses));
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       await Future<void>.delayed(Duration.zero);
 
       final loaded = notifier.state as ChannelDetailLoaded;
@@ -154,11 +160,9 @@ void main() {
       when(mockApi.readFeed(any, any)).thenAnswer(
         (_) async => FeedData(fields: emptyFields, statuses: statuses),
       );
-      when(
-        mockApi.readLastFieldEntry(any, any),
-      ).thenAnswer((_) async => null);
+      when(mockApi.readLastFieldEntry(any, any)).thenAnswer((_) async => null);
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       await Future<void>.delayed(Duration.zero);
 
       final empty = notifier.state as ChannelDetailEmpty;
@@ -176,6 +180,7 @@ void main() {
 
         final notifier = ChannelDetailNotifier(
           mockApi,
+          storage,
           channel,
           onChannelUpdated: (c) => reported = c,
         );
@@ -198,6 +203,7 @@ void main() {
 
         final notifier = ChannelDetailNotifier(
           mockApi,
+          storage,
           channel,
           onChannelUpdated: (c) => reported = c,
         );
@@ -206,8 +212,8 @@ void main() {
 
         when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
         when(
-        mockApi.readFeed(any, any),
-      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
         await notifier.load();
 
         expect(reported?.authError, isFalse);
@@ -215,21 +221,18 @@ void main() {
       },
     );
 
-    test(
-      'does not call readLastFieldEntry when no field is empty',
-      () async {
-        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
-        when(
-          mockApi.readFeed(any, any),
-        ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+    test('does not call readLastFieldEntry when no field is empty', () async {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
-        await Future<void>.delayed(Duration.zero);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
+      await Future<void>.delayed(Duration.zero);
 
-        verifyNever(mockApi.readLastFieldEntry(any, any));
-        notifier.dispose();
-      },
-    );
+      verifyNever(mockApi.readLastFieldEntry(any, any));
+      notifier.dispose();
+    });
 
     test(
       'recovers a sparse field via readLastFieldEntry and keeps id order',
@@ -251,7 +254,7 @@ void main() {
           mockApi.readLastFieldEntry(any, 2),
         ).thenAnswer((_) async => recovered);
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
         await Future<void>.delayed(Duration.zero);
 
         expect(notifier.state, isA<ChannelDetailLoaded>());
@@ -278,11 +281,9 @@ void main() {
         when(
           mockApi.readFeed(any, any),
         ).thenAnswer((_) async => FeedData(fields: sparseFields, statuses: []));
-        when(
-          mockApi.readLastFieldEntry(any, 2),
-        ).thenAnswer((_) async => null);
+        when(mockApi.readLastFieldEntry(any, 2)).thenAnswer((_) async => null);
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
         await Future<void>.delayed(Duration.zero);
 
         expect(notifier.state, isA<ChannelDetailLoaded>());
@@ -308,7 +309,7 @@ void main() {
           (_) async => FieldValue(createdAt: DateTime(2023), value: 5.0),
         );
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
         await Future<void>.delayed(Duration.zero);
 
         expect(notifier.state, isA<ChannelDetailLoaded>());
@@ -333,7 +334,7 @@ void main() {
           mockApi.readLastFieldEntry(any, any),
         ).thenAnswer((_) async => null);
 
-        final notifier = ChannelDetailNotifier(mockApi, channel);
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
         await Future<void>.delayed(Duration.zero);
 
         expect(notifier.state, isA<ChannelDetailEmpty>());
@@ -347,7 +348,7 @@ void main() {
         mockApi.readFeed(any, any),
       ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
 
-      final notifier = ChannelDetailNotifier(mockApi, channel);
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
       // Dispose before the async load completes.
       notifier.dispose();
 
@@ -356,5 +357,126 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       // Reaching here without exception means the guard works.
     });
+  });
+
+  group('cache', () {
+    test(
+      'paints cached values immediately, before the fetch resolves',
+      () async {
+        await storage.save(
+          channel,
+          ChannelSnapshot(
+            fields: [
+              FieldSnapshot(
+                id: 1,
+                label: 'Temp',
+                value: 23.5,
+                valueAt: DateTime(2024),
+              ),
+            ],
+            fetchedAt: DateTime(2024, 1, 2),
+          ),
+        );
+        final channelCompleter = Completer<Channel>();
+        when(
+          mockApi.readChannel(any),
+        ).thenAnswer((_) => channelCompleter.future);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
+
+        expect(notifier.state, isA<ChannelDetailLoaded>());
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.cachedAt, DateTime(2024, 1, 2));
+        expect(loaded.refreshing, isTrue);
+        expect(loaded.fields.single.lastValue, 23.5);
+
+        channelCompleter.complete(enrichedChannel);
+        await Future<void>.delayed(Duration.zero);
+        notifier.dispose();
+      },
+    );
+
+    test('clears cache flags once the fetch succeeds', () async {
+      await storage.save(
+        channel,
+        ChannelSnapshot(
+          fields: [
+            FieldSnapshot(
+              id: 1,
+              label: 'Temp',
+              value: 1,
+              valueAt: DateTime(2024),
+            ),
+          ],
+          fetchedAt: DateTime(2024),
+        ),
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
+      await Future<void>.delayed(Duration.zero);
+
+      final loaded = notifier.state as ChannelDetailLoaded;
+      expect(loaded.cachedAt, isNull);
+      expect(loaded.refreshing, isFalse);
+      expect(loaded.refreshError, isNull);
+      notifier.dispose();
+    });
+
+    test('persists a snapshot on a successful fetch', () async {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
+      await Future<void>.delayed(Duration.zero);
+
+      final saved = storage.snapshotFor(channel);
+      expect(saved, isNotNull);
+      expect(saved!.fields.map((f) => f.id).toList(), [1, 2]);
+      expect(saved.fields.first.value, 23.5);
+      notifier.dispose();
+    });
+
+    test(
+      'keeps cached values on screen with refreshError when the fetch fails',
+      () async {
+        await storage.save(
+          channel,
+          ChannelSnapshot(
+            fields: [
+              FieldSnapshot(
+                id: 1,
+                label: 'Temp',
+                value: 23.5,
+                valueAt: DateTime(2024),
+              ),
+            ],
+            fetchedAt: DateTime(2024, 1, 2),
+          ),
+        );
+        when(
+          mockApi.readChannel(any),
+        ).thenThrow(const ApiException(ApiErrorCode.network));
+
+        final notifier = ChannelDetailNotifier(mockApi, storage, channel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.state, isA<ChannelDetailLoaded>());
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.fields.single.lastValue, 23.5);
+        expect(loaded.refreshing, isFalse);
+        expect(loaded.refreshError, ApiErrorCode.network);
+        expect(loaded.cachedAt, isNotNull);
+        notifier.dispose();
+      },
+    );
   });
 }

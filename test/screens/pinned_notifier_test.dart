@@ -4,9 +4,10 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/field.dart';
-import 'package:thingviewer/models/pinned_field.dart';
 import 'package:thingviewer/screens/channel_list/pinned_notifier.dart';
+import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
 
 import 'pinned_notifier_test.mocks.dart';
@@ -31,10 +32,9 @@ void main() {
 
   late MockThingSpeakApi mockApi;
   late PinnedFieldsStorage storage;
+  late ChannelSnapshotStorage snapshotStorage;
 
-  Future<PinnedFieldsStorage> seededStorage(
-    List<(Channel, int)> pins,
-  ) async {
+  Future<PinnedFieldsStorage> seededStorage(List<(Channel, int)> pins) async {
     SharedPreferences.setMockInitialValues({});
     final s = PinnedFieldsStorage(await SharedPreferences.getInstance());
     for (final (channel, fieldId) in pins) {
@@ -43,44 +43,50 @@ void main() {
     return s;
   }
 
+  Future<ChannelSnapshotStorage> sharedSnapshotStorage() async =>
+      ChannelSnapshotStorage(await SharedPreferences.getInstance());
+
   setUp(() {
     mockApi = MockThingSpeakApi();
   });
 
   test('emits cached snapshots before any network call resolves', () async {
     storage = await seededStorage([(_channelA, 1)]);
-    await storage.saveSnapshots([
-      const PinnedField(
-        serverUrl: 'https://api.thingspeak.com',
-        channelId: 1,
-        fieldId: 1,
-        label: 'Temp',
-        value: 21,
+    snapshotStorage = await sharedSnapshotStorage();
+    await snapshotStorage.save(
+      _channelA,
+      ChannelSnapshot(
+        fields: [FieldSnapshot(id: 1, label: 'Temp', value: 21)],
+        fetchedAt: DateTime(2024),
       ),
-    ]);
-    when(mockApi.readFeed(any, any)).thenAnswer(
-      (_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        return FeedData(fields: const [], statuses: []);
-      },
     );
+    when(mockApi.readFeed(any, any)).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      return FeedData(fields: const [], statuses: []);
+    });
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
 
     expect(notifier.entries, hasLength(1));
-    expect(notifier.entries.single.snapshot.value, 21);
+    expect(notifier.entries.single.snapshot?.value, 21);
     expect(notifier.entries.single.state, isA<PinnedEntryValue>());
     notifier.dispose();
   });
 
   test('a pin with no cached value starts in loading state', () async {
     storage = await seededStorage([(_channelA, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: const [], statuses: []));
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
 
+    expect(notifier.entries.single.snapshot, isNull);
     expect(notifier.entries.single.state, isA<PinnedEntryLoading>());
     notifier.dispose();
   });
@@ -91,11 +97,15 @@ void main() {
       (_channelA, 2),
       (_channelB, 1),
     ]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: const [], statuses: []));
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA, _channelB]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+      _channelB,
+    ]);
     await Future<void>.delayed(Duration.zero);
 
     verify(mockApi.readFeed(_channelA, any)).called(1);
@@ -103,60 +113,71 @@ void main() {
     notifier.dispose();
   });
 
-  test('updates entries with fetched values, sorted by channel then field id', () async {
-    storage = await seededStorage([(_channelB, 2), (_channelA, 1)]);
-    when(mockApi.readFeed(_channelA, any)).thenAnswer(
-      (_) async => FeedData(
-        fields: [
-          Field(
-            id: 1,
-            label: 'Temp',
-            values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
-          ),
-        ],
-        statuses: [],
-      ),
-    );
-    when(mockApi.readFeed(_channelB, any)).thenAnswer(
-      (_) async => FeedData(
-        fields: [
-          Field(
-            id: 2,
-            label: 'Humidity',
-            values: [FieldValue(createdAt: DateTime(2024), value: 60.0)],
-          ),
-        ],
-        statuses: [],
-      ),
-    );
+  test(
+    'updates entries with fetched values, sorted by channel then field id',
+    () async {
+      storage = await seededStorage([(_channelB, 2), (_channelA, 1)]);
+      snapshotStorage = await sharedSnapshotStorage();
+      when(mockApi.readFeed(_channelA, any)).thenAnswer(
+        (_) async => FeedData(
+          fields: [
+            Field(
+              id: 1,
+              label: 'Temp',
+              values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
+            ),
+          ],
+          statuses: [],
+        ),
+      );
+      when(mockApi.readFeed(_channelB, any)).thenAnswer(
+        (_) async => FeedData(
+          fields: [
+            Field(
+              id: 2,
+              label: 'Humidity',
+              values: [FieldValue(createdAt: DateTime(2024), value: 60.0)],
+            ),
+          ],
+          statuses: [],
+        ),
+      );
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA, _channelB]);
-    await Future<void>.delayed(Duration.zero);
+      final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+        _channelA,
+        _channelB,
+      ]);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(notifier.entries, hasLength(2));
-    expect(notifier.entries[0].channel, _channelA);
-    expect(notifier.entries[0].snapshot.value, 23.5);
-    expect(notifier.entries[0].snapshot.label, 'Temp');
-    expect(notifier.entries[1].channel, _channelB);
-    expect(notifier.entries[1].snapshot.value, 60.0);
-    notifier.dispose();
-  });
+      expect(notifier.entries, hasLength(2));
+      expect(notifier.entries[0].channel, _channelA);
+      expect(notifier.entries[0].snapshot?.value, 23.5);
+      expect(notifier.entries[0].snapshot?.label, 'Temp');
+      expect(notifier.entries[1].channel, _channelB);
+      expect(notifier.entries[1].snapshot?.value, 60.0);
+      notifier.dispose();
+    },
+  );
 
   test('recovers a sparse pinned field via readLastFieldEntry', () async {
     storage = await seededStorage([(_channelA, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(mockApi.readFeed(any, any)).thenAnswer(
-      (_) async => FeedData(fields: [const Field(id: 1, label: 'Temp')], statuses: []),
+      (_) async => FeedData(
+        fields: [const Field(id: 1, label: 'Temp')],
+        statuses: [],
+      ),
     );
     final recovered = FieldValue(createdAt: DateTime(2023), value: 42.0);
-    when(
-      mockApi.readLastFieldEntry(any, 1),
-    ).thenAnswer((_) async => recovered);
+    when(mockApi.readLastFieldEntry(any, 1)).thenAnswer((_) async => recovered);
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
     await Future<void>.delayed(Duration.zero);
 
     expect(notifier.entries.single.state, isA<PinnedEntryValue>());
-    expect(notifier.entries.single.snapshot.value, 42.0);
+    expect(notifier.entries.single.snapshot?.value, 42.0);
     notifier.dispose();
   });
 
@@ -164,6 +185,7 @@ void main() {
     'does not call readLastFieldEntry for fields that already have a value',
     () async {
       storage = await seededStorage([(_channelA, 1)]);
+      snapshotStorage = await sharedSnapshotStorage();
       when(mockApi.readFeed(any, any)).thenAnswer(
         (_) async => FeedData(
           fields: [
@@ -177,7 +199,9 @@ void main() {
         ),
       );
 
-      final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+      final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+        _channelA,
+      ]);
       await Future<void>.delayed(Duration.zero);
 
       verifyNever(mockApi.readLastFieldEntry(any, any));
@@ -189,9 +213,10 @@ void main() {
     'isolates a failing channel: its pins error, others stay live',
     () async {
       storage = await seededStorage([(_channelA, 1), (_channelB, 1)]);
-      when(mockApi.readFeed(_channelA, any)).thenThrow(
-        const ApiException(ApiErrorCode.network),
-      );
+      snapshotStorage = await sharedSnapshotStorage();
+      when(
+        mockApi.readFeed(_channelA, any),
+      ).thenThrow(const ApiException(ApiErrorCode.network));
       when(mockApi.readFeed(_channelB, any)).thenAnswer(
         (_) async => FeedData(
           fields: [
@@ -205,26 +230,35 @@ void main() {
         ),
       );
 
-      final notifier = PinnedNotifier(mockApi, storage, [_channelA, _channelB]);
+      final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+        _channelA,
+        _channelB,
+      ]);
       await Future<void>.delayed(Duration.zero);
 
       final aEntry = notifier.entries.firstWhere((e) => e.channel == _channelA);
       final bEntry = notifier.entries.firstWhere((e) => e.channel == _channelB);
       expect(aEntry.state, isA<PinnedEntryError>());
-      expect((aEntry.state as PinnedEntryError).errorCode, ApiErrorCode.network);
+      expect(
+        (aEntry.state as PinnedEntryError).errorCode,
+        ApiErrorCode.network,
+      );
       expect(bEntry.state, isA<PinnedEntryValue>());
-      expect(bEntry.snapshot.value, 60.0);
+      expect(bEntry.snapshot?.value, 60.0);
       notifier.dispose();
     },
   );
 
   test('filters out pins whose channel is not in the given list', () async {
     storage = await seededStorage([(_channelA, 1), (_channelB, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: const [], statuses: []));
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
 
     expect(notifier.entries, hasLength(1));
     expect(notifier.entries.single.channel, _channelA);
@@ -233,6 +267,7 @@ void main() {
 
   test('persists refreshed snapshots back to storage', () async {
     storage = await seededStorage([(_channelA, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(mockApi.readFeed(any, any)).thenAnswer(
       (_) async => FeedData(
         fields: [
@@ -246,20 +281,64 @@ void main() {
       ),
     );
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
     await Future<void>.delayed(Duration.zero);
 
-    expect(storage.pins([_channelA]).single.value, 23.5);
+    final saved = snapshotStorage.snapshotFor(_channelA);
+    expect(saved?.fields.single.value, 23.5);
     notifier.dispose();
   });
 
+  test(
+    "a pinned refresh does not blank a non-pinned field's cached value",
+    () async {
+      storage = await seededStorage([(_channelA, 1)]);
+      snapshotStorage = await sharedSnapshotStorage();
+      await snapshotStorage.save(
+        _channelA,
+        ChannelSnapshot(
+          fields: [FieldSnapshot(id: 2, label: 'Humidity', value: 50.0)],
+          fetchedAt: DateTime(2024),
+        ),
+      );
+      when(mockApi.readFeed(any, any)).thenAnswer(
+        (_) async => FeedData(
+          fields: [
+            Field(
+              id: 1,
+              label: 'Temp',
+              values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
+            ),
+            const Field(id: 2, label: 'Humidity'),
+          ],
+          statuses: [],
+        ),
+      );
+
+      final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+        _channelA,
+      ]);
+      await Future<void>.delayed(Duration.zero);
+
+      final saved = snapshotStorage.snapshotFor(_channelA);
+      final field2 = saved?.fields.firstWhere((f) => f.id == 2);
+      expect(field2?.value, 50.0);
+      notifier.dispose();
+    },
+  );
+
   test('setChannels re-resolves entries and refetches', () async {
     storage = await seededStorage([(_channelA, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: const [], statuses: []));
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
     await Future<void>.delayed(Duration.zero);
     expect(notifier.entries, hasLength(1));
 
@@ -272,11 +351,14 @@ void main() {
 
   test('does not call notifyListeners after dispose', () async {
     storage = await seededStorage([(_channelA, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: const [], statuses: []));
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
     notifier.dispose();
 
     await Future<void>.delayed(Duration.zero);
@@ -284,8 +366,11 @@ void main() {
 
   test('refresh is a no-op when there are no pins', () async {
     storage = await seededStorage([]);
+    snapshotStorage = await sharedSnapshotStorage();
 
-    final notifier = PinnedNotifier(mockApi, storage, [_channelA]);
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
     await notifier.refresh();
 
     verifyNever(mockApi.readFeed(any, any));

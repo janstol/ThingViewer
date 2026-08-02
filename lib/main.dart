@@ -7,6 +7,7 @@ import 'api/thingspeak_api.dart';
 import 'app.dart';
 import 'backup/backup_service.dart';
 import 'migration/migration_service.dart';
+import 'storage/channel_snapshot_storage.dart';
 import 'storage/channel_storage.dart';
 import 'storage/field_settings_storage.dart';
 import 'storage/pinned_fields_storage.dart';
@@ -22,6 +23,7 @@ void main() async {
   final settingsStorage = SettingsStorage(prefs);
   final fieldSettingsStorage = FieldSettingsStorage(prefs);
   final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+  final channelSnapshotStorage = ChannelSnapshotStorage(prefs);
   final backupService = BackupService(
     channelStorage,
     settingsStorage,
@@ -37,6 +39,7 @@ void main() async {
       settingsStorage: settingsStorage,
       fieldSettingsStorage: fieldSettingsStorage,
       pinnedFieldsStorage: pinnedFieldsStorage,
+      channelSnapshotStorage: channelSnapshotStorage,
       backupService: backupService,
     ),
   );

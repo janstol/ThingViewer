@@ -30,19 +30,16 @@ void main() {
   });
 
   group('equality', () {
-    test('is identity-only, ignoring snapshot fields', () {
+    test('is equal when identity fields match', () {
       const a = PinnedField(
         serverUrl: 'https://api.thingspeak.com',
         channelId: 1,
         fieldId: 2,
-        value: 1,
       );
       const b = PinnedField(
         serverUrl: 'https://api.thingspeak.com',
         channelId: 1,
         fieldId: 2,
-        value: 99,
-        label: 'different label',
       );
 
       expect(a, b);
@@ -71,55 +68,30 @@ void main() {
         serverUrl: 'https://api.thingspeak.com',
         channelId: 1,
         fieldId: 2,
-        label: 'Temperature',
-        value: 20,
       );
 
-      final updated = pin.copyWith(value: 21);
+      final updated = pin.copyWith(fieldId: 3);
 
-      expect(updated.label, 'Temperature');
-      expect(updated.value, 21);
+      expect(updated.serverUrl, pin.serverUrl);
+      expect(updated.channelId, pin.channelId);
+      expect(updated.fieldId, 3);
     });
 
-    test('does not clear existing snapshot fields when passed null', () {
-      final valueAt = DateTime(2024, 1, 1);
-      final pin = PinnedField(
+    test('keeps existing fields when passed nothing', () {
+      const pin = PinnedField(
         serverUrl: 'https://api.thingspeak.com',
         channelId: 1,
         fieldId: 2,
-        value: 20,
-        valueAt: valueAt,
       );
 
       final updated = pin.copyWith();
 
-      expect(updated.value, 20);
-      expect(updated.valueAt, valueAt);
+      expect(updated, pin);
     });
   });
 
   group('JSON round trip', () {
-    test('round trips a fully populated snapshot', () {
-      final pin = PinnedField(
-        serverUrl: 'https://api.thingspeak.com',
-        channelId: 1,
-        fieldId: 2,
-        label: 'Temperature',
-        value: 21.5,
-        valueAt: DateTime.utc(2024, 3, 1, 12),
-        fetchedAt: DateTime.utc(2024, 3, 1, 12, 5),
-      );
-
-      final decoded = PinnedField.fromJson(pin.toJson());
-
-      expect(decoded, pin);
-      expect(decoded.label, pin.label);
-      expect(decoded.value, pin.value);
-      expect(decoded.valueAt, pin.valueAt);
-      expect(decoded.fetchedAt, pin.fetchedAt);
-    });
-
-    test('round trips with null snapshot fields', () {
+    test('round trips identity fields', () {
       const pin = PinnedField(
         serverUrl: 'https://api.thingspeak.com',
         channelId: 1,
@@ -129,23 +101,29 @@ void main() {
       final decoded = PinnedField.fromJson(pin.toJson());
 
       expect(decoded, pin);
-      expect(decoded.label, isNull);
-      expect(decoded.value, isNull);
-      expect(decoded.valueAt, isNull);
-      expect(decoded.fetchedAt, isNull);
     });
 
-    test('parses an integer value as a double', () {
+    test('ignores unknown legacy snapshot keys', () {
       final json = {
         'serverUrl': 'https://api.thingspeak.com',
         'channelId': 1,
         'fieldId': 2,
-        'value': 5,
+        'label': 'Temperature',
+        'value': 21.5,
+        'valueAt': '2024-03-01T12:00:00.000Z',
+        'fetchedAt': '2024-03-01T12:05:00.000Z',
       };
 
       final decoded = PinnedField.fromJson(json);
 
-      expect(decoded.value, 5.0);
+      expect(
+        decoded,
+        const PinnedField(
+          serverUrl: 'https://api.thingspeak.com',
+          channelId: 1,
+          fieldId: 2,
+        ),
+      );
     });
   });
 }

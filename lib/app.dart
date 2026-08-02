@@ -6,6 +6,7 @@ import 'backup/backup_service.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/channel_list/channel_list_screen.dart';
 import 'screens/settings/settings_notifier.dart';
+import 'storage/channel_snapshot_storage.dart';
 import 'storage/channel_storage.dart';
 import 'storage/field_settings_storage.dart';
 import 'storage/pinned_fields_storage.dart';
@@ -18,6 +19,7 @@ class App extends StatefulWidget {
   final SettingsStorage settingsStorage;
   final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
 
   const App({
@@ -27,6 +29,7 @@ class App extends StatefulWidget {
     required this.settingsStorage,
     required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
   });
 
@@ -71,6 +74,7 @@ class _AppState extends State<App> {
           settings: _settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
           pinnedFieldsStorage: widget.pinnedFieldsStorage,
+          channelSnapshotStorage: widget.channelSnapshotStorage,
           backupService: widget.backupService,
         ),
       ),

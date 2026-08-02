@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A field whose readings are sparser than the channel detail screen's feed window (e.g. one value per few hundred entries) now still shows up, instead of being silently dropped.
 - Field chart screen can now toggle to a paginated table view of the same data (timestamp and value, newest first).
 - The table view can export the currently filtered range as a CSV file, with a choice of raw (UTC ISO timestamps, full-precision values) or formatted (current date/time and rounding settings) output.
+- The channel detail screen now shows the last known field values immediately on open, from a per-channel cache, instead of a blank loading screen while it refreshes. A banner reports how old the cached data is, and stays up if a refresh fails. The pinned fields dashboard now reads from the same cache, so it also shows values immediately on a cold start with no network.
 
 ### Accessibility
 

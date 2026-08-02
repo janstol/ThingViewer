@@ -82,6 +82,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelDetailFieldsSection => 'Fields';
 
   @override
+  String channelDetailCachedData(String age) {
+    return 'Showing data from $age';
+  }
+
+  @override
+  String channelDetailRefreshFailedCached(String age) {
+    return 'Refresh failed. Showing data from $age';
+  }
+
+  @override
+  String get channelDetailRefreshingSemantics => 'Refreshing';
+
+  @override
   String get channelStatusTitle => 'Status log';
 
   @override

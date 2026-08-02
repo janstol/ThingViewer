@@ -9,6 +9,7 @@ import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/screens/channel_detail/channel_detail_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
+import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
@@ -54,6 +55,11 @@ Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
   return PinnedFieldsStorage(prefs);
 }
 
+Future<ChannelSnapshotStorage> _channelSnapshotStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return ChannelSnapshotStorage(prefs);
+}
+
 void main() {
   late MockThingSpeakApi mockApi;
 
@@ -81,6 +87,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -108,6 +115,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -135,6 +143,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -156,9 +165,7 @@ void main() {
     when(
       mockApi.readFeed(any, any),
     ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
-    when(
-      mockApi.readLastFieldEntry(any, any),
-    ).thenAnswer((_) async => null);
+    when(mockApi.readLastFieldEntry(any, any)).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
       _wrap(
@@ -168,6 +175,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -186,11 +194,9 @@ void main() {
       );
       when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
       when(
-      mockApi.readFeed(any, any),
-    ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
-      when(
-        mockApi.readLastFieldEntry(any, any),
-      ).thenAnswer((_) async => null);
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: _emptyFields, statuses: []));
+      when(mockApi.readLastFieldEntry(any, any)).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         _wrap(
@@ -199,7 +205,8 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
-          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
           ),
         ),
       );
@@ -228,6 +235,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -255,6 +263,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -281,7 +290,8 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
-          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
           ),
         ),
       );
@@ -310,7 +320,8 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
-          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
           ),
         ),
       );
@@ -339,6 +350,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -365,6 +377,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -399,7 +412,8 @@ void main() {
             api: mockApi,
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
-          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
           ),
         ),
       );
@@ -440,6 +454,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -487,6 +502,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );
@@ -527,6 +543,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
         ),
       ),
     );

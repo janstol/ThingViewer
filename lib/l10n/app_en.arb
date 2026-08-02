@@ -24,6 +24,19 @@
   "channelDetailSource": "Source code",
   "channelDetailStatus": "Status",
   "channelDetailFieldsSection": "Fields",
+  "channelDetailCachedData": "Showing data from {age}",
+  "@channelDetailCachedData": {
+    "placeholders": {
+      "age": { "type": "String" }
+    }
+  },
+  "channelDetailRefreshFailedCached": "Refresh failed. Showing data from {age}",
+  "@channelDetailRefreshFailedCached": {
+    "placeholders": {
+      "age": { "type": "String" }
+    }
+  },
+  "channelDetailRefreshingSemantics": "Refreshing",
   "channelStatusTitle": "Status log",
   "channelStatusEmpty": "No status messages for this channel.",
   "channelStatusViewLog": "View log",

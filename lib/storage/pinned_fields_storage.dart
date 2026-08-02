@@ -60,21 +60,6 @@ class PinnedFieldsStorage {
     await _persist();
   }
 
-  /// Overwrites the cached snapshot (label/value/valueAt/fetchedAt) for each
-  /// pin in [snapshots] that is still pinned, keyed by identity. Pins not
-  /// present in [snapshots] are left untouched.
-  Future<void> saveSnapshots(List<PinnedField> snapshots) async {
-    var changed = false;
-    for (final snapshot in snapshots) {
-      final index = _pins.indexOf(snapshot);
-      if (index >= 0) {
-        _pins[index] = snapshot;
-        changed = true;
-      }
-    }
-    if (changed) await _persist();
-  }
-
   /// Re-keys every pin stored under [from]'s identity onto [to]'s, for when
   /// an edited channel's server URL and/or id changes.
   Future<void> migrateChannel(Channel from, Channel to) async {

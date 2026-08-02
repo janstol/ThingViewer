@@ -9,6 +9,7 @@ import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
+import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
@@ -81,6 +82,11 @@ Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
   return PinnedFieldsStorage(prefs);
 }
 
+Future<ChannelSnapshotStorage> _channelSnapshotStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return ChannelSnapshotStorage(prefs);
+}
+
 Future<BackupService> _backupService() async {
   final prefs = await SharedPreferences.getInstance();
   return BackupService(
@@ -112,6 +118,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
         ),
       ),
@@ -135,6 +142,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
         ),
       ),
@@ -160,6 +168,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
         ),
       ),
@@ -210,6 +219,7 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
             ),
           ),
@@ -240,6 +250,7 @@ void main() {
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
           ),
         ),
@@ -268,6 +279,7 @@ void main() {
             settings: await _settings(),
             fieldSettingsStorage: await _fieldSettingsStorage(),
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
           ),
         ),
@@ -294,6 +306,7 @@ void main() {
           settings: await _settings(),
           fieldSettingsStorage: await _fieldSettingsStorage(),
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
         ),
         2,

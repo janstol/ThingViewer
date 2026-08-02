@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/channel_status.dart';
 import '../../models/field.dart';
+import '../../storage/channel_snapshot_storage.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
 import '../../theme.dart';
@@ -176,6 +177,7 @@ class ChannelDetailScreen extends StatefulWidget {
   final SettingsNotifier settings;
   final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final List<Channel> existingChannels;
   final void Function(Channel)? onChannelUpdated;
   final Future<void> Function(Channel original, Channel updated)?
@@ -189,6 +191,7 @@ class ChannelDetailScreen extends StatefulWidget {
     required this.settings,
     required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     this.existingChannels = const [],
     this.onChannelUpdated,
     this.onChannelEdited,
@@ -211,6 +214,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
     _channel = widget.channel;
     _notifier = ChannelDetailNotifier(
       widget.api,
+      widget.channelSnapshotStorage,
       widget.channel,
       onChannelUpdated: widget.onChannelUpdated,
     );
@@ -299,21 +303,104 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
               :final channel,
               :final fields,
               :final statuses,
+              :final cachedAt,
+              :final refreshing,
+              :final refreshError,
             ) =>
-              _FieldList(
-                channel: channel,
-                fields: fields,
-                statuses: statuses,
-                api: widget.api,
-                settings: widget.settings,
-                fieldSettingsStorage: widget.fieldSettingsStorage,
-                pinnedFieldsStorage: widget.pinnedFieldsStorage,
-                onPinnedChanged: widget.onPinnedChanged,
-                now: _now,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (cachedAt != null || refreshError != null)
+                    _StaleBanner(
+                      cachedAt: cachedAt!,
+                      refreshing: refreshing,
+                      refreshError: refreshError,
+                      now: _now,
+                    ),
+                  Expanded(
+                    child: _FieldList(
+                      channel: channel,
+                      fields: fields,
+                      statuses: statuses,
+                      api: widget.api,
+                      settings: widget.settings,
+                      fieldSettingsStorage: widget.fieldSettingsStorage,
+                      pinnedFieldsStorage: widget.pinnedFieldsStorage,
+                      onPinnedChanged: widget.onPinnedChanged,
+                      now: _now,
+                    ),
+                  ),
+                ],
               ),
           },
         ),
       ),
+    );
+  }
+}
+
+/// Shown above the field list when the values on screen are not from the
+/// fetch that just completed: either still loading from cache (`refreshing`)
+/// or a refresh attempt failed and cached values stayed on screen.
+class _StaleBanner extends StatelessWidget {
+  final DateTime cachedAt;
+  final bool refreshing;
+  final ApiErrorCode? refreshError;
+  final DateTime now;
+
+  const _StaleBanner({
+    required this.cachedAt,
+    required this.refreshing,
+    this.refreshError,
+    required this.now,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final age = formatEntryAge(l10n, now.difference(cachedAt));
+    final failed = refreshError != null;
+    final background = failed
+        ? colorScheme.errorContainer
+        : colorScheme.secondaryContainer;
+    final foreground = failed
+        ? colorScheme.onErrorContainer
+        : colorScheme.onSecondaryContainer;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: background,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              ExcludeSemantics(
+                child: Icon(
+                  failed ? Icons.error_outline : Icons.info_outline,
+                  size: 18,
+                  color: foreground,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  failed
+                      ? l10n.channelDetailRefreshFailedCached(age)
+                      : l10n.channelDetailCachedData(age),
+                  style: TextStyle(color: foreground),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (refreshing)
+          LinearProgressIndicator(
+            minHeight: 2,
+            semanticsLabel: l10n.channelDetailRefreshingSemantics,
+          ),
+      ],
     );
   }
 }

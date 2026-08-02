@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../models/channel.dart';
+import '../../models/channel_snapshot.dart';
 import '../../models/field.dart';
 import '../../models/pinned_field.dart';
+import '../../storage/channel_snapshot_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
 
 sealed class PinnedEntryState {}
@@ -25,33 +27,49 @@ class PinnedEntryError extends PinnedEntryState {
 
 class PinnedEntry {
   final Channel channel;
-  final PinnedField snapshot;
+  final PinnedField pin;
+  final FieldSnapshot? snapshot;
   final PinnedEntryState state;
 
   const PinnedEntry({
     required this.channel,
+    required this.pin,
     required this.snapshot,
     required this.state,
   });
 }
 
-/// Resolves pinned fields against the live channel list and keeps their
-/// cached value/age snapshots fresh.
+FieldSnapshot? _fieldSnapshotFor(ChannelSnapshot? snapshot, int fieldId) {
+  if (snapshot == null) return null;
+  for (final field in snapshot.fields) {
+    if (field.id == fieldId) return field;
+  }
+  return null;
+}
+
+/// Resolves pinned fields against the live channel list and keeps them
+/// fresh, reading/writing their values through the shared per-channel
+/// [ChannelSnapshotStorage] cache (also used by the channel detail screen).
 ///
-/// Emits cached snapshots immediately (from [PinnedFieldsStorage]) so the
-/// channel-list dashboard has real values before any network call, then
-/// fires one `readFeed` per distinct pinned channel to refresh them.
+/// Emits cached snapshots immediately so the channel-list dashboard has real
+/// values before any network call, then fires one `readFeed` per distinct
+/// pinned channel to refresh them.
 class PinnedNotifier extends ChangeNotifier {
   final ThingSpeakApi _api;
-  final PinnedFieldsStorage _storage;
+  final PinnedFieldsStorage _pinsStorage;
+  final ChannelSnapshotStorage _snapshotStorage;
   List<Channel> _channels;
   bool _disposed = false;
 
   List<PinnedEntry> _entries = [];
   List<PinnedEntry> get entries => _entries;
 
-  PinnedNotifier(this._api, this._storage, List<Channel> channels)
-    : _channels = channels {
+  PinnedNotifier(
+    this._api,
+    this._pinsStorage,
+    this._snapshotStorage,
+    List<Channel> channels,
+  ) : _channels = channels {
     _loadFromCache();
     refresh();
   }
@@ -71,14 +89,21 @@ class PinnedNotifier extends ChangeNotifier {
   }
 
   void _loadFromCache() {
-    final pins = _storage.pins(_channels);
+    final pins = _pinsStorage.pins(_channels);
     _entries = _sort(
       pins.map((pin) {
         final channel = _channels.firstWhere((c) => pin.matches(c));
+        final snapshot = _fieldSnapshotFor(
+          _snapshotStorage.snapshotFor(channel),
+          pin.fieldId,
+        );
         return PinnedEntry(
           channel: channel,
-          snapshot: pin,
-          state: pin.value == null ? PinnedEntryLoading() : PinnedEntryValue(),
+          pin: pin,
+          snapshot: snapshot,
+          state: snapshot?.value == null
+              ? PinnedEntryLoading()
+              : PinnedEntryValue(),
         );
       }).toList(),
     );
@@ -91,13 +116,13 @@ class PinnedNotifier extends ChangeNotifier {
           .indexOf(a.channel)
           .compareTo(_channels.indexOf(b.channel));
       if (channelCompare != 0) return channelCompare;
-      return a.snapshot.fieldId.compareTo(b.snapshot.fieldId);
+      return a.pin.fieldId.compareTo(b.pin.fieldId);
     });
     return entries;
   }
 
   Future<void> refresh() async {
-    final pins = _storage.pins(_channels);
+    final pins = _pinsStorage.pins(_channels);
     if (pins.isEmpty) return;
 
     final byChannel = <Channel, List<PinnedField>>{};
@@ -113,12 +138,6 @@ class PinnedNotifier extends ChangeNotifier {
     final updated = [for (final r in results) ...r];
     _entries = _sort(updated);
     if (!_disposed) notifyListeners();
-
-    final snapshots = [
-      for (final entry in updated)
-        if (entry.state is PinnedEntryValue) entry.snapshot,
-    ];
-    if (snapshots.isNotEmpty) await _storage.saveSnapshots(snapshots);
   }
 
   Future<List<PinnedEntry>> _fetchChannel(
@@ -160,25 +179,47 @@ class PinnedNotifier extends ChangeNotifier {
         }
       }
 
-      final fieldsById = {for (final f in fields) f.id: f};
-      final now = DateTime.now();
+      // Write the whole feed back, not just the pinned fields — the merge
+      // rule in ChannelSnapshot protects non-pinned sparse fields this fetch
+      // did not recover (it only recovers gaps for pinned field ids).
+      final nonEmpty = fields.where((f) => f.lastValue != null).toList();
+      await _snapshotStorage.save(
+        channel,
+        ChannelSnapshot(
+          fields: nonEmpty
+              .map(
+                (f) => FieldSnapshot(
+                  id: f.id,
+                  label: f.label,
+                  value: f.lastValue,
+                  valueAt: f.lastUpdated,
+                ),
+              )
+              .toList(),
+          fetchedAt: DateTime.now(),
+        ),
+      );
+
+      final merged = _snapshotStorage.snapshotFor(channel);
       return [
         for (final pin in pins)
           PinnedEntry(
             channel: channel,
-            snapshot: pin.copyWith(
-              label: fieldsById[pin.fieldId]?.displayLabel,
-              value: fieldsById[pin.fieldId]?.lastValue,
-              valueAt: fieldsById[pin.fieldId]?.lastUpdated,
-              fetchedAt: now,
-            ),
+            pin: pin,
+            snapshot: _fieldSnapshotFor(merged, pin.fieldId),
             state: PinnedEntryValue(),
           ),
       ];
     } on ApiException catch (e) {
+      final cached = _snapshotStorage.snapshotFor(channel);
       return [
         for (final pin in pins)
-          PinnedEntry(channel: channel, snapshot: pin, state: PinnedEntryError(e.code)),
+          PinnedEntry(
+            channel: channel,
+            pin: pin,
+            snapshot: _fieldSnapshotFor(cached, pin.fieldId),
+            state: PinnedEntryError(e.code),
+          ),
       ];
     }
   }

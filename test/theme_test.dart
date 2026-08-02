@@ -45,6 +45,26 @@ void main() {
         greaterThanOrEqualTo(4.5),
       );
     });
+
+    test(
+      'onSecondaryContainer on secondaryContainer meets WCAG AA (>= 4.5:1)',
+      () {
+        expect(
+          _contrastRatio(
+            scheme.onSecondaryContainer,
+            scheme.secondaryContainer,
+          ),
+          greaterThanOrEqualTo(4.5),
+        );
+      },
+    );
+
+    test('onErrorContainer on errorContainer meets WCAG AA (>= 4.5:1)', () {
+      expect(
+        _contrastRatio(scheme.onErrorContainer, scheme.errorContainer),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
   });
 
   group('AppTheme dark', () {
@@ -79,6 +99,26 @@ void main() {
       final appBar = theme.appBarTheme;
       expect(
         _contrastRatio(appBar.foregroundColor!, appBar.backgroundColor!),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test(
+      'onSecondaryContainer on secondaryContainer meets WCAG AA (>= 4.5:1)',
+      () {
+        expect(
+          _contrastRatio(
+            scheme.onSecondaryContainer,
+            scheme.secondaryContainer,
+          ),
+          greaterThanOrEqualTo(4.5),
+        );
+      },
+    );
+
+    test('onErrorContainer on errorContainer meets WCAG AA (>= 4.5:1)', () {
+      expect(
+        _contrastRatio(scheme.onErrorContainer, scheme.errorContainer),
         greaterThanOrEqualTo(4.5),
       );
     });
