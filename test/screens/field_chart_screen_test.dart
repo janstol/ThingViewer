@@ -977,6 +977,59 @@ void main() {
     });
   });
 
+  group('CSV export', () {
+    testWidgets('download button is absent in chart view', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.download_outlined), findsNothing);
+    });
+
+    testWidgets('download button appears in table view and opens a dialog '
+        'offering both modes', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.table_rows));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.download_outlined), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.download_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Raw'), findsOneWidget);
+      expect(find.text('Formatted'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Raw'), findsNothing);
+    });
+  });
+
   testWidgets('chart axes do not overflow at 2x text scale', (tester) async {
     await tester.pumpWidget(
       _wrapScaled(

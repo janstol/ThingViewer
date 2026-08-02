@@ -358,6 +358,54 @@ abstract class AppLocalizations {
   /// **'Next page'**
   String get fieldTableNextPage;
 
+  /// No description provided for @csvExportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get csvExportTooltip;
+
+  /// No description provided for @csvExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get csvExportTitle;
+
+  /// No description provided for @csvExportModeRaw.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw'**
+  String get csvExportModeRaw;
+
+  /// No description provided for @csvExportModeRawSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ISO timestamps in UTC and full-precision values, unaffected by display settings.'**
+  String get csvExportModeRawSubtitle;
+
+  /// No description provided for @csvExportModeFormatted.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatted'**
+  String get csvExportModeFormatted;
+
+  /// No description provided for @csvExportModeFormattedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamps and values as shown on screen, using the current date/time and rounding settings.'**
+  String get csvExportModeFormattedSubtitle;
+
+  /// No description provided for @csvExportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get csvExportAction;
+
+  /// No description provided for @csvExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV saved'**
+  String get csvExportSuccess;
+
   /// No description provided for @fieldChartSemantics.
   ///
   /// In en, this message translates to:

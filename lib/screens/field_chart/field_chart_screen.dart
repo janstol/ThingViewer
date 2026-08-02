@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:fl_chart/fl_chart.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../api/thingspeak_api.dart';
+import '../../export/csv_export.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
@@ -100,6 +106,59 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
     );
   }
 
+  /// The values currently shown in the table, delta-adjusted if
+  /// [FieldChartSettings.showDelta] is on — the same series the table
+  /// itself displays, just not reversed to newest-first. Null when there
+  /// is nothing to export (loading, empty, or no cached data on error).
+  List<FieldValue>? _exportableValues() {
+    final values = switch (_notifier.state) {
+      FieldChartLoaded(:final values) => values,
+      FieldChartError(:final cachedValues) => cachedValues,
+      FieldChartEmpty() => null,
+      FieldChartLoading() => null,
+    };
+    if (values == null || values.isEmpty) return null;
+    return _chartSettings.showDelta ? deltaValues(values) : values;
+  }
+
+  Future<void> _exportCsv(BuildContext context) async {
+    final values = _exportableValues();
+    if (values == null) return;
+
+    final mode = await showDialog<CsvExportMode>(
+      context: context,
+      builder: (_) => const _CsvExportDialog(),
+    );
+    if (mode == null || !context.mounted) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final csv = buildFieldCsv(
+      values,
+      mode: mode,
+      formatTimestamp: widget.settings.formatDateTime,
+      decimals: _chartSettings.decimals,
+    );
+    final bytes = Uint8List.fromList(utf8.encode(csv));
+    final fileName =
+        'thingviewer-${widget.channel.id}-field${widget.field.id}-'
+        '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.csv';
+
+    final String? path;
+    try {
+      path = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+    } on PlatformException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
+      return;
+    }
+    if (path == null || !context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.csvExportSuccess)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -120,6 +179,12 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                 : l10n.fieldTableTooltip,
             onPressed: () => setState(() => _showTable = !_showTable),
           ),
+          if (_showTable)
+            IconButton(
+              icon: const Icon(Icons.download_outlined),
+              tooltip: l10n.csvExportTooltip,
+              onPressed: () => _exportCsv(context),
+            ),
           IconButton(
             icon: const Icon(Icons.tune),
             tooltip: l10n.fieldSettingsTooltip,
@@ -910,5 +975,55 @@ class _FilterSheetState extends State<_FilterSheet> {
     if (time == null) return null;
 
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+}
+
+class _CsvExportDialog extends StatefulWidget {
+  const _CsvExportDialog();
+
+  @override
+  State<_CsvExportDialog> createState() => _CsvExportDialogState();
+}
+
+class _CsvExportDialogState extends State<_CsvExportDialog> {
+  CsvExportMode _selected = CsvExportMode.raw;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.csvExportTitle),
+      content: SingleChildScrollView(
+        child: RadioGroup<CsvExportMode>(
+          groupValue: _selected,
+          onChanged: (v) => setState(() => _selected = v!),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<CsvExportMode>(
+                value: CsvExportMode.raw,
+                title: Text(l10n.csvExportModeRaw),
+                subtitle: Text(l10n.csvExportModeRawSubtitle),
+              ),
+              RadioListTile<CsvExportMode>(
+                value: CsvExportMode.formatted,
+                title: Text(l10n.csvExportModeFormatted),
+                subtitle: Text(l10n.csvExportModeFormattedSubtitle),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.labelCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _selected),
+          child: Text(l10n.csvExportAction),
+        ),
+      ],
+    );
   }
 }

@@ -193,6 +193,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldTableNextPage => 'Next page';
 
   @override
+  String get csvExportTooltip => 'Export CSV';
+
+  @override
+  String get csvExportTitle => 'Export CSV';
+
+  @override
+  String get csvExportModeRaw => 'Raw';
+
+  @override
+  String get csvExportModeRawSubtitle =>
+      'ISO timestamps in UTC and full-precision values, unaffected by display settings.';
+
+  @override
+  String get csvExportModeFormatted => 'Formatted';
+
+  @override
+  String get csvExportModeFormattedSubtitle =>
+      'Timestamps and values as shown on screen, using the current date/time and rounding settings.';
+
+  @override
+  String get csvExportAction => 'Export';
+
+  @override
+  String get csvExportSuccess => 'CSV saved';
+
+  @override
   String fieldChartSemantics(
     String title,
     num count,

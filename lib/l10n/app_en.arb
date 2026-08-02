@@ -80,6 +80,14 @@
   },
   "fieldTablePreviousPage": "Previous page",
   "fieldTableNextPage": "Next page",
+  "csvExportTooltip": "Export CSV",
+  "csvExportTitle": "Export CSV",
+  "csvExportModeRaw": "Raw",
+  "csvExportModeRawSubtitle": "ISO timestamps in UTC and full-precision values, unaffected by display settings.",
+  "csvExportModeFormatted": "Formatted",
+  "csvExportModeFormattedSubtitle": "Timestamps and values as shown on screen, using the current date/time and rounding settings.",
+  "csvExportAction": "Export",
+  "csvExportSuccess": "CSV saved",
   "fieldChartSemantics": "{title} chart. {count, plural, =1{1 point} other{{count} points}}, ranging from {min} to {max}. Latest value {latest} at {latestTime}. Use Table view to browse individual readings.",
   "@fieldChartSemantics": {
     "placeholders": {

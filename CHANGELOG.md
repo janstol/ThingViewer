@@ -12,6 +12,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The newest channel status message from ThingSpeak now shows on the channel detail screen, tappable to a log of recent status messages.
 - A field whose readings are sparser than the channel detail screen's feed window (e.g. one value per few hundred entries) now still shows up, instead of being silently dropped.
 - Field chart screen can now toggle to a paginated table view of the same data (timestamp and value, newest first).
+- The table view can export the currently filtered range as a CSV file, with a choice of raw (UTC ISO timestamps, full-precision values) or formatted (current date/time and rounding settings) output.
 
 ### Accessibility
 
