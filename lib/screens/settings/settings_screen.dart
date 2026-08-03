@@ -428,10 +428,17 @@ class _ExportTile extends StatelessWidget {
       title: Text(l10n.settingsExport),
       subtitle: Text(l10n.settingsExportSubtitle),
       onTap: () async {
-        final json = await backupService.export();
+        final mode = await showDialog<BackupExportMode>(
+          context: context,
+          builder: (_) => const _BackupExportDialog(),
+        );
+        if (mode == null || !context.mounted) return;
+
+        final json = await backupService.export(mode: mode);
         final bytes = Uint8List.fromList(utf8.encode(json));
+        final infix = mode == BackupExportMode.withoutApiKeys ? '-no-keys' : '';
         final fileName =
-            'thingviewer-backup-'
+            'thingviewer-backup$infix-'
             '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
         final String? path;
         try {
@@ -448,6 +455,56 @@ class _ExportTile extends StatelessWidget {
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.backupExportSuccess)));
       },
+    );
+  }
+}
+
+class _BackupExportDialog extends StatefulWidget {
+  const _BackupExportDialog();
+
+  @override
+  State<_BackupExportDialog> createState() => _BackupExportDialogState();
+}
+
+class _BackupExportDialogState extends State<_BackupExportDialog> {
+  BackupExportMode _selected = BackupExportMode.full;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.backupExportTitle),
+      content: SingleChildScrollView(
+        child: RadioGroup<BackupExportMode>(
+          groupValue: _selected,
+          onChanged: (v) => setState(() => _selected = v!),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<BackupExportMode>(
+                value: BackupExportMode.full,
+                title: Text(l10n.backupExportModeFull),
+                subtitle: Text(l10n.backupExportModeFullSubtitle),
+              ),
+              RadioListTile<BackupExportMode>(
+                value: BackupExportMode.withoutApiKeys,
+                title: Text(l10n.backupExportModeNoKeys),
+                subtitle: Text(l10n.backupExportModeNoKeysSubtitle),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.labelCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _selected),
+          child: Text(l10n.backupExportAction),
+        ),
+      ],
     );
   }
 }
@@ -521,6 +578,9 @@ class _ImportTile extends StatelessWidget {
           return;
         }
 
+        final channelsNeedingApiKey = backupService.channelsNeedingApiKey(
+          contents,
+        );
         final mode = await showDialog<ImportMode>(
           context: context,
           builder: (ctx) {
@@ -534,6 +594,16 @@ class _ImportTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(l10n.backupImportSummary(_summary(l10n, contents))),
+                      if (channelsNeedingApiKey > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            l10n.backupImportMissingKeys(channelsNeedingApiKey),
+                            style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.error,
+                            ),
+                          ),
+                        ),
                       RadioGroup<ImportMode?>(
                         groupValue: selected,
                         onChanged: (v) => setState(() => selected = v),

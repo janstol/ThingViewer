@@ -145,13 +145,25 @@
   "settingsSectionBackup": "Backup",
   "settingsSectionInfo": "Info",
   "settingsExport": "Export",
-  "settingsExportSubtitle": "Includes API keys for private channels. Store the file securely!",
+  "settingsExportSubtitle": "Save your channels, settings, and chart overrides to a file.",
   "settingsImport": "Import",
+  "backupExportTitle": "Export backup",
+  "backupExportModeFull": "Full backup",
+  "backupExportModeFullSubtitle": "Includes API keys for private channels. Store the file securely!",
+  "backupExportModeNoKeys": "Without API keys",
+  "backupExportModeNoKeysSubtitle": "Safe to share or attach to a bug report. Private channels will need their API key re-entered after importing.",
+  "backupExportAction": "Export",
   "backupImportTitle": "Import backup",
   "backupImportSummary": "This backup contains {summary}.",
   "@backupImportSummary": {
     "placeholders": {
       "summary": { "type": "String" }
+    }
+  },
+  "backupImportMissingKeys": "{count, plural, =1{1 private channel has no API key and will need one re-entered after importing.} other{{count} private channels have no API key and will need one re-entered after importing.}}",
+  "@backupImportMissingKeys": {
+    "placeholders": {
+      "count": { "type": "num" }
     }
   },
   "backupSummaryChannels": "{count, plural, =1{1 channel} other{{count} channels}}",

@@ -64,6 +64,8 @@ class _FakeFilePickerPlatform extends FilePickerPlatform
   FilePickerResult? pickResult;
   String? savePath;
   Object? error;
+  Uint8List? savedBytes;
+  String? savedFileName;
 
   @override
   Future<FilePickerResult?> pickFiles({
@@ -95,6 +97,8 @@ class _FakeFilePickerPlatform extends FilePickerPlatform
     bool lockParentWindow = false,
   }) async {
     if (error != null) throw error!;
+    savedBytes = bytes;
+    savedFileName = fileName;
     return savePath;
   }
 }
@@ -345,7 +349,8 @@ void main() {
       expect(find.text('Import'), findsOneWidget);
     });
 
-    testWidgets('Export tile warns that API keys are included', (tester) async {
+    testWidgets('Export tile opens a mode dialog warning that the full backup '
+        'includes API keys', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final settings = SettingsNotifier(
         SettingsStorage(await SharedPreferences.getInstance()),
@@ -368,7 +373,12 @@ void main() {
         100,
         scrollable: find.byType(Scrollable),
       );
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
 
+      expect(find.text('Export backup'), findsOneWidget);
+      expect(find.text('Full backup'), findsOneWidget);
+      expect(find.text('Without API keys'), findsOneWidget);
       expect(
         find.text(
           'Includes API keys for private channels. Store the file securely!',
@@ -500,6 +510,122 @@ void main() {
       expect(channelStorage.loadChannels(), [_otherChannel]);
     });
 
+    testWidgets('import dialog warns about channels missing an API key', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+      const keylessPrivateChannel = Channel(
+        id: 9,
+        serverUrl: 'https://api.thingspeak.com',
+        isPublic: false,
+        name: 'Keyless Channel',
+      );
+      fakePicker.pickResult = FilePickerResult([
+        PlatformFile(
+          name: 'backup.json',
+          size: 0,
+          bytes: _backupBytes([keylessPrivateChannel]),
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Import'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Import'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          '1 private channel has no API key and will need one '
+          're-entered after importing.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'import dialog does not warn about a channel that already has a '
+      'saved key',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        const savedPrivateChannel = Channel(
+          id: 9,
+          serverUrl: 'https://api.thingspeak.com',
+          isPublic: false,
+          apiKey: 'secret-key',
+          name: 'Keyless Channel',
+        );
+        await ChannelStorage(prefs).saveChannels([savedPrivateChannel]);
+        final settings = SettingsNotifier(SettingsStorage(prefs));
+        const keylessIncoming = Channel(
+          id: 9,
+          serverUrl: 'https://api.thingspeak.com',
+          isPublic: false,
+          name: 'Keyless Channel',
+        );
+        fakePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'backup.json',
+            size: 0,
+            bytes: _backupBytes([keylessIncoming]),
+          ),
+        ]);
+
+        await tester.pumpWidget(
+          _wrap(
+            SettingsScreen(
+              settings: settings,
+              channels: const [savedPrivateChannel],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              backupService: BackupService(
+                ChannelStorage(prefs),
+                SettingsStorage(prefs),
+                FieldSettingsStorage(prefs),
+                PinnedFieldsStorage(prefs),
+              ),
+              onImported: () {},
+            ),
+          ),
+        );
+        await tester.scrollUntilVisible(
+          find.text('Import'),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Import'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('has no API key'), findsNothing);
+      },
+    );
+
     testWidgets('a malformed backup file shows an error and no dialog', (
       tester,
     ) async {
@@ -578,8 +704,12 @@ void main() {
       );
       await tester.tap(find.text('Export'));
       await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Export'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Backup saved'), findsOneWidget);
+      expect(fakePicker.savedFileName, contains('thingviewer-backup-'));
+      expect(fakePicker.savedFileName, isNot(contains('-no-keys')));
     });
 
     testWidgets('Export shows nothing when the save dialog is cancelled', (
@@ -614,10 +744,115 @@ void main() {
       );
       await tester.tap(find.text('Export'));
       await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Export'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Backup saved'), findsNothing);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('Export dialog cancel closes without saving', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsNotifier(
+        SettingsStorage(await SharedPreferences.getInstance()),
+      );
+      fakePicker.savePath = '/tmp/backup.json';
+
+      await tester.pumpWidget(
+        _wrap(
+          SettingsScreen(
+            settings: settings,
+            channels: const [],
+            api: mockApi,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            backupService: await _backupService(),
+            onImported: () {},
+          ),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Backup saved'), findsNothing);
+      expect(fakePicker.savedBytes, isNull);
+    });
+
+    testWidgets(
+      'picking Without API keys saves keyless bytes with a -no-keys filename',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final channelStorage = ChannelStorage(prefs);
+        await channelStorage.saveChannels([
+          const Channel(
+            id: 5,
+            serverUrl: 'https://api.thingspeak.com',
+            isPublic: false,
+            apiKey: 'secret-key',
+            name: 'Private Channel',
+          ),
+        ]);
+        final settings = SettingsNotifier(SettingsStorage(prefs));
+        fakePicker.savePath = '/tmp/backup.json';
+
+        await tester.pumpWidget(
+          _wrap(
+            SettingsScreen(
+              settings: settings,
+              channels: const [],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              backupService: BackupService(
+                channelStorage,
+                SettingsStorage(prefs),
+                FieldSettingsStorage(prefs),
+                PinnedFieldsStorage(prefs),
+              ),
+              onImported: () {},
+            ),
+          ),
+        );
+        await tester.scrollUntilVisible(
+          find.text('Export'),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Export'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Without API keys'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(TextButton, 'Export'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Backup saved'), findsOneWidget);
+        expect(fakePicker.savedFileName, contains('-no-keys'));
+        final savedJson =
+            jsonDecode(utf8.decode(fakePicker.savedBytes!))
+                as Map<String, dynamic>;
+        expect(savedJson['apiKeysExcluded'], isTrue);
+        final channelsJson = savedJson['channels'] as List<dynamic>;
+        expect(
+          (channelsJson.single as Map<String, dynamic>).containsKey('apiKey'),
+          isFalse,
+        );
+      },
+    );
 
     testWidgets('Export shows an error snackbar when the picker throws', (
       tester,
@@ -650,6 +885,8 @@ void main() {
         scrollable: find.byType(Scrollable),
       );
       await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Export'));
       await tester.pumpAndSettle();
 
       expect(find.text("Couldn't open the file picker."), findsOneWidget);

@@ -11,6 +11,8 @@ const _kBackupVersion = 2;
 
 enum ImportMode { replace, addChannels }
 
+enum BackupExportMode { full, withoutApiKeys }
+
 enum BackupErrorType { notABackup, newerVersion, malformed }
 
 class BackupException implements Exception {
@@ -33,6 +35,7 @@ class BackupContents {
   final Map<String, dynamic>? fieldChartSettings;
   final List<dynamic>? pinnedFields;
   final DateTime? exportedAt;
+  final bool apiKeysExcluded;
 
   const BackupContents({
     this.channels,
@@ -40,6 +43,7 @@ class BackupContents {
     this.fieldChartSettings,
     this.pinnedFields,
     this.exportedAt,
+    this.apiKeysExcluded = false,
   });
 }
 
@@ -70,17 +74,20 @@ class BackupService {
 
   static Future<String> _noAppVersion() async => '';
 
-  Future<String> export() async {
+  Future<String> export({BackupExportMode mode = BackupExportMode.full}) async {
     final version = await appVersion();
     final json = {
       'app': _kBackupApp,
       'version': _kBackupVersion,
       'exportedAt': DateTime.now().toUtc().toIso8601String(),
       if (version.isNotEmpty) 'appVersion': version,
-      'channels': _channelStorage
-          .loadChannels()
-          .map((c) => c.toJson())
-          .toList(),
+      if (mode == BackupExportMode.withoutApiKeys) 'apiKeysExcluded': true,
+      'channels': _channelStorage.loadChannels().map((c) => c.toJson()).map((
+        json,
+      ) {
+        if (mode == BackupExportMode.withoutApiKeys) json.remove('apiKey');
+        return json;
+      }).toList(),
       'settings': _settingsStorage.exportJson(),
       'fieldChartSettings': _fieldSettingsStorage.exportJson(),
       'pinnedFields': _pinnedFieldsStorage.exportJson(),
@@ -137,10 +144,42 @@ class BackupService {
         exportedAt: exportedAtValue is String
             ? DateTime.tryParse(exportedAtValue)
             : null,
+        apiKeysExcluded: decoded['apiKeysExcluded'] == true,
       );
     } catch (e) {
       throw BackupException(BackupErrorType.malformed, e.toString());
     }
+  }
+
+  /// Fills a keyless incoming private channel's API key from the currently
+  /// saved copy, if there is one, rather than either losing a key the app
+  /// cannot recover or silently leaving the channel unable to authenticate.
+  Channel _withKey(Channel incoming, Channel? existing) {
+    if (incoming.isPublic || incoming.apiKey?.isNotEmpty == true) {
+      return incoming;
+    }
+    final key = existing?.apiKey;
+    if (key != null && key.isNotEmpty) return incoming.copyWith(apiKey: key);
+    return incoming.copyWith(authError: true);
+  }
+
+  /// Counts private channels in [contents] that will actually end up
+  /// needing an API key re-entered after import: no key in the file, and no
+  /// already-saved channel to recover one from. A plain count of keyless
+  /// channels in the file overstates this whenever a channel being restored
+  /// already has a usable (or even just non-empty) key saved locally, since
+  /// [restore] preserves it.
+  int channelsNeedingApiKey(BackupContents contents) {
+    final channels = contents.channels;
+    if (channels == null) return 0;
+    final existingByIdentity = {
+      for (final c in _channelStorage.loadChannels()) c: c,
+    };
+    return channels.where((c) {
+      if (c.isPublic || (c.apiKey?.isNotEmpty ?? false)) return false;
+      final key = existingByIdentity[c]?.apiKey;
+      return key == null || key.isEmpty;
+    }).length;
   }
 
   Future<void> restore(BackupContents contents, ImportMode mode) async {
@@ -148,7 +187,12 @@ class BackupService {
       case ImportMode.replace:
         final channels = contents.channels;
         if (channels != null) {
-          await _channelStorage.saveChannels(channels);
+          final existingByIdentity = {
+            for (final c in _channelStorage.loadChannels()) c: c,
+          };
+          await _channelStorage.saveChannels(
+            channels.map((c) => _withKey(c, existingByIdentity[c])).toList(),
+          );
         }
         final settings = contents.settings;
         if (settings != null) {
@@ -169,7 +213,9 @@ class BackupService {
         final existingSet = existing.toSet();
         final merged = [
           ...existing,
-          ...incoming.where((c) => !existingSet.contains(c)),
+          ...incoming
+              .where((c) => !existingSet.contains(c))
+              .map((c) => _withKey(c, null)),
         ];
         await _channelStorage.saveChannels(merged);
     }

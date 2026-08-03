@@ -350,10 +350,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsExportSubtitle =>
-      'Includes API keys for private channels. Store the file securely!';
+      'Save your channels, settings, and chart overrides to a file.';
 
   @override
   String get settingsImport => 'Import';
+
+  @override
+  String get backupExportTitle => 'Export backup';
+
+  @override
+  String get backupExportModeFull => 'Full backup';
+
+  @override
+  String get backupExportModeFullSubtitle =>
+      'Includes API keys for private channels. Store the file securely!';
+
+  @override
+  String get backupExportModeNoKeys => 'Without API keys';
+
+  @override
+  String get backupExportModeNoKeysSubtitle =>
+      'Safe to share or attach to a bug report. Private channels will need their API key re-entered after importing.';
+
+  @override
+  String get backupExportAction => 'Export';
 
   @override
   String get backupImportTitle => 'Import backup';
@@ -361,6 +381,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String backupImportSummary(String summary) {
     return 'This backup contains $summary.';
+  }
+
+  @override
+  String backupImportMissingKeys(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count private channels have no API key and will need one re-entered after importing.',
+      one:
+          '1 private channel has no API key and will need one re-entered after importing.',
+    );
+    return '$_temp0';
   }
 
   @override

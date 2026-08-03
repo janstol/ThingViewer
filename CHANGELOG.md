@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Field chart screen can now toggle to a paginated table view of the same data (timestamp and value, newest first).
 - The table view can export the currently filtered range as a CSV file, with a choice of raw (UTC ISO timestamps, full-precision values) or formatted (current date/time and rounding settings) output.
 - The channel detail screen now shows the last known field values immediately on open, from a per-channel cache, instead of a blank loading screen while it refreshes. A banner reports how old the cached data is, and stays up if a refresh fails. The pinned fields dashboard now reads from the same cache, so it also shows values immediately on a cold start with no network.
+- Backup export now offers a choice between a full backup and one that excludes API keys, safe to share or attach to a bug report. Importing a keyless backup preserves an already-saved channel's key, or flags the channel as needing one re-entered.
 
 ### Accessibility
 

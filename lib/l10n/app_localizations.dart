@@ -638,7 +638,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsExportSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Includes API keys for private channels. Store the file securely!'**
+  /// **'Save your channels, settings, and chart overrides to a file.'**
   String get settingsExportSubtitle;
 
   /// No description provided for @settingsImport.
@@ -646,6 +646,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import'**
   String get settingsImport;
+
+  /// No description provided for @backupExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup'**
+  String get backupExportTitle;
+
+  /// No description provided for @backupExportModeFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full backup'**
+  String get backupExportModeFull;
+
+  /// No description provided for @backupExportModeFullSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes API keys for private channels. Store the file securely!'**
+  String get backupExportModeFullSubtitle;
+
+  /// No description provided for @backupExportModeNoKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Without API keys'**
+  String get backupExportModeNoKeys;
+
+  /// No description provided for @backupExportModeNoKeysSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe to share or attach to a bug report. Private channels will need their API key re-entered after importing.'**
+  String get backupExportModeNoKeysSubtitle;
+
+  /// No description provided for @backupExportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get backupExportAction;
 
   /// No description provided for @backupImportTitle.
   ///
@@ -658,6 +694,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This backup contains {summary}.'**
   String backupImportSummary(String summary);
+
+  /// No description provided for @backupImportMissingKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 private channel has no API key and will need one re-entered after importing.} other{{count} private channels have no API key and will need one re-entered after importing.}}'**
+  String backupImportMissingKeys(num count);
 
   /// No description provided for @backupSummaryChannels.
   ///
