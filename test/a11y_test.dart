@@ -6,18 +6,21 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/backup/backup_service.dart';
+import 'package:thingviewer/backup/import_plan.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
+import 'package:thingviewer/models/pinned_field.dart';
 import 'package:thingviewer/screens/channel_add/channel_add_screen.dart';
 import 'package:thingviewer/screens/channel_detail/channel_detail_screen.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/channel_status/channel_status_screen.dart';
 import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
 import 'package:thingviewer/screens/field_settings/field_settings_screen.dart';
+import 'package:thingviewer/screens/import_preview/import_preview_screen.dart';
 import 'package:thingviewer/screens/pinned_edit/pinned_edit_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/screens/settings/settings_screen.dart';
@@ -103,6 +106,63 @@ Future<BackupService> _backupService() async {
     SettingsStorage(prefs),
     FieldSettingsStorage(prefs),
     PinnedFieldsStorage(prefs),
+  );
+}
+
+ImportPlan _importPlan() {
+  const updated = Channel(
+    id: 1,
+    serverUrl: 'https://api.thingspeak.com',
+    isPublic: true,
+    name: 'My Channel Renamed',
+  );
+  const needsKey = Channel(
+    id: 3,
+    serverUrl: 'https://api.thingspeak.com',
+    isPublic: false,
+    name: 'Private Channel',
+  );
+  const pin = PinnedField(
+    serverUrl: 'https://api.thingspeak.com',
+    channelId: 1,
+    fieldId: 1,
+  );
+  return ImportPlan(
+    contents: BackupContents(
+      channels: [updated, needsKey],
+      exportedAt: _now,
+      appVersion: '0.9.0',
+    ),
+    channels: [
+      ChannelDiff(
+        incoming: updated,
+        existing: _channel,
+        change: ChannelChange.updated,
+        changes: const {ChannelFieldChange.name},
+        needsApiKey: false,
+        chartSettingKeys: const ['https://api.thingspeak.com|1|1'],
+        pinnedFields: const [pin],
+      ),
+      const ChannelDiff(
+        incoming: needsKey,
+        existing: null,
+        change: ChannelChange.added,
+        changes: {},
+        needsApiKey: true,
+        chartSettingKeys: [],
+        pinnedFields: [],
+      ),
+    ],
+    settings: [
+      SettingDiff(
+        key: BackupSettingKey.themeMode,
+        current: ThemeMode.light.index,
+        incoming: ThemeMode.dark.index,
+      ),
+    ],
+    orphanChartSettingKeys: const [],
+    orphanPinnedFields: const [],
+    onlyOnDevice: const [_otherChannel],
   );
 }
 
@@ -465,6 +525,24 @@ void main() {
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
               channels: const [_channel, _otherChannel],
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
+      testWidgets('import preview', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+
+        await tester.pumpWidget(
+          _wrap(
+            ImportPreviewScreen(
+              plan: _importPlan(),
+              fileName: 'thingviewer-backup-2026-08-01.json',
+              settings: await _settings(),
             ),
             themeMode,
           ),

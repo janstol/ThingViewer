@@ -14,6 +14,7 @@ import '../../storage/pinned_fields_storage.dart';
 import '../../storage/storage_recovery.dart';
 import '../../widgets/section_header.dart';
 import '../settings/import_flow.dart';
+import '../settings/settings_notifier.dart';
 
 /// Writes [raw] to a user-chosen file named after [storeKey], so unreadable
 /// data can be inspected or attached to a bug report instead of lost.
@@ -95,6 +96,7 @@ class RecoveryScreen extends StatefulWidget {
   final FieldSettingsStorage fieldSettingsStorage;
   final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
+  final SettingsNotifier settings;
 
   /// Called after an import or a discard changes any of the storages above,
   /// so the caller can refresh whatever else depends on them.
@@ -107,6 +109,7 @@ class RecoveryScreen extends StatefulWidget {
     required this.fieldSettingsStorage,
     required this.channelSnapshotStorage,
     required this.backupService,
+    required this.settings,
     required this.onChanged,
   });
 
@@ -168,7 +171,11 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   }
 
   Future<void> _import() async {
-    final imported = await runBackupImport(context, widget.backupService);
+    final imported = await runBackupImport(
+      context,
+      widget.backupService,
+      widget.settings,
+    );
     if (!imported) return;
     widget.onChanged();
     if (mounted) setState(() {});

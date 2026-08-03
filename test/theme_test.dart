@@ -46,6 +46,14 @@ void main() {
       );
     });
 
+    test('changeAccent on surface meets WCAG AA (>= 4.5:1)', () {
+      final changeAccent = theme.extension<BrandColors>()!.changeAccent;
+      expect(
+        _contrastRatio(changeAccent, scheme.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
     test(
       'onSecondaryContainer on secondaryContainer meets WCAG AA (>= 4.5:1)',
       () {
@@ -91,6 +99,14 @@ void main() {
       final dataAccent = theme.extension<BrandColors>()!.dataAccent;
       expect(
         _contrastRatio(dataAccent, scheme.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+    });
+
+    test('changeAccent on surface meets WCAG AA (>= 4.5:1)', () {
+      final changeAccent = theme.extension<BrandColors>()!.changeAccent;
+      expect(
+        _contrastRatio(changeAccent, scheme.surface),
         greaterThanOrEqualTo(4.5),
       );
     });

@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import '../models/channel.dart';
+import '../models/pinned_field.dart';
 import '../storage/channel_storage.dart';
 import '../storage/field_settings_storage.dart';
 import '../storage/pinned_fields_storage.dart';
 import '../storage/settings_storage.dart';
+import 'import_plan.dart';
 
 const _kBackupApp = 'thingviewer';
 const _kBackupVersion = 2;
-
-enum ImportMode { replace, addChannels }
 
 enum BackupExportMode { full, withoutApiKeys }
 
@@ -27,14 +27,15 @@ class BackupException implements Exception {
 
 /// Result of successfully parsing a backup file. Every section is nullable —
 /// `null` means the section was absent from the file, as opposed to an empty
-/// (but present) section, so [BackupService.restore] knows what to leave
-/// untouched in [ImportMode.replace].
+/// (but present) section, so [BackupService.planImport] knows there is
+/// nothing to show or import for that section.
 class BackupContents {
   final List<Channel>? channels;
   final Map<String, dynamic>? settings;
   final Map<String, dynamic>? fieldChartSettings;
   final List<dynamic>? pinnedFields;
   final DateTime? exportedAt;
+  final String? appVersion;
   final bool apiKeysExcluded;
 
   const BackupContents({
@@ -43,6 +44,7 @@ class BackupContents {
     this.fieldChartSettings,
     this.pinnedFields,
     this.exportedAt,
+    this.appVersion,
     this.apiKeysExcluded = false,
   });
 }
@@ -134,6 +136,7 @@ class BackupService {
       final fieldChartSettings = decoded['fieldChartSettings'];
       final pinnedFields = decoded['pinnedFields'];
       final exportedAtValue = decoded['exportedAt'];
+      final appVersionValue = decoded['appVersion'];
       return BackupContents(
         channels: channels,
         settings: settings is Map<String, dynamic> ? settings : null,
@@ -143,6 +146,9 @@ class BackupService {
         pinnedFields: pinnedFields is List ? pinnedFields : null,
         exportedAt: exportedAtValue is String
             ? DateTime.tryParse(exportedAtValue)
+            : null,
+        appVersion: appVersionValue is String && appVersionValue.isNotEmpty
+            ? appVersionValue
             : null,
         apiKeysExcluded: decoded['apiKeysExcluded'] == true,
       );
@@ -163,61 +169,145 @@ class BackupService {
     return incoming.copyWith(authError: true);
   }
 
-  /// Counts private channels in [contents] that will actually end up
-  /// needing an API key re-entered after import: no key in the file, and no
-  /// already-saved channel to recover one from. A plain count of keyless
-  /// channels in the file overstates this whenever a channel being restored
-  /// already has a usable (or even just non-empty) key saved locally, since
-  /// [restore] preserves it.
-  int channelsNeedingApiKey(BackupContents contents) {
-    final channels = contents.channels;
-    if (channels == null) return 0;
-    final existingByIdentity = {
-      for (final c in _channelStorage.loadChannels()) c: c,
-    };
-    return channels.where((c) {
-      if (c.isPublic || (c.apiKey?.isNotEmpty ?? false)) return false;
-      final key = existingByIdentity[c]?.apiKey;
-      return key == null || key.isEmpty;
-    }).length;
+  /// Builds a diff of [contents] against everything currently saved, for the
+  /// import preview screen to render and the user to select from.
+  ImportPlan planImport(BackupContents contents) {
+    final savedChannels = _channelStorage.loadChannels();
+    final existingByIdentity = {for (final c in savedChannels) c: c};
+    final incoming = contents.channels ?? const <Channel>[];
+    final incomingIdentities = incoming.toSet();
+
+    final fileChartSettings =
+        contents.fieldChartSettings ?? const <String, dynamic>{};
+    final filePins = (contents.pinnedFields ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(PinnedField.fromJson)
+        .toList();
+
+    String prefixFor(Channel c) => '${c.serverUrl}|${c.id}|';
+
+    final channelDiffs = <ChannelDiff>[];
+    for (final c in incoming) {
+      final existing = existingByIdentity[c];
+      final effective = _withKey(c, existing);
+      final changes = <ChannelFieldChange>{};
+      if (existing != null) {
+        if (effective.name != existing.name) {
+          changes.add(ChannelFieldChange.name);
+        }
+        if (effective.apiKey != existing.apiKey) {
+          changes.add(ChannelFieldChange.apiKey);
+        }
+        if (effective.isPublic != existing.isPublic) {
+          changes.add(ChannelFieldChange.visibility);
+        }
+      }
+      final change = existing == null
+          ? ChannelChange.added
+          : (changes.isEmpty ? ChannelChange.unchanged : ChannelChange.updated);
+      final needsApiKey =
+          !effective.isPublic &&
+          (effective.apiKey == null || effective.apiKey!.isEmpty);
+      final prefix = prefixFor(c);
+      channelDiffs.add(
+        ChannelDiff(
+          incoming: c,
+          existing: existing,
+          change: change,
+          changes: changes,
+          needsApiKey: needsApiKey,
+          chartSettingKeys: fileChartSettings.keys
+              .where((k) => k.startsWith(prefix))
+              .toList(),
+          pinnedFields: filePins.where((p) => p.matches(c)).toList(),
+        ),
+      );
+    }
+
+    final orphanChartSettingKeys = fileChartSettings.keys
+        .where((k) => !incoming.any((c) => k.startsWith(prefixFor(c))))
+        .toList();
+    final orphanPinnedFields = filePins
+        .where((p) => !incoming.any((c) => p.matches(c)))
+        .toList();
+    final onlyOnDevice = savedChannels
+        .where((c) => !incomingIdentities.contains(c))
+        .toList();
+
+    final incomingSettings = contents.settings;
+    final settingsDiffs = <SettingDiff>[];
+    if (incomingSettings != null) {
+      final savedSettings = _settingsStorage.exportJson();
+      for (final key in BackupSettingKey.values) {
+        settingsDiffs.add(
+          SettingDiff.compute(key, savedSettings, incomingSettings),
+        );
+      }
+    }
+
+    return ImportPlan(
+      contents: contents,
+      channels: channelDiffs,
+      settings: settingsDiffs,
+      orphanChartSettingKeys: orphanChartSettingKeys,
+      orphanPinnedFields: orphanPinnedFields,
+      onlyOnDevice: onlyOnDevice,
+    );
   }
 
-  Future<void> restore(BackupContents contents, ImportMode mode) async {
-    switch (mode) {
-      case ImportMode.replace:
-        final channels = contents.channels;
-        if (channels != null) {
-          final existingByIdentity = {
-            for (final c in _channelStorage.loadChannels()) c: c,
-          };
-          await _channelStorage.saveChannels(
-            channels.map((c) => _withKey(c, existingByIdentity[c])).toList(),
-          );
-        }
-        final settings = contents.settings;
-        if (settings != null) {
-          await _settingsStorage.importJson(settings);
-        }
-        final fieldChartSettings = contents.fieldChartSettings;
-        if (fieldChartSettings != null) {
-          await _fieldSettingsStorage.importJson(fieldChartSettings);
-        }
-        final pinnedFields = contents.pinnedFields;
-        if (pinnedFields != null) {
-          await _pinnedFieldsStorage.importJson(pinnedFields);
-        }
-      case ImportMode.addChannels:
-        final incoming = contents.channels;
-        if (incoming == null || incoming.isEmpty) return;
-        final existing = _channelStorage.loadChannels();
-        final existingSet = existing.toSet();
-        final merged = [
-          ...existing,
-          ...incoming
-              .where((c) => !existingSet.contains(c))
-              .map((c) => _withKey(c, null)),
-        ];
-        await _channelStorage.saveChannels(merged);
+  /// Applies [selection] from a previously built [ImportPlan]: selected
+  /// channels are merged into the saved list (through [_withKey], so a
+  /// locally saved API key survives a keyless backup), unselected saved data
+  /// is left alone, and [ImportSelection.removeChannelsNotInBackup] controls
+  /// whether saved channels absent from [contents] are dropped.
+  Future<void> applyImport(
+    BackupContents contents,
+    ImportSelection selection,
+  ) async {
+    final saved = _channelStorage.loadChannels();
+    final existingByIdentity = {for (final c in saved) c: c};
+    final reconciledByIdentity = {
+      for (final c in selection.channels)
+        c: _withKey(c, existingByIdentity[c]),
+    };
+    final incomingIdentities = (contents.channels ?? const <Channel>[])
+        .toSet();
+
+    final result = <Channel>[];
+    for (final c in saved) {
+      if (selection.removeChannelsNotInBackup &&
+          !incomingIdentities.contains(c)) {
+        continue;
+      }
+      result.add(reconciledByIdentity[c] ?? c);
     }
+    for (final entry in reconciledByIdentity.entries) {
+      if (!existingByIdentity.containsKey(entry.key)) result.add(entry.value);
+    }
+    await _channelStorage.saveChannels(result);
+
+    final settings = contents.settings;
+    if (settings != null) {
+      final allowedKeys = {
+        for (final key in selection.settingKeys) ...key.prefsKeys,
+      };
+      await _settingsStorage.importJson({
+        for (final entry in settings.entries)
+          if (allowedKeys.contains(entry.key)) entry.key: entry.value,
+      });
+    }
+
+    final fieldChartSettings = contents.fieldChartSettings;
+    if (fieldChartSettings != null) {
+      await _fieldSettingsStorage.mergeJson({
+        for (final entry in fieldChartSettings.entries)
+          if (selection.fieldChartSettingsKeys.contains(entry.key))
+            entry.key: entry.value,
+      });
+    }
+
+    await _pinnedFieldsStorage.mergeJson(
+      selection.pinnedFields.map((p) => p.toJson()).toList(),
+    );
   }
 }

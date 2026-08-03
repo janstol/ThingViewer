@@ -99,7 +99,11 @@ class SettingsScreen extends StatelessWidget {
             _EntryTimeTile(settings: settings),
             SectionHeader(title: l10n.settingsSectionBackup),
             _ExportTile(backupService: backupService),
-            _ImportTile(backupService: backupService, onImported: onImported),
+            _ImportTile(
+              backupService: backupService,
+              settings: settings,
+              onImported: onImported,
+            ),
             if (channelStorage.issue != null ||
                 fieldSettingsStorage.issue != null ||
                 pinnedFieldsStorage.issue != null ||
@@ -110,6 +114,7 @@ class SettingsScreen extends StatelessWidget {
                 pinnedFieldsStorage: pinnedFieldsStorage,
                 channelSnapshotStorage: channelSnapshotStorage,
                 backupService: backupService,
+                settings: settings,
                 onImported: onImported,
               ),
             SectionHeader(title: l10n.settingsSectionInfo),
@@ -534,9 +539,14 @@ class _BackupExportDialogState extends State<_BackupExportDialog> {
 
 class _ImportTile extends StatelessWidget {
   final BackupService backupService;
+  final SettingsNotifier settings;
   final VoidCallback onImported;
 
-  const _ImportTile({required this.backupService, required this.onImported});
+  const _ImportTile({
+    required this.backupService,
+    required this.settings,
+    required this.onImported,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +555,9 @@ class _ImportTile extends StatelessWidget {
       leading: const Icon(Icons.download_outlined),
       title: Text(l10n.settingsImport),
       onTap: () async {
-        if (await runBackupImport(context, backupService)) onImported();
+        if (await runBackupImport(context, backupService, settings)) {
+          onImported();
+        }
       },
     );
   }
@@ -557,6 +569,7 @@ class _RecoveryTile extends StatelessWidget {
   final PinnedFieldsStorage pinnedFieldsStorage;
   final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
+  final SettingsNotifier settings;
   final VoidCallback onImported;
 
   const _RecoveryTile({
@@ -565,6 +578,7 @@ class _RecoveryTile extends StatelessWidget {
     required this.pinnedFieldsStorage,
     required this.channelSnapshotStorage,
     required this.backupService,
+    required this.settings,
     required this.onImported,
   });
 
@@ -586,6 +600,7 @@ class _RecoveryTile extends StatelessWidget {
             fieldSettingsStorage: fieldSettingsStorage,
             channelSnapshotStorage: channelSnapshotStorage,
             backupService: backupService,
+            settings: settings,
             onChanged: onImported,
           ),
         ),

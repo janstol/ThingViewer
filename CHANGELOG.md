@@ -28,6 +28,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Backup import now opens a preview screen showing exactly what the file contains and how it differs from what's currently saved, with a checkbox on every channel, chart override, pinned field, and app setting, instead of a single dialog forcing a choice between replacing everything or adding channels only. Unselected items are left untouched; a separate, off-by-default toggle lets you remove saved channels that are absent from the backup.
 - Field chart pinch-zoom and panning are smoother, especially on dense channels: derived chart data is now cached instead of being recomputed on every frame.
 - The channel detail screen loads faster, fetching channel info and feed data in parallel instead of sequentially.
 - Release builds are now obfuscated, with debug symbols uploaded separately for de-obfuscating crash reports, and no longer bundle unused icon source images. Both reduce app size.

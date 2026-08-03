@@ -405,11 +405,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupImportTitle => 'Import backup';
 
   @override
-  String backupImportSummary(String summary) {
-    return 'This backup contains $summary.';
-  }
-
-  @override
   String backupImportMissingKeys(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -421,48 +416,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String backupSummaryChannels(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count channels',
-      one: '1 channel',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get backupSummarySettings => 'app settings';
-
-  @override
-  String backupSummaryFieldSettings(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count chart settings',
-      one: '1 chart setting',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get backupSummaryEmpty => 'nothing to import';
-
-  @override
-  String get backupModeReplace => 'Replace everything';
-
-  @override
-  String get backupModeReplaceDescription =>
-      'Overwrites all saved channels, app settings, and chart overrides with this backup\'s contents.';
-
-  @override
-  String get backupModeAddChannels => 'Add channels only';
-
-  @override
-  String get backupModeAddChannelsDescription =>
-      'Adds channels from the backup that aren\'t already saved. Existing channels, app settings, and chart overrides are left unchanged.';
 
   @override
   String get backupImportConfirm => 'Import';
@@ -726,7 +679,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPinnedFields => 'Pinned fields';
 
   @override
-  String backupSummaryPinnedFields(num count) {
+  String get importPreviewSectionFile => 'File';
+
+  @override
+  String get importPreviewSectionChannels => 'Channels';
+
+  @override
+  String get importPreviewSectionSettings => 'App settings';
+
+  @override
+  String get importPreviewSectionOnlyHere => 'Only on this device';
+
+  @override
+  String get importPreviewSectionOtherOverrides => 'Other chart overrides';
+
+  @override
+  String importPreviewExportedAt(String date) {
+    return 'Exported $date';
+  }
+
+  @override
+  String importPreviewAppVersion(String version) {
+    return 'App version $version';
+  }
+
+  @override
+  String get importPreviewNoApiKeys =>
+      'API keys were excluded from this backup.';
+
+  @override
+  String get importPreviewStatusNew => 'NEW';
+
+  @override
+  String get importPreviewStatusUpdate => 'UPDATE';
+
+  @override
+  String get importPreviewStatusUnchanged => 'UNCHANGED';
+
+  @override
+  String get importPreviewChangeName => 'Name';
+
+  @override
+  String get importPreviewChangeApiKey => 'API key changed';
+
+  @override
+  String get importPreviewChangeVisibility => 'Visibility';
+
+  @override
+  String get importPreviewNeedsApiKey =>
+      'Needs an API key re-entered after importing';
+
+  @override
+  String importPreviewChartOverrides(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chart overrides',
+      one: '1 chart override',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPreviewPinnedFields(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -735,4 +750,29 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String importPreviewValueChange(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get importPreviewValueSame => 'unchanged';
+
+  @override
+  String get importPreviewSelectAll => 'Select all';
+
+  @override
+  String get importPreviewSelectNone => 'Select none';
+
+  @override
+  String get importPreviewRemoveMissing => 'Remove channels not in this backup';
+
+  @override
+  String get importPreviewRemoveMissingDescription =>
+      'Deletes saved channels that aren\'t present in this file.';
+
+  @override
+  String get importPreviewNothingToImport =>
+      'This backup has nothing to import.';
 }

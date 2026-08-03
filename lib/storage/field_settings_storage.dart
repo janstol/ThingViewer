@@ -88,16 +88,16 @@ class FieldSettingsStorage {
   Map<String, dynamic> exportJson() =>
       _settings.map((k, v) => MapEntry(k, v.toJson()));
 
-  Future<void> importJson(Map<String, dynamic> json) async {
-    _settings
-      ..clear()
-      ..addAll({
-        for (final entry in json.entries)
-          if (entry.value is Map<String, dynamic>)
-            entry.key: FieldChartSettings.fromJson(
-              entry.value as Map<String, dynamic>,
-            ),
-      });
+  /// Overwrites entries present in [json], leaving every other saved entry
+  /// untouched — for merging a partial import selection into what is saved.
+  Future<void> mergeJson(Map<String, dynamic> json) async {
+    for (final entry in json.entries) {
+      if (entry.value is Map<String, dynamic>) {
+        _settings[entry.key] = FieldChartSettings.fromJson(
+          entry.value as Map<String, dynamic>,
+        );
+      }
+    }
     await _persist();
   }
 

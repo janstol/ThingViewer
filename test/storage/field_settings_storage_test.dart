@@ -197,7 +197,7 @@ void main() {
     expect(second.settingsFor(_channel, 1), settings);
   });
 
-  group('exportJson / importJson', () {
+  group('exportJson / mergeJson', () {
     test('round trips settings for multiple fields', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = FieldSettingsStorage(
@@ -214,35 +214,52 @@ void main() {
       final target = FieldSettingsStorage(
         await SharedPreferences.getInstance(),
       );
-      await target.importJson(exported);
+      await target.mergeJson(exported);
 
       expect(target.settingsFor(_channel, 1), forField1);
       expect(target.settingsFor(_otherChannel, 2), forField2);
     });
 
-    test('importJson replaces any existing entries', () async {
+    test('mergeJson overwrites matching keys but leaves other saved entries',
+        () async {
       SharedPreferences.setMockInitialValues({});
       final storage = FieldSettingsStorage(
         await SharedPreferences.getInstance(),
       );
       await storage.save(_channel, 1, const FieldChartSettings(decimals: 5));
 
-      await storage.importJson({
+      await storage.mergeJson({
         '${_otherChannel.serverUrl}|${_otherChannel.id}|1':
             const FieldChartSettings(type: ChartType.column).toJson(),
       });
 
-      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+      expect(storage.settingsFor(_channel, 1).decimals, 5);
       expect(storage.settingsFor(_otherChannel, 1).type, ChartType.column);
     });
 
-    test('importJson skips entries whose value is not a map', () async {
+    test('mergeJson overwrites an entry that already exists', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      await storage.save(_channel, 1, const FieldChartSettings(decimals: 5));
+
+      await storage.mergeJson({
+        '${_channel.serverUrl}|${_channel.id}|1':
+            const FieldChartSettings(type: ChartType.column).toJson(),
+      });
+
+      expect(storage.settingsFor(_channel, 1).type, ChartType.column);
+      expect(storage.settingsFor(_channel, 1).decimals, isNull);
+    });
+
+    test('mergeJson skips entries whose value is not a map', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = FieldSettingsStorage(
         await SharedPreferences.getInstance(),
       );
 
-      await storage.importJson({'bad-key': 'not a map'});
+      await storage.mergeJson({'bad-key': 'not a map'});
 
       expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
     });

@@ -5,15 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../backup/backup_service.dart';
+import '../../backup/import_plan.dart';
 import '../../l10n/app_localizations.dart';
+import '../import_preview/import_preview_screen.dart';
+import 'settings_notifier.dart';
 
-/// Runs the pick-file → parse → choose-mode → restore flow for importing a
+/// Runs the pick-file → parse → preview → apply flow for importing a
 /// backup. Shared by the settings screen's import tile and the recovery
 /// screen, which both need the exact same flow. Returns whether an import
 /// actually happened, so the caller knows whether to refresh its state.
 Future<bool> runBackupImport(
   BuildContext context,
   BackupService backupService,
+  SettingsNotifier settings,
 ) async {
   final l10n = AppLocalizations.of(context)!;
   final FilePickerResult? result;
@@ -42,97 +46,25 @@ Future<bool> runBackupImport(
     return false;
   }
 
-  final channelsNeedingApiKey = backupService.channelsNeedingApiKey(contents);
-  final mode = await showDialog<ImportMode>(
-    context: context,
-    builder: (ctx) {
-      ImportMode? selected;
-      return StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: Text(l10n.backupImportTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.backupImportSummary(_summary(l10n, contents))),
-                if (channelsNeedingApiKey > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      l10n.backupImportMissingKeys(channelsNeedingApiKey),
-                      style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-                    ),
-                  ),
-                RadioGroup<ImportMode?>(
-                  groupValue: selected,
-                  onChanged: (v) => setState(() => selected = v),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioListTile<ImportMode?>(
-                        value: ImportMode.addChannels,
-                        title: Text(l10n.backupModeAddChannels),
-                        subtitle: Text(
-                          l10n.backupModeAddChannelsDescription,
-                        ),
-                      ),
-                      RadioListTile<ImportMode?>(
-                        value: ImportMode.replace,
-                        title: Text(
-                          l10n.backupModeReplace,
-                          style: TextStyle(
-                            color: Theme.of(ctx).colorScheme.error,
-                          ),
-                        ),
-                        subtitle: Text(l10n.backupModeReplaceDescription),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.labelCancel),
-            ),
-            TextButton(
-              onPressed: selected == null
-                  ? null
-                  : () => Navigator.pop(ctx, selected),
-              child: Text(l10n.backupImportConfirm),
-            ),
-          ],
-        ),
-      );
-    },
+  final plan = backupService.planImport(contents);
+  if (!context.mounted) return false;
+  final selection = await Navigator.of(context).push<ImportSelection>(
+    MaterialPageRoute(
+      builder: (_) => ImportPreviewScreen(
+        plan: plan,
+        fileName: files.first.name,
+        settings: settings,
+      ),
+    ),
   );
-  if (mode == null || !context.mounted) return false;
+  if (selection == null || !context.mounted) return false;
 
-  await backupService.restore(contents, mode);
+  await backupService.applyImport(contents, selection);
   if (!context.mounted) return true;
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(l10n.backupImportSuccess)));
   return true;
-}
-
-String _summary(AppLocalizations l10n, BackupContents contents) {
-  final parts = <String>[];
-  final channels = contents.channels;
-  if (channels != null) {
-    parts.add(l10n.backupSummaryChannels(channels.length));
-  }
-  if (contents.settings != null) {
-    parts.add(l10n.backupSummarySettings);
-  }
-  final fieldChartSettings = contents.fieldChartSettings;
-  if (fieldChartSettings != null) {
-    parts.add(l10n.backupSummaryFieldSettings(fieldChartSettings.length));
-  }
-  return parts.isEmpty ? l10n.backupSummaryEmpty : parts.join(' · ');
 }
 
 String _errorMessage(AppLocalizations l10n, BackupException e) {

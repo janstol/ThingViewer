@@ -737,65 +737,11 @@ abstract class AppLocalizations {
   /// **'Import backup'**
   String get backupImportTitle;
 
-  /// No description provided for @backupImportSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'This backup contains {summary}.'**
-  String backupImportSummary(String summary);
-
   /// No description provided for @backupImportMissingKeys.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 private channel has no API key and will need one re-entered after importing.} other{{count} private channels have no API key and will need one re-entered after importing.}}'**
   String backupImportMissingKeys(num count);
-
-  /// No description provided for @backupSummaryChannels.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 channel} other{{count} channels}}'**
-  String backupSummaryChannels(num count);
-
-  /// No description provided for @backupSummarySettings.
-  ///
-  /// In en, this message translates to:
-  /// **'app settings'**
-  String get backupSummarySettings;
-
-  /// No description provided for @backupSummaryFieldSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 chart setting} other{{count} chart settings}}'**
-  String backupSummaryFieldSettings(num count);
-
-  /// No description provided for @backupSummaryEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'nothing to import'**
-  String get backupSummaryEmpty;
-
-  /// No description provided for @backupModeReplace.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace everything'**
-  String get backupModeReplace;
-
-  /// No description provided for @backupModeReplaceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Overwrites all saved channels, app settings, and chart overrides with this backup\'s contents.'**
-  String get backupModeReplaceDescription;
-
-  /// No description provided for @backupModeAddChannels.
-  ///
-  /// In en, this message translates to:
-  /// **'Add channels only'**
-  String get backupModeAddChannels;
-
-  /// No description provided for @backupModeAddChannelsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Adds channels from the backup that aren\'t already saved. Existing channels, app settings, and chart overrides are left unchanged.'**
-  String get backupModeAddChannelsDescription;
 
   /// No description provided for @backupImportConfirm.
   ///
@@ -1277,11 +1223,149 @@ abstract class AppLocalizations {
   /// **'Pinned fields'**
   String get settingsPinnedFields;
 
-  /// No description provided for @backupSummaryPinnedFields.
+  /// No description provided for @importPreviewSectionFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get importPreviewSectionFile;
+
+  /// No description provided for @importPreviewSectionChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Channels'**
+  String get importPreviewSectionChannels;
+
+  /// No description provided for @importPreviewSectionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'App settings'**
+  String get importPreviewSectionSettings;
+
+  /// No description provided for @importPreviewSectionOnlyHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on this device'**
+  String get importPreviewSectionOnlyHere;
+
+  /// No description provided for @importPreviewSectionOtherOverrides.
+  ///
+  /// In en, this message translates to:
+  /// **'Other chart overrides'**
+  String get importPreviewSectionOtherOverrides;
+
+  /// No description provided for @importPreviewExportedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported {date}'**
+  String importPreviewExportedAt(String date);
+
+  /// No description provided for @importPreviewAppVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App version {version}'**
+  String importPreviewAppVersion(String version);
+
+  /// No description provided for @importPreviewNoApiKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'API keys were excluded from this backup.'**
+  String get importPreviewNoApiKeys;
+
+  /// No description provided for @importPreviewStatusNew.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get importPreviewStatusNew;
+
+  /// No description provided for @importPreviewStatusUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'UPDATE'**
+  String get importPreviewStatusUpdate;
+
+  /// No description provided for @importPreviewStatusUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'UNCHANGED'**
+  String get importPreviewStatusUnchanged;
+
+  /// No description provided for @importPreviewChangeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get importPreviewChangeName;
+
+  /// No description provided for @importPreviewChangeApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key changed'**
+  String get importPreviewChangeApiKey;
+
+  /// No description provided for @importPreviewChangeVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get importPreviewChangeVisibility;
+
+  /// No description provided for @importPreviewNeedsApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs an API key re-entered after importing'**
+  String get importPreviewNeedsApiKey;
+
+  /// No description provided for @importPreviewChartOverrides.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chart override} other{{count} chart overrides}}'**
+  String importPreviewChartOverrides(num count);
+
+  /// No description provided for @importPreviewPinnedFields.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 pinned field} other{{count} pinned fields}}'**
-  String backupSummaryPinnedFields(num count);
+  String importPreviewPinnedFields(num count);
+
+  /// No description provided for @importPreviewValueChange.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} → {to}'**
+  String importPreviewValueChange(String from, String to);
+
+  /// No description provided for @importPreviewValueSame.
+  ///
+  /// In en, this message translates to:
+  /// **'unchanged'**
+  String get importPreviewValueSame;
+
+  /// No description provided for @importPreviewSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get importPreviewSelectAll;
+
+  /// No description provided for @importPreviewSelectNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Select none'**
+  String get importPreviewSelectNone;
+
+  /// No description provided for @importPreviewRemoveMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove channels not in this backup'**
+  String get importPreviewRemoveMissing;
+
+  /// No description provided for @importPreviewRemoveMissingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes saved channels that aren\'t present in this file.'**
+  String get importPreviewRemoveMissingDescription;
+
+  /// No description provided for @importPreviewNothingToImport.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup has nothing to import.'**
+  String get importPreviewNothingToImport;
 }
 
 class _AppLocalizationsDelegate

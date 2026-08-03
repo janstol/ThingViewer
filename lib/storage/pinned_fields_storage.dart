@@ -92,14 +92,13 @@ class PinnedFieldsStorage {
 
   List<dynamic> exportJson() => _pins.map((p) => p.toJson()).toList();
 
-  Future<void> importJson(List<dynamic> json) async {
-    _pins
-      ..clear()
-      ..addAll(
-        json
-            .whereType<Map<String, dynamic>>()
-            .map(PinnedField.fromJson),
-      );
+  /// Unions [json]'s pins into what is already saved, by value equality —
+  /// for merging a partial import selection without disturbing other pins.
+  Future<void> mergeJson(List<dynamic> json) async {
+    final existing = _pins.toSet();
+    for (final pin in json.whereType<Map<String, dynamic>>().map(PinnedField.fromJson)) {
+      if (existing.add(pin)) _pins.add(pin);
+    }
     await _persist();
   }
 

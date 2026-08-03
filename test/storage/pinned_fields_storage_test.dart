@@ -194,7 +194,7 @@ void main() {
     });
   });
 
-  group('exportJson / importJson', () {
+  group('exportJson / mergeJson', () {
     test('round trips pins across storage instances', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = PinnedFieldsStorage(
@@ -209,20 +209,20 @@ void main() {
       final target = PinnedFieldsStorage(
         await SharedPreferences.getInstance(),
       );
-      await target.importJson(exported);
+      await target.mergeJson(exported);
 
       expect(target.isPinned(_channel, 1), isTrue);
       expect(target.isPinned(_otherChannel, 2), isTrue);
     });
 
-    test('importJson replaces any existing pins', () async {
+    test('mergeJson unions new pins into what is already saved', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = PinnedFieldsStorage(
         await SharedPreferences.getInstance(),
       );
       await storage.toggle(_channel, 1);
 
-      await storage.importJson([
+      await storage.mergeJson([
         PinnedField(
           serverUrl: _otherChannel.serverUrl,
           channelId: _otherChannel.id,
@@ -230,17 +230,35 @@ void main() {
         ).toJson(),
       ]);
 
-      expect(storage.isPinned(_channel, 1), isFalse);
+      expect(storage.isPinned(_channel, 1), isTrue);
       expect(storage.isPinned(_otherChannel, 3), isTrue);
     });
 
-    test('importJson skips entries that are not maps', () async {
+    test('mergeJson does not duplicate a pin that is already saved', () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = PinnedFieldsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      await storage.toggle(_channel, 1);
+
+      await storage.mergeJson([
+        PinnedField(
+          serverUrl: _channel.serverUrl,
+          channelId: _channel.id,
+          fieldId: 1,
+        ).toJson(),
+      ]);
+
+      expect(storage.pins([_channel]), hasLength(1));
+    });
+
+    test('mergeJson skips entries that are not maps', () async {
       SharedPreferences.setMockInitialValues({});
       final storage = PinnedFieldsStorage(
         await SharedPreferences.getInstance(),
       );
 
-      await storage.importJson(['not a map']);
+      await storage.mergeJson(['not a map']);
 
       expect(storage.pins([_channel, _otherChannel]), isEmpty);
     });

@@ -162,36 +162,12 @@
   "backupExportModeNoKeysSubtitle": "Safe to share or attach to a bug report. Private channels will need their API key re-entered after importing.",
   "backupExportAction": "Export",
   "backupImportTitle": "Import backup",
-  "backupImportSummary": "This backup contains {summary}.",
-  "@backupImportSummary": {
-    "placeholders": {
-      "summary": { "type": "String" }
-    }
-  },
   "backupImportMissingKeys": "{count, plural, =1{1 private channel has no API key and will need one re-entered after importing.} other{{count} private channels have no API key and will need one re-entered after importing.}}",
   "@backupImportMissingKeys": {
     "placeholders": {
       "count": { "type": "num" }
     }
   },
-  "backupSummaryChannels": "{count, plural, =1{1 channel} other{{count} channels}}",
-  "@backupSummaryChannels": {
-    "placeholders": {
-      "count": { "type": "num" }
-    }
-  },
-  "backupSummarySettings": "app settings",
-  "backupSummaryFieldSettings": "{count, plural, =1{1 chart setting} other{{count} chart settings}}",
-  "@backupSummaryFieldSettings": {
-    "placeholders": {
-      "count": { "type": "num" }
-    }
-  },
-  "backupSummaryEmpty": "nothing to import",
-  "backupModeReplace": "Replace everything",
-  "backupModeReplaceDescription": "Overwrites all saved channels, app settings, and chart overrides with this backup's contents.",
-  "backupModeAddChannels": "Add channels only",
-  "backupModeAddChannelsDescription": "Adds channels from the backup that aren't already saved. Existing channels, app settings, and chart overrides are left unchanged.",
   "backupImportConfirm": "Import",
   "backupErrorNotABackup": "This file isn't a ThingViewer backup.",
   "backupErrorNewerVersion": "This backup was created by a newer version of the app.",
@@ -287,10 +263,54 @@
   "pinnedEditEmpty": "No saved channels. Add a channel first to pin its fields.",
   "pinnedEditChannelLoadFailed": "Couldn't load fields for this channel.",
   "settingsPinnedFields": "Pinned fields",
-  "backupSummaryPinnedFields": "{count, plural, =1{1 pinned field} other{{count} pinned fields}}",
-  "@backupSummaryPinnedFields": {
+  "importPreviewSectionFile": "File",
+  "importPreviewSectionChannels": "Channels",
+  "importPreviewSectionSettings": "App settings",
+  "importPreviewSectionOnlyHere": "Only on this device",
+  "importPreviewSectionOtherOverrides": "Other chart overrides",
+  "importPreviewExportedAt": "Exported {date}",
+  "@importPreviewExportedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "importPreviewAppVersion": "App version {version}",
+  "@importPreviewAppVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "importPreviewNoApiKeys": "API keys were excluded from this backup.",
+  "importPreviewStatusNew": "NEW",
+  "importPreviewStatusUpdate": "UPDATE",
+  "importPreviewStatusUnchanged": "UNCHANGED",
+  "importPreviewChangeName": "Name",
+  "importPreviewChangeApiKey": "API key changed",
+  "importPreviewChangeVisibility": "Visibility",
+  "importPreviewNeedsApiKey": "Needs an API key re-entered after importing",
+  "importPreviewChartOverrides": "{count, plural, =1{1 chart override} other{{count} chart overrides}}",
+  "@importPreviewChartOverrides": {
     "placeholders": {
       "count": { "type": "num" }
     }
-  }
+  },
+  "importPreviewPinnedFields": "{count, plural, =1{1 pinned field} other{{count} pinned fields}}",
+  "@importPreviewPinnedFields": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "importPreviewValueChange": "{from} → {to}",
+  "@importPreviewValueChange": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "importPreviewValueSame": "unchanged",
+  "importPreviewSelectAll": "Select all",
+  "importPreviewSelectNone": "Select none",
+  "importPreviewRemoveMissing": "Remove channels not in this backup",
+  "importPreviewRemoveMissingDescription": "Deletes saved channels that aren't present in this file.",
+  "importPreviewNothingToImport": "This backup has nothing to import."
 }

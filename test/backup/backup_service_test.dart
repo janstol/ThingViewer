@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/backup/backup_service.dart';
+import 'package:thingviewer/backup/import_plan.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
 import 'package:thingviewer/models/pinned_field.dart';
@@ -47,10 +48,19 @@ Future<BackupService> _service() async {
   );
 }
 
+/// A selection that imports nothing at all — tests build on top of this with
+/// the specific fields they want selected.
+const _nothing = ImportSelection(
+  channels: {},
+  fieldChartSettingsKeys: {},
+  pinnedFields: {},
+  settingKeys: {},
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('export → parse → restore round trip', () {
+  group('export → parse → planImport/applyImport round trip', () {
     test(
       'preserves channels, settings, field chart settings, and pinned fields',
       () async {
@@ -97,7 +107,20 @@ void main() {
           PinnedFieldsStorage(freshPrefs),
         );
         final contents = freshService.parse(raw);
-        await freshService.restore(contents, ImportMode.replace);
+        final plan = freshService.planImport(contents);
+        await freshService.applyImport(
+          contents,
+          ImportSelection(
+            channels: plan.channels.map((d) => d.incoming).toSet(),
+            fieldChartSettingsKeys: {
+              for (final d in plan.channels) ...d.chartSettingKeys,
+            },
+            pinnedFields: {
+              for (final d in plan.channels) ...d.pinnedFields,
+            },
+            settingKeys: BackupSettingKey.values.toSet(),
+          ),
+        );
 
         final restoredChannels = ChannelStorage(freshPrefs).loadChannels();
         expect(restoredChannels, [_channel, _otherChannel]);
@@ -116,104 +139,6 @@ void main() {
         expect(restoredPinnedFields.isPinned(_channel, 1), isTrue);
       },
     );
-  });
-
-  group('ImportMode.addChannels', () {
-    test(
-      'appends only channels not already present, by (id, serverUrl)',
-      () async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-        final channelStorage = ChannelStorage(prefs);
-        await channelStorage.saveChannels([_channel]);
-        final service = BackupService(
-          channelStorage,
-          SettingsStorage(prefs),
-          FieldSettingsStorage(prefs),
-          PinnedFieldsStorage(prefs),
-        );
-
-        const thirdChannel = Channel(
-          id: 3,
-          serverUrl: 'https://api.thingspeak.com',
-          isPublic: true,
-          name: 'Third Channel',
-        );
-        final contents = BackupContents(
-          channels: [_channel, _otherChannel, thirdChannel],
-        );
-
-        await service.restore(contents, ImportMode.addChannels);
-
-        expect(channelStorage.loadChannels(), [
-          _channel,
-          _otherChannel,
-          thirdChannel,
-        ]);
-      },
-    );
-
-    test('leaves settings and field chart settings untouched', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final channelStorage = ChannelStorage(prefs);
-      final settingsStorage = SettingsStorage(prefs);
-      await settingsStorage.saveThemeMode(ThemeMode.light);
-      final service = BackupService(
-        channelStorage,
-        settingsStorage,
-        FieldSettingsStorage(prefs),
-        PinnedFieldsStorage(prefs),
-      );
-
-      final contents = BackupContents(
-        channels: [_otherChannel],
-        settings: {'themeMode': ThemeMode.dark.index},
-      );
-
-      await service.restore(contents, ImportMode.addChannels);
-
-      expect(settingsStorage.themeMode, ThemeMode.light);
-    });
-  });
-
-  group('ImportMode.replace', () {
-    test('overwrites channels with exactly the backup contents', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final channelStorage = ChannelStorage(prefs);
-      await channelStorage.saveChannels([_otherChannel]);
-      final service = BackupService(
-        channelStorage,
-        SettingsStorage(prefs),
-        FieldSettingsStorage(prefs),
-        PinnedFieldsStorage(prefs),
-      );
-
-      final contents = BackupContents(channels: [_channel]);
-      await service.restore(contents, ImportMode.replace);
-
-      expect(channelStorage.loadChannels(), [_channel]);
-    });
-
-    test('leaves a section alone when absent from the backup', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final channelStorage = ChannelStorage(prefs);
-      await channelStorage.saveChannels([_otherChannel]);
-      final service = BackupService(
-        channelStorage,
-        SettingsStorage(prefs),
-        FieldSettingsStorage(prefs),
-        PinnedFieldsStorage(prefs),
-      );
-
-      // No `channels` section in this payload.
-      final contents = BackupContents(settings: {'themeMode': 1});
-      await service.restore(contents, ImportMode.replace);
-
-      expect(channelStorage.loadChannels(), [_otherChannel]);
-    });
   });
 
   group('parse errors', () {
@@ -378,27 +303,59 @@ void main() {
     );
   });
 
-  group('BackupService.channelsNeedingApiKey', () {
-    test(
-      'counts a keyless private channel with no existing saved match',
-      () async {
-        SharedPreferences.setMockInitialValues({});
-        final service = await _service();
-        const keylessPrivate = Channel(
-          id: 3,
-          serverUrl: 'https://api.thingspeak.com',
-          isPublic: false,
-        );
-        final contents = BackupContents(
-          channels: [_keylessChannel, _otherChannel, keylessPrivate],
-        );
+  group('BackupService.planImport channel classification', () {
+    test('a channel with no saved match is added', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = await _service();
+      final contents = BackupContents(channels: [_otherChannel]);
 
-        expect(service.channelsNeedingApiKey(contents), 2);
-      },
-    );
+      final plan = service.planImport(contents);
+
+      expect(plan.channels.single.change, ChannelChange.added);
+      expect(plan.channels.single.existing, isNull);
+    });
+
+    test('a channel identical to the saved one is unchanged', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await ChannelStorage(prefs).saveChannels([_channel]);
+      final service = await _service();
+      final contents = BackupContents(channels: [_channel]);
+
+      final plan = service.planImport(contents);
+
+      expect(plan.channels.single.change, ChannelChange.unchanged);
+      expect(plan.channels.single.changes, isEmpty);
+    });
+
+    test('a channel with a different name is updated, with name flagged',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await ChannelStorage(prefs).saveChannels([_channel]);
+      final service = await _service();
+      final renamed = _channel.copyWith(name: 'Renamed');
+      final contents = BackupContents(channels: [renamed]);
+
+      final plan = service.planImport(contents);
+
+      expect(plan.channels.single.change, ChannelChange.updated);
+      expect(plan.channels.single.changes, {ChannelFieldChange.name});
+    });
+
+    test('a keyless private channel with no saved match needs an API key',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = await _service();
+      final contents = BackupContents(channels: [_keylessChannel]);
+
+      final plan = service.planImport(contents);
+
+      expect(plan.channels.single.needsApiKey, isTrue);
+    });
 
     test(
-      'excludes a keyless channel that already has a saved key locally',
+      'a keyless private channel with an existing saved key does not need one',
       () async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
@@ -406,111 +363,352 @@ void main() {
         final service = await _service();
         final contents = BackupContents(channels: [_keylessChannel]);
 
-        expect(service.channelsNeedingApiKey(contents), 0);
+        final plan = service.planImport(contents);
+
+        expect(plan.channels.single.needsApiKey, isFalse);
+        expect(plan.channels.single.change, ChannelChange.unchanged);
       },
     );
 
-    test('is zero when there are no channels', () async {
+    test('a saved channel absent from the file is listed as onlyOnDevice',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await ChannelStorage(prefs).saveChannels([_channel, _otherChannel]);
+      final service = await _service();
+      final contents = BackupContents(channels: [_otherChannel]);
+
+      final plan = service.planImport(contents);
+
+      expect(plan.onlyOnDevice, [_channel]);
+    });
+
+    test('chart overrides and pins are grouped per channel, by prefix/match',
+        () async {
       SharedPreferences.setMockInitialValues({});
       final service = await _service();
-      const contents = BackupContents();
+      final contents = BackupContents(
+        channels: [_channel, _otherChannel],
+        fieldChartSettings: {
+          '${_channel.serverUrl}|${_channel.id}|1': {'type': 'line'},
+          'https://elsewhere.example|999|1': {'type': 'line'},
+        },
+        pinnedFields: [
+          PinnedField(
+            serverUrl: _channel.serverUrl,
+            channelId: _channel.id,
+            fieldId: 2,
+          ).toJson(),
+          const PinnedField(
+            serverUrl: 'https://elsewhere.example',
+            channelId: 999,
+            fieldId: 1,
+          ).toJson(),
+        ],
+      );
 
-      expect(service.channelsNeedingApiKey(contents), 0);
+      final plan = service.planImport(contents);
+
+      final diff = plan.channels.firstWhere(
+        (d) => d.incoming == _channel,
+      );
+      expect(diff.chartSettingKeys, [
+        '${_channel.serverUrl}|${_channel.id}|1',
+      ]);
+      expect(diff.pinnedFields, hasLength(1));
+      expect(plan.orphanChartSettingKeys, [
+        'https://elsewhere.example|999|1',
+      ]);
+      expect(plan.orphanPinnedFields, hasLength(1));
     });
   });
 
-  group('restore key reconciliation', () {
-    test('ImportMode.replace preserves an existing saved key when the '
-        'incoming channel has none', () async {
+  group('BackupService.planImport settings', () {
+    test('is empty when the file has no settings section', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = await _service();
+
+      final plan = service.planImport(const BackupContents());
+
+      expect(plan.settings, isEmpty);
+    });
+
+    test('flags a changed key and leaves an absent key as unchanged',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await SettingsStorage(prefs).saveThemeMode(ThemeMode.light);
+      final service = await _service();
+      final contents = BackupContents(
+        settings: {'themeMode': ThemeMode.dark.index},
+      );
+
+      final plan = service.planImport(contents);
+
+      final themeDiff = plan.settings.firstWhere(
+        (d) => d.key == BackupSettingKey.themeMode,
+      );
+      expect(themeDiff.changed, isTrue);
+      final dateDiff = plan.settings.firstWhere(
+        (d) => d.key == BackupSettingKey.dateFormat,
+      );
+      expect(dateDiff.changed, isFalse);
+    });
+  });
+
+  group('BackupService.applyImport channels', () {
+    test('a selected channel replaces the matching saved entry', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final channelStorage = ChannelStorage(prefs);
       await channelStorage.saveChannels([_channel]);
-      final service = BackupService(
-        channelStorage,
-        SettingsStorage(prefs),
-        FieldSettingsStorage(prefs),
-        PinnedFieldsStorage(prefs),
+      final service = await _service();
+      final renamed = _channel.copyWith(name: 'Renamed');
+      final contents = BackupContents(channels: [renamed]);
+
+      await service.applyImport(
+        contents,
+        ImportSelection(
+          channels: {renamed},
+          fieldChartSettingsKeys: const {},
+          pinnedFields: const {},
+          settingKeys: const {},
+        ),
       );
 
-      const keylessIncoming = _keylessChannel;
-      await service.restore(
-        BackupContents(channels: [keylessIncoming]),
-        ImportMode.replace,
-      );
-
-      final restored = channelStorage.loadChannels().single;
-      expect(restored.apiKey, _channel.apiKey);
-      expect(restored.authError, isFalse);
+      expect(channelStorage.loadChannels().single.name, 'Renamed');
     });
 
-    test('ImportMode.replace sets authError when there is no existing key '
-        'to preserve', () async {
+    test('an unselected channel is left untouched', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final channelStorage = ChannelStorage(prefs);
-      final service = BackupService(
-        channelStorage,
-        SettingsStorage(prefs),
-        FieldSettingsStorage(prefs),
-        PinnedFieldsStorage(prefs),
-      );
+      await channelStorage.saveChannels([_channel]);
+      final service = await _service();
+      final renamed = _channel.copyWith(name: 'Renamed');
+      final contents = BackupContents(channels: [renamed]);
 
-      const keylessIncoming = _keylessChannel;
-      await service.restore(
-        BackupContents(channels: [keylessIncoming]),
-        ImportMode.replace,
-      );
+      await service.applyImport(contents, _nothing);
 
-      final restored = channelStorage.loadChannels().single;
-      expect(restored.apiKey, isNull);
-      expect(restored.authError, isTrue);
+      expect(channelStorage.loadChannels().single.name, _channel.name);
     });
 
-    test('ImportMode.addChannels sets authError on a new keyless private '
-        'channel', () async {
+    test('a selected new channel is appended', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final channelStorage = ChannelStorage(prefs);
-      final service = BackupService(
-        channelStorage,
-        SettingsStorage(prefs),
-        FieldSettingsStorage(prefs),
-        PinnedFieldsStorage(prefs),
+      await channelStorage.saveChannels([_channel]);
+      final service = await _service();
+      final contents = BackupContents(channels: [_otherChannel]);
+
+      await service.applyImport(
+        contents,
+        ImportSelection(
+          channels: {_otherChannel},
+          fieldChartSettingsKeys: const {},
+          pinnedFields: const {},
+          settingKeys: const {},
+        ),
       );
 
-      const keylessIncoming = _keylessChannel;
-      await service.restore(
-        BackupContents(channels: [keylessIncoming]),
-        ImportMode.addChannels,
+      expect(channelStorage.loadChannels(), [_channel, _otherChannel]);
+    });
+
+    test('removeChannelsNotInBackup drops only channels absent from the file',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final channelStorage = ChannelStorage(prefs);
+      await channelStorage.saveChannels([_channel, _otherChannel]);
+      final service = await _service();
+      final contents = BackupContents(channels: [_otherChannel]);
+
+      await service.applyImport(
+        contents,
+        const ImportSelection(
+          channels: {},
+          fieldChartSettingsKeys: {},
+          pinnedFields: {},
+          settingKeys: {},
+          removeChannelsNotInBackup: true,
+        ),
       );
 
-      final restored = channelStorage.loadChannels().single;
-      expect(restored.apiKey, isNull);
-      expect(restored.authError, isTrue);
+      expect(channelStorage.loadChannels(), [_otherChannel]);
     });
 
     test(
-      'a keyless public channel is left as-is, never flagged authError',
+      'a selected keyless private channel keeps the existing saved key',
       () async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         final channelStorage = ChannelStorage(prefs);
-        final service = BackupService(
-          channelStorage,
-          SettingsStorage(prefs),
-          FieldSettingsStorage(prefs),
-          PinnedFieldsStorage(prefs),
-        );
+        await channelStorage.saveChannels([_channel]);
+        final service = await _service();
+        final contents = BackupContents(channels: [_keylessChannel]);
 
-        await service.restore(
-          BackupContents(channels: [_otherChannel]),
-          ImportMode.replace,
+        await service.applyImport(
+          contents,
+          ImportSelection(
+            channels: {_keylessChannel},
+            fieldChartSettingsKeys: const {},
+            pinnedFields: const {},
+            settingKeys: const {},
+          ),
         );
 
         final restored = channelStorage.loadChannels().single;
+        expect(restored.apiKey, _channel.apiKey);
         expect(restored.authError, isFalse);
       },
     );
+
+    test(
+      'a selected keyless private channel with no saved key gets authError',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final service = await _service();
+        final prefs = await SharedPreferences.getInstance();
+        final channelStorage = ChannelStorage(prefs);
+        final contents = BackupContents(channels: [_keylessChannel]);
+
+        await service.applyImport(
+          contents,
+          ImportSelection(
+            channels: {_keylessChannel},
+            fieldChartSettingsKeys: const {},
+            pinnedFields: const {},
+            settingKeys: const {},
+          ),
+        );
+
+        final restored = channelStorage.loadChannels().single;
+        expect(restored.apiKey, isNull);
+        expect(restored.authError, isTrue);
+      },
+    );
+
+    test('a keyless public channel is left as-is, never flagged authError',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = await _service();
+      final contents = BackupContents(channels: [_otherChannel]);
+
+      await service.applyImport(
+        contents,
+        ImportSelection(
+          channels: {_otherChannel},
+          fieldChartSettingsKeys: const {},
+          pinnedFields: const {},
+          settingKeys: const {},
+        ),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final restored = ChannelStorage(prefs).loadChannels().single;
+      expect(restored.authError, isFalse);
+    });
+  });
+
+  group('BackupService.applyImport settings', () {
+    test('an unselected settings key is not written', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final settingsStorage = SettingsStorage(prefs);
+      await settingsStorage.saveThemeMode(ThemeMode.light);
+      final service = await _service();
+      final contents = BackupContents(
+        settings: {'themeMode': ThemeMode.dark.index},
+      );
+
+      await service.applyImport(contents, _nothing);
+
+      expect(settingsStorage.themeMode, ThemeMode.light);
+    });
+
+    test('a selected settings key is written', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final settingsStorage = SettingsStorage(prefs);
+      await settingsStorage.saveThemeMode(ThemeMode.light);
+      final service = await _service();
+      final contents = BackupContents(
+        settings: {'themeMode': ThemeMode.dark.index},
+      );
+
+      await service.applyImport(
+        contents,
+        const ImportSelection(
+          channels: {},
+          fieldChartSettingsKeys: {},
+          pinnedFields: {},
+          settingKeys: {BackupSettingKey.themeMode},
+        ),
+      );
+
+      expect(settingsStorage.themeMode, ThemeMode.dark);
+    });
+  });
+
+  group('BackupService.applyImport chart overrides and pinned fields', () {
+    test('merge keeps existing entries not in the selection', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final fieldSettingsStorage = FieldSettingsStorage(prefs);
+      final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+      const existingSettings = FieldChartSettings(type: ChartType.step);
+      await fieldSettingsStorage.save(_channel, 1, existingSettings);
+      await pinnedFieldsStorage.toggle(_channel, 1);
+
+      final service = await _service();
+      final key = '${_otherChannel.serverUrl}|${_otherChannel.id}|2';
+      final newPin = PinnedField(
+        serverUrl: _otherChannel.serverUrl,
+        channelId: _otherChannel.id,
+        fieldId: 2,
+      );
+      final contents = BackupContents(
+        fieldChartSettings: {
+          key: const FieldChartSettings(type: ChartType.column).toJson(),
+        },
+        pinnedFields: [newPin.toJson()],
+      );
+
+      await service.applyImport(
+        contents,
+        ImportSelection(
+          channels: const {},
+          fieldChartSettingsKeys: {key},
+          pinnedFields: {newPin},
+          settingKeys: const {},
+        ),
+      );
+
+      expect(
+        FieldSettingsStorage(prefs).settingsFor(_channel, 1),
+        existingSettings,
+      );
+      expect(PinnedFieldsStorage(prefs).isPinned(_channel, 1), isTrue);
+      expect(PinnedFieldsStorage(prefs).isPinned(_otherChannel, 2), isTrue);
+    });
+
+    test('an unselected chart override key is not merged in', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final service = await _service();
+      final key = '${_channel.serverUrl}|${_channel.id}|1';
+      final contents = BackupContents(
+        fieldChartSettings: {
+          key: const FieldChartSettings(type: ChartType.column).toJson(),
+        },
+      );
+
+      await service.applyImport(contents, _nothing);
+
+      expect(
+        FieldSettingsStorage(prefs).settingsFor(_channel, 1),
+        FieldChartSettings.defaults,
+      );
+    });
   });
 }

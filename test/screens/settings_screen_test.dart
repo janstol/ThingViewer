@@ -440,7 +440,7 @@ void main() {
     });
 
     testWidgets(
-      'Import stays disabled until a mode is picked, then addChannels merges',
+      'everything is selected by default, so Import merges the new channel',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1400);
         tester.view.devicePixelRatio = 1;
@@ -488,12 +488,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Import backup'), findsOneWidget);
-        final confirmButton = find.widgetWithText(TextButton, 'Import');
-        expect(tester.widget<TextButton>(confirmButton).onPressed, isNull);
-
-        await tester.tap(find.text('Add channels only'));
-        await tester.pumpAndSettle();
-        expect(tester.widget<TextButton>(confirmButton).onPressed, isNotNull);
+        final confirmButton = find.widgetWithText(FilledButton, 'Import');
+        expect(tester.widget<FilledButton>(confirmButton).onPressed, isNotNull);
 
         await tester.tap(confirmButton);
         await tester.pumpAndSettle();
@@ -503,63 +499,69 @@ void main() {
       },
     );
 
-    testWidgets('replace mode overwrites the existing saved channels', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final channelStorage = ChannelStorage(prefs);
-      await channelStorage.saveChannels([_channel]);
-      final settings = SettingsNotifier(SettingsStorage(prefs));
-      fakePicker.pickResult = FilePickerResult([
-        PlatformFile(
-          name: 'backup.json',
-          size: 0,
-          bytes: _backupBytes([_otherChannel]),
-        ),
-      ]);
-
-      await tester.pumpWidget(
-        _wrap(
-          SettingsScreen(
-            settings: settings,
-            channels: const [_channel],
-            api: mockApi,
-            pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            channelStorage: await _channelStorage(),
-            fieldSettingsStorage: await _fieldSettingsStorage(),
-            channelSnapshotStorage: await _channelSnapshotStorage(),
-            backupService: BackupService(
-              channelStorage,
-              SettingsStorage(prefs),
-              FieldSettingsStorage(prefs),
-              PinnedFieldsStorage(prefs),
-            ),
-            onImported: () {},
+    testWidgets(
+      'removeChannelsNotInBackup drops a saved channel absent from the file',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final channelStorage = ChannelStorage(prefs);
+        await channelStorage.saveChannels([_channel]);
+        final settings = SettingsNotifier(SettingsStorage(prefs));
+        fakePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'backup.json',
+            size: 0,
+            bytes: _backupBytes([_otherChannel]),
           ),
-        ),
-      );
-      await tester.scrollUntilVisible(
-        find.text('Import'),
-        100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.tap(find.text('Import'));
-      await tester.pumpAndSettle();
+        ]);
 
-      await tester.tap(find.text('Replace everything'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Import'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          _wrap(
+            SettingsScreen(
+              settings: settings,
+              channels: const [_channel],
+              api: mockApi,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+              backupService: BackupService(
+                channelStorage,
+                SettingsStorage(prefs),
+                FieldSettingsStorage(prefs),
+                PinnedFieldsStorage(prefs),
+              ),
+              onImported: () {},
+            ),
+          ),
+        );
+        await tester.scrollUntilVisible(
+          find.text('Import'),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Import'));
+        await tester.pumpAndSettle();
 
-      expect(channelStorage.loadChannels(), [_otherChannel]);
-    });
+        await tester.scrollUntilVisible(
+          find.text('Remove channels not in this backup'),
+          100,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.tap(find.text('Remove channels not in this backup'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+        await tester.pumpAndSettle();
 
-    testWidgets('import dialog warns about channels missing an API key', (
+        expect(channelStorage.loadChannels(), [_otherChannel]);
+      },
+    );
+
+    testWidgets('import preview warns about channels missing an API key', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -608,16 +610,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(
-          '1 private channel has no API key and will need one '
-          're-entered after importing.',
-        ),
+        find.text('Needs an API key re-entered after importing'),
         findsOneWidget,
       );
     });
 
     testWidgets(
-      'import dialog does not warn about a channel that already has a '
+      'import preview does not warn about a channel that already has a '
       'saved key',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1400);
@@ -677,7 +676,7 @@ void main() {
         await tester.tap(find.text('Import'));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('has no API key'), findsNothing);
+        expect(find.textContaining('Needs an API key'), findsNothing);
       },
     );
 

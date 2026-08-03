@@ -10,26 +10,42 @@ const brandGreen = Color(0xFF20BF55);
 const _dataAccentLight = Color(0xFF0F7A34);
 const _dataAccentDark = Color(0xFF3DD672);
 
+// Same rationale as dataAccent above, tuned for a distinct "this was
+// changed" role (e.g. the import preview's UPDATE label) — verified >= 4.5:1
+// on both surfaces in test/theme_test.dart.
+const _changeAccentLight = Color(0xFFB24C00);
+const _changeAccentDark = Color(0xFFFF6D00);
+
 /// Extra brand colour roles that don't map onto a Material [ColorScheme]
 /// role (e.g. a chart series colour distinct from the primary fill colour).
 @immutable
 class BrandColors extends ThemeExtension<BrandColors> {
   final Color dataAccent;
+  final Color changeAccent;
 
-  const BrandColors({required this.dataAccent});
+  const BrandColors({required this.dataAccent, required this.changeAccent});
 
-  static const light = BrandColors(dataAccent: _dataAccentLight);
-  static const dark = BrandColors(dataAccent: _dataAccentDark);
+  static const light = BrandColors(
+    dataAccent: _dataAccentLight,
+    changeAccent: _changeAccentLight,
+  );
+  static const dark = BrandColors(
+    dataAccent: _dataAccentDark,
+    changeAccent: _changeAccentDark,
+  );
 
   @override
-  BrandColors copyWith({Color? dataAccent}) =>
-      BrandColors(dataAccent: dataAccent ?? this.dataAccent);
+  BrandColors copyWith({Color? dataAccent, Color? changeAccent}) => BrandColors(
+    dataAccent: dataAccent ?? this.dataAccent,
+    changeAccent: changeAccent ?? this.changeAccent,
+  );
 
   @override
   BrandColors lerp(ThemeExtension<BrandColors>? other, double t) {
     if (other is! BrandColors) return this;
     return BrandColors(
       dataAccent: Color.lerp(dataAccent, other.dataAccent, t)!,
+      changeAccent: Color.lerp(changeAccent, other.changeAccent, t)!,
     );
   }
 }

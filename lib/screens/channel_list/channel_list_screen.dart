@@ -88,6 +88,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
           fieldSettingsStorage: widget.fieldSettingsStorage,
           channelSnapshotStorage: widget.channelSnapshotStorage,
           backupService: widget.backupService,
+          settings: widget.settings,
           onChanged: _onImported,
         ),
       ),
@@ -384,6 +385,7 @@ class _NarrowLayout extends StatelessWidget {
         l10n: l10n,
         channelStorage: channelStorage,
         backupService: backupService,
+        settings: settings,
         onImported: onImported,
         issueBannerVisible: issueBannerVisible,
         onDismissIssueBanner: onDismissIssueBanner,
@@ -495,6 +497,7 @@ class _WideLayout extends StatelessWidget {
               l10n: l10n,
               channelStorage: channelStorage,
               backupService: backupService,
+              settings: settings,
               onImported: onImported,
               issueBannerVisible: issueBannerVisible,
               onDismissIssueBanner: onDismissIssueBanner,
@@ -628,6 +631,7 @@ class _ChannelListBody extends StatelessWidget {
   final AppLocalizations l10n;
   final ChannelStorage channelStorage;
   final BackupService backupService;
+  final SettingsNotifier settings;
   final VoidCallback onImported;
   final bool issueBannerVisible;
   final VoidCallback onDismissIssueBanner;
@@ -646,6 +650,7 @@ class _ChannelListBody extends StatelessWidget {
     required this.l10n,
     required this.channelStorage,
     required this.backupService,
+    required this.settings,
     required this.onImported,
     required this.issueBannerVisible,
     required this.onDismissIssueBanner,
@@ -675,6 +680,7 @@ class _ChannelListBody extends StatelessWidget {
           ChannelListCorrupted() => _CorruptedBody(
             channelStorage: channelStorage,
             backupService: backupService,
+            settings: settings,
             onChanged: onImported,
           ),
           ChannelListLoaded(:final channels) =>
@@ -781,16 +787,18 @@ class _ChannelListBody extends StatelessWidget {
 class _CorruptedBody extends StatelessWidget {
   final ChannelStorage channelStorage;
   final BackupService backupService;
+  final SettingsNotifier settings;
   final VoidCallback onChanged;
 
   const _CorruptedBody({
     required this.channelStorage,
     required this.backupService,
+    required this.settings,
     required this.onChanged,
   });
 
   Future<void> _import(BuildContext context) async {
-    if (await runBackupImport(context, backupService)) onChanged();
+    if (await runBackupImport(context, backupService, settings)) onChanged();
   }
 
   Future<void> _save(BuildContext context) async {
