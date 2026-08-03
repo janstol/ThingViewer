@@ -12,11 +12,16 @@ import '../../backup/backup_service.dart';
 import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../storage/channel_snapshot_storage.dart';
+import '../../storage/channel_storage.dart';
+import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
 import '../../storage/settings_storage.dart';
 import '../../theme.dart';
 import '../../widgets/section_header.dart';
 import '../pinned_edit/pinned_edit_screen.dart';
+import '../recovery/recovery_screen.dart';
+import 'import_flow.dart';
 import 'settings_notifier.dart';
 
 const _dateFormats = ['dd.MM.yyyy', 'dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'];
@@ -26,7 +31,10 @@ class SettingsScreen extends StatelessWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final List<Channel> channels;
+  final ChannelStorage channelStorage;
+  final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
   final VoidCallback onImported;
 
@@ -35,7 +43,10 @@ class SettingsScreen extends StatelessWidget {
     required this.api,
     required this.settings,
     required this.channels,
+    required this.channelStorage,
+    required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
     required this.onImported,
   });
@@ -89,6 +100,18 @@ class SettingsScreen extends StatelessWidget {
             SectionHeader(title: l10n.settingsSectionBackup),
             _ExportTile(backupService: backupService),
             _ImportTile(backupService: backupService, onImported: onImported),
+            if (channelStorage.issue != null ||
+                fieldSettingsStorage.issue != null ||
+                pinnedFieldsStorage.issue != null ||
+                channelSnapshotStorage.issue != null)
+              _RecoveryTile(
+                channelStorage: channelStorage,
+                fieldSettingsStorage: fieldSettingsStorage,
+                pinnedFieldsStorage: pinnedFieldsStorage,
+                channelSnapshotStorage: channelSnapshotStorage,
+                backupService: backupService,
+                onImported: onImported,
+              ),
             SectionHeader(title: l10n.settingsSectionInfo),
             ListTile(
               leading: const Icon(Icons.privacy_tip_outlined),
@@ -515,33 +538,6 @@ class _ImportTile extends StatelessWidget {
 
   const _ImportTile({required this.backupService, required this.onImported});
 
-  String _summary(AppLocalizations l10n, BackupContents contents) {
-    final parts = <String>[];
-    final channels = contents.channels;
-    if (channels != null) {
-      parts.add(l10n.backupSummaryChannels(channels.length));
-    }
-    if (contents.settings != null) {
-      parts.add(l10n.backupSummarySettings);
-    }
-    final fieldChartSettings = contents.fieldChartSettings;
-    if (fieldChartSettings != null) {
-      parts.add(l10n.backupSummaryFieldSettings(fieldChartSettings.length));
-    }
-    return parts.isEmpty ? l10n.backupSummaryEmpty : parts.join(' · ');
-  }
-
-  String _errorMessage(AppLocalizations l10n, BackupException e) {
-    switch (e.type) {
-      case BackupErrorType.notABackup:
-        return l10n.backupErrorNotABackup;
-      case BackupErrorType.newerVersion:
-        return l10n.backupErrorNewerVersion;
-      case BackupErrorType.malformed:
-        return l10n.backupErrorMalformed;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -549,115 +545,51 @@ class _ImportTile extends StatelessWidget {
       leading: const Icon(Icons.download_outlined),
       title: Text(l10n.settingsImport),
       onTap: () async {
-        final FilePickerResult? result;
-        try {
-          result = await FilePicker.pickFiles(
-            type: FileType.any,
-            withData: true,
-          );
-        } on PlatformException {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
-          return;
-        }
-        final files = result?.files;
-        if (files == null || files.isEmpty || !context.mounted) return;
-        final bytes = files.first.bytes;
-        if (bytes == null) return;
-
-        final BackupContents contents;
-        try {
-          contents = backupService.parse(utf8.decode(bytes));
-        } on BackupException catch (e) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(_errorMessage(l10n, e))));
-          return;
-        }
-
-        final channelsNeedingApiKey = backupService.channelsNeedingApiKey(
-          contents,
-        );
-        final mode = await showDialog<ImportMode>(
-          context: context,
-          builder: (ctx) {
-            ImportMode? selected;
-            return StatefulBuilder(
-              builder: (ctx, setState) => AlertDialog(
-                title: Text(l10n.backupImportTitle),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.backupImportSummary(_summary(l10n, contents))),
-                      if (channelsNeedingApiKey > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            l10n.backupImportMissingKeys(channelsNeedingApiKey),
-                            style: TextStyle(
-                              color: Theme.of(ctx).colorScheme.error,
-                            ),
-                          ),
-                        ),
-                      RadioGroup<ImportMode?>(
-                        groupValue: selected,
-                        onChanged: (v) => setState(() => selected = v),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            RadioListTile<ImportMode?>(
-                              value: ImportMode.addChannels,
-                              title: Text(l10n.backupModeAddChannels),
-                              subtitle: Text(
-                                l10n.backupModeAddChannelsDescription,
-                              ),
-                            ),
-                            RadioListTile<ImportMode?>(
-                              value: ImportMode.replace,
-                              title: Text(
-                                l10n.backupModeReplace,
-                                style: TextStyle(
-                                  color: Theme.of(ctx).colorScheme.error,
-                                ),
-                              ),
-                              subtitle: Text(l10n.backupModeReplaceDescription),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(l10n.labelCancel),
-                  ),
-                  TextButton(
-                    onPressed: selected == null
-                        ? null
-                        : () => Navigator.pop(ctx, selected),
-                    child: Text(l10n.backupImportConfirm),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-        if (mode == null || !context.mounted) return;
-
-        await backupService.restore(contents, mode);
-        onImported();
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.backupImportSuccess)));
+        if (await runBackupImport(context, backupService)) onImported();
       },
+    );
+  }
+}
+
+class _RecoveryTile extends StatelessWidget {
+  final ChannelStorage channelStorage;
+  final FieldSettingsStorage fieldSettingsStorage;
+  final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
+  final BackupService backupService;
+  final VoidCallback onImported;
+
+  const _RecoveryTile({
+    required this.channelStorage,
+    required this.fieldSettingsStorage,
+    required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
+    required this.backupService,
+    required this.onImported,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListTile(
+      leading: Icon(
+        Icons.warning_amber_rounded,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      title: Text(l10n.settingsRecoverData),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RecoveryScreen(
+            channelStorage: channelStorage,
+            pinnedFieldsStorage: pinnedFieldsStorage,
+            fieldSettingsStorage: fieldSettingsStorage,
+            channelSnapshotStorage: channelSnapshotStorage,
+            backupService: backupService,
+            onChanged: onImported,
+          ),
+        ),
+      ),
     );
   }
 }

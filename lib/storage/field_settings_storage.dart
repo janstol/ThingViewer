@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
 import '../models/field_chart_settings.dart';
+import 'storage_recovery.dart';
 
 const _kFieldChartSettingsKey = 'fieldChartSettings';
 
@@ -14,24 +15,34 @@ const _kFieldChartSettingsKey = 'fieldChartSettings';
 /// occur inside [Channel.serverUrl].
 class FieldSettingsStorage {
   final SharedPreferences _prefs;
-  final Map<String, FieldChartSettings> _settings;
+  late Map<String, FieldChartSettings> _settings;
+  StorageIssue? _issue;
 
-  FieldSettingsStorage(this._prefs) : _settings = _load(_prefs);
+  FieldSettingsStorage(this._prefs) {
+    _applyLoad(_load(_prefs));
+  }
 
-  static Map<String, FieldChartSettings> _load(SharedPreferences prefs) {
-    final raw = prefs.getString(_kFieldChartSettingsKey);
-    if (raw == null || raw.isEmpty) return {};
-    try {
-      final map = jsonDecode(raw) as Map<String, dynamic>;
-      return {
-        for (final entry in map.entries)
-          entry.key: FieldChartSettings.fromJson(
-            entry.value as Map<String, dynamic>,
-          ),
-      };
-    } catch (_) {
-      return {};
-    }
+  StorageIssue? get issue => _issue;
+
+  String? get corruptRaw => quarantinedRaw(_prefs, _kFieldChartSettingsKey);
+
+  Future<void> discardCorrupt() async {
+    await clearQuarantine(_prefs, _kFieldChartSettingsKey);
+    await _prefs.remove(_kFieldChartSettingsKey);
+    reload();
+  }
+
+  static LoadOutcome<Map<String, FieldChartSettings>> _load(
+    SharedPreferences prefs,
+  ) => decodeStoredMap(
+    prefs,
+    _kFieldChartSettingsKey,
+    FieldChartSettings.fromJson,
+  );
+
+  void _applyLoad(LoadOutcome<Map<String, FieldChartSettings>> outcome) {
+    _settings = outcome.value;
+    _issue = outcome.issue;
   }
 
   String _key(Channel channel, int fieldId) =>
@@ -92,9 +103,5 @@ class FieldSettingsStorage {
 
   /// Re-reads the in-memory cache from [_prefs], picking up any changes
   /// written directly to storage (e.g. by a backup restore) since construction.
-  void reload() {
-    _settings
-      ..clear()
-      ..addAll(_load(_prefs));
-  }
+  void reload() => _applyLoad(_load(_prefs));
 }

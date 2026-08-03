@@ -11,6 +11,13 @@
   "channelListPublicSemantics": "Public channel",
   "channelListPrivateSemantics": "Private channel",
   "channelListDeleteSemantics": "Delete channel",
+  "channelListCorruptedTitle": "Saved channels couldn't be read",
+  "channelListCorruptedText": "The data is unreadable but hasn't been overwritten. You can restore it from a backup, save the raw data to look at it later, or discard it and start fresh.",
+  "channelListCorruptedSave": "Save raw data",
+  "channelListCorruptedDiscard": "Discard and start fresh",
+  "channelListIssueBannerText": "Some saved data couldn't be fully read.",
+  "channelListIssueBannerDismiss": "Dismiss",
+  "channelListIssueBannerAction": "Details",
   "fieldServerUrl": "Server URL",
   "fieldChannelId": "Channel ID",
   "fieldPublic": "Public",
@@ -147,6 +154,7 @@
   "settingsExport": "Export",
   "settingsExportSubtitle": "Save your channels, settings, and chart overrides to a file.",
   "settingsImport": "Import",
+  "settingsRecoverData": "Recover unreadable data",
   "backupExportTitle": "Export backup",
   "backupExportModeFull": "Full backup",
   "backupExportModeFullSubtitle": "Includes API keys for private channels. Store the file securely!",
@@ -191,6 +199,30 @@
   "backupErrorFilePicker": "Couldn't open the file picker.",
   "backupExportSuccess": "Backup saved",
   "backupImportSuccess": "Backup imported",
+  "recoveryTitle": "Recover data",
+  "recoveryImportBackup": "Import a backup",
+  "recoveryNothingToRecover": "Nothing to recover.",
+  "recoveryStoreChannels": "Saved channels",
+  "recoveryStorePinnedFields": "Pinned fields",
+  "recoveryStoreChartSettings": "Chart settings",
+  "recoveryStoreCachedValues": "Cached values",
+  "recoveryIssueTotal": "This data couldn't be read at all.",
+  "recoveryIssuePartial": "{count, plural, =1{1 entry couldn't be read and was skipped.} other{{count} entries couldn't be read and were skipped.}}",
+  "@recoveryIssuePartial": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
+  "recoverySaveRawData": "Save raw data",
+  "recoveryDiscard": "Discard",
+  "recoverySaveSuccess": "Raw data saved",
+  "recoveryDiscardTitle": "Discard unreadable data?",
+  "recoveryDiscardText": "This permanently deletes the unreadable data for {name}. This cannot be undone.",
+  "@recoveryDiscardText": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "privacyPolicy": "Privacy Policy",
   "settingsSourceCode": "Source code",
   "aboutTitle": "About",

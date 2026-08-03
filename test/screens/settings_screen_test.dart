@@ -12,6 +12,7 @@ import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/screens/settings/settings_screen.dart';
+import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
@@ -54,6 +55,21 @@ Future<BackupService> _backupService() async {
 Future<PinnedFieldsStorage> _pinnedFieldsStorage() async {
   final prefs = await SharedPreferences.getInstance();
   return PinnedFieldsStorage(prefs);
+}
+
+Future<ChannelStorage> _channelStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return ChannelStorage(prefs);
+}
+
+Future<FieldSettingsStorage> _fieldSettingsStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return FieldSettingsStorage(prefs);
+}
+
+Future<ChannelSnapshotStorage> _channelSnapshotStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return ChannelSnapshotStorage(prefs);
 }
 
 // file_picker's static API delegates to FilePickerPlatform.instance, a
@@ -129,6 +145,9 @@ void main() {
           channels: const [],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -154,6 +173,9 @@ void main() {
           channels: const [],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -183,6 +205,9 @@ void main() {
           channels: const [_channel, _otherChannel],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -206,6 +231,9 @@ void main() {
           channels: const [_channel, _otherChannel],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -233,6 +261,9 @@ void main() {
           channels: const [],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -267,6 +298,9 @@ void main() {
           channels: const [],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -294,6 +328,9 @@ void main() {
           channels: const [_channel, _otherChannel],
           api: mockApi,
           pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelStorage: await _channelStorage(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
           backupService: await _backupService(),
           onImported: () {},
         ),
@@ -322,6 +359,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -363,6 +403,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -423,6 +466,9 @@ void main() {
               channels: const [_channel],
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: BackupService(
                 channelStorage,
                 SettingsStorage(prefs),
@@ -484,6 +530,9 @@ void main() {
             channels: const [_channel],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: BackupService(
               channelStorage,
               SettingsStorage(prefs),
@@ -542,6 +591,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -604,6 +656,9 @@ void main() {
               channels: const [savedPrivateChannel],
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: BackupService(
                 ChannelStorage(prefs),
                 SettingsStorage(prefs),
@@ -652,6 +707,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -692,6 +750,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -732,6 +793,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -769,6 +833,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -817,6 +884,9 @@ void main() {
               channels: const [],
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: BackupService(
                 channelStorage,
                 SettingsStorage(prefs),
@@ -874,6 +944,9 @@ void main() {
             channels: const [],
             api: mockApi,
             pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelStorage: await _channelStorage(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
             backupService: await _backupService(),
             onImported: () {},
           ),
@@ -912,6 +985,9 @@ void main() {
               channels: const [],
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
               onImported: () {},
             ),

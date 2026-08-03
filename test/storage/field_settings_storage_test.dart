@@ -76,11 +76,47 @@ void main() {
     expect(reloaded.settingsFor(_channel, 1), FieldChartSettings.defaults);
   });
 
-  test('a corrupt blob yields defaults instead of throwing', () async {
-    SharedPreferences.setMockInitialValues({'fieldChartSettings': 'not json'});
-    final storage = FieldSettingsStorage(await SharedPreferences.getInstance());
+  group('a corrupt blob', () {
+    test('yields defaults instead of throwing', () async {
+      SharedPreferences.setMockInitialValues({
+        'fieldChartSettings': 'not json',
+      });
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
 
-    expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+      expect(storage.issue?.total, isTrue);
+    });
+
+    test('is preserved via corruptRaw and survives a later write', () async {
+      SharedPreferences.setMockInitialValues({
+        'fieldChartSettings': 'not json',
+      });
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.save(_channel, 1, const FieldChartSettings(decimals: 2));
+
+      expect(storage.corruptRaw, 'not json');
+      expect(storage.settingsFor(_channel, 1).decimals, 2);
+    });
+
+    test('discardCorrupt clears the quarantine and the issue', () async {
+      SharedPreferences.setMockInitialValues({
+        'fieldChartSettings': 'not json',
+      });
+      final storage = FieldSettingsStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.discardCorrupt();
+
+      expect(storage.corruptRaw, isNull);
+      expect(storage.issue, isNull);
+      expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
+    });
   });
 
   group('migrateChannel', () {

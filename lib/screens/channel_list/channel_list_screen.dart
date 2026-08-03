@@ -17,6 +17,8 @@ import '../channel_add/channel_add_screen.dart';
 import '../channel_detail/channel_detail_screen.dart';
 import '../field_chart/field_chart_screen.dart';
 import '../pinned_edit/pinned_edit_screen.dart';
+import '../recovery/recovery_screen.dart';
+import '../settings/import_flow.dart';
 import '../settings/settings_notifier.dart';
 import '../settings/settings_screen.dart';
 import 'channel_list_notifier.dart';
@@ -56,11 +58,41 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
   Channel? _pendingStartChannel;
   DateTime _now = DateTime.now();
   Timer? _ageTicker;
+  bool _issueBannerDismissed = false;
 
   List<Channel> get _channels => switch (_notifier.state) {
     ChannelListLoaded(:final channels) => channels,
     _ => const <Channel>[],
   };
+
+  /// Whether some store other than (or in addition to) a fully-corrupted
+  /// channel list has unreadable data. `ChannelListCorrupted` already gets
+  /// its own blocking body, so the banner only covers the remaining cases.
+  bool get _issueBannerVisible =>
+      !_issueBannerDismissed &&
+      _notifier.state is ChannelListLoaded &&
+      (widget.channelStorage.issue != null ||
+          widget.pinnedFieldsStorage.issue != null ||
+          widget.fieldSettingsStorage.issue != null ||
+          widget.channelSnapshotStorage.issue != null);
+
+  void _dismissIssueBanner() => setState(() => _issueBannerDismissed = true);
+
+  void _openRecovery() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RecoveryScreen(
+          channelStorage: widget.channelStorage,
+          pinnedFieldsStorage: widget.pinnedFieldsStorage,
+          fieldSettingsStorage: widget.fieldSettingsStorage,
+          channelSnapshotStorage: widget.channelSnapshotStorage,
+          backupService: widget.backupService,
+          onChanged: _onImported,
+        ),
+      ),
+    ).then((_) => setState(() {}));
+  }
 
   @override
   void initState() {
@@ -168,6 +200,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                     notifier: _notifier,
                     api: widget.api,
                     settings: widget.settings,
+                    channelStorage: widget.channelStorage,
                     fieldSettingsStorage: widget.fieldSettingsStorage,
                     pinnedFieldsStorage: widget.pinnedFieldsStorage,
                     channelSnapshotStorage: widget.channelSnapshotStorage,
@@ -185,13 +218,19 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                     onEditPinned: _openPinnedEdit,
                     onTapPinned: _openPinnedField,
                     onPinnedRefresh: _pinnedNotifier.refresh,
+                    issueBannerVisible: _issueBannerVisible,
+                    onDismissIssueBanner: _dismissIssueBanner,
+                    onOpenRecovery: _openRecovery,
                     l10n: l10n,
                   )
                 : _NarrowLayout(
                     notifier: _notifier,
                     api: widget.api,
                     settings: widget.settings,
+                    channelStorage: widget.channelStorage,
+                    fieldSettingsStorage: widget.fieldSettingsStorage,
                     pinnedFieldsStorage: widget.pinnedFieldsStorage,
+                    channelSnapshotStorage: widget.channelSnapshotStorage,
                     backupService: widget.backupService,
                     onImported: _onImported,
                     onOpenChannel: _openChannel,
@@ -202,6 +241,9 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
                     onEditPinned: _openPinnedEdit,
                     onTapPinned: _openPinnedField,
                     onPinnedRefresh: _pinnedNotifier.refresh,
+                    issueBannerVisible: _issueBannerVisible,
+                    onDismissIssueBanner: _dismissIssueBanner,
+                    onOpenRecovery: _openRecovery,
                     l10n: l10n,
                   );
           },
@@ -275,7 +317,10 @@ class _NarrowLayout extends StatelessWidget {
   final ChannelListNotifier notifier;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final ChannelStorage channelStorage;
+  final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
   final VoidCallback onImported;
   final ValueChanged<Channel> onOpenChannel;
@@ -286,13 +331,19 @@ class _NarrowLayout extends StatelessWidget {
   final VoidCallback onEditPinned;
   final ValueChanged<PinnedEntry> onTapPinned;
   final Future<void> Function() onPinnedRefresh;
+  final bool issueBannerVisible;
+  final VoidCallback onDismissIssueBanner;
+  final VoidCallback onOpenRecovery;
   final AppLocalizations l10n;
 
   const _NarrowLayout({
     required this.notifier,
     required this.api,
     required this.settings,
+    required this.channelStorage,
+    required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
     required this.onImported,
     required this.onOpenChannel,
@@ -303,6 +354,9 @@ class _NarrowLayout extends StatelessWidget {
     required this.onEditPinned,
     required this.onTapPinned,
     required this.onPinnedRefresh,
+    required this.issueBannerVisible,
+    required this.onDismissIssueBanner,
+    required this.onOpenRecovery,
     required this.l10n,
   });
 
@@ -316,7 +370,10 @@ class _NarrowLayout extends StatelessWidget {
             api: api,
             settings: settings,
             notifier: notifier,
+            channelStorage: channelStorage,
+            fieldSettingsStorage: fieldSettingsStorage,
             pinnedFieldsStorage: pinnedFieldsStorage,
+            channelSnapshotStorage: channelSnapshotStorage,
             backupService: backupService,
             onImported: onImported,
           ),
@@ -325,6 +382,12 @@ class _NarrowLayout extends StatelessWidget {
       body: _ChannelListBody(
         notifier: notifier,
         l10n: l10n,
+        channelStorage: channelStorage,
+        backupService: backupService,
+        onImported: onImported,
+        issueBannerVisible: issueBannerVisible,
+        onDismissIssueBanner: onDismissIssueBanner,
+        onOpenRecovery: onOpenRecovery,
         onTap: onOpenChannel,
         onDelete: onDeleteChannel,
         pinnedEntries: pinnedEntries,
@@ -348,6 +411,7 @@ class _WideLayout extends StatelessWidget {
   final ChannelListNotifier notifier;
   final ThingSpeakApi api;
   final SettingsNotifier settings;
+  final ChannelStorage channelStorage;
   final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
   final ChannelSnapshotStorage channelSnapshotStorage;
@@ -365,12 +429,16 @@ class _WideLayout extends StatelessWidget {
   final VoidCallback onEditPinned;
   final ValueChanged<PinnedEntry> onTapPinned;
   final Future<void> Function() onPinnedRefresh;
+  final bool issueBannerVisible;
+  final VoidCallback onDismissIssueBanner;
+  final VoidCallback onOpenRecovery;
   final AppLocalizations l10n;
 
   const _WideLayout({
     required this.notifier,
     required this.api,
     required this.settings,
+    required this.channelStorage,
     required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
     required this.channelSnapshotStorage,
@@ -387,6 +455,9 @@ class _WideLayout extends StatelessWidget {
     required this.onEditPinned,
     required this.onTapPinned,
     required this.onPinnedRefresh,
+    required this.issueBannerVisible,
+    required this.onDismissIssueBanner,
+    required this.onOpenRecovery,
     required this.l10n,
   });
 
@@ -400,7 +471,10 @@ class _WideLayout extends StatelessWidget {
             api: api,
             settings: settings,
             notifier: notifier,
+            channelStorage: channelStorage,
+            fieldSettingsStorage: fieldSettingsStorage,
             pinnedFieldsStorage: pinnedFieldsStorage,
+            channelSnapshotStorage: channelSnapshotStorage,
             backupService: backupService,
             onImported: onImported,
           ),
@@ -419,6 +493,12 @@ class _WideLayout extends StatelessWidget {
             child: _ChannelListBody(
               notifier: notifier,
               l10n: l10n,
+              channelStorage: channelStorage,
+              backupService: backupService,
+              onImported: onImported,
+              issueBannerVisible: issueBannerVisible,
+              onDismissIssueBanner: onDismissIssueBanner,
+              onOpenRecovery: onOpenRecovery,
               selectedChannel: selectedChannel,
               onTap: onChannelSelected,
               onDelete: onChannelRemoved,
@@ -468,7 +548,10 @@ class _SettingsButton extends StatelessWidget {
   final ThingSpeakApi api;
   final SettingsNotifier settings;
   final ChannelListNotifier notifier;
+  final ChannelStorage channelStorage;
+  final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
   final VoidCallback onImported;
 
@@ -476,7 +559,10 @@ class _SettingsButton extends StatelessWidget {
     required this.api,
     required this.settings,
     required this.notifier,
+    required this.channelStorage,
+    required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
     required this.onImported,
   });
@@ -499,7 +585,10 @@ class _SettingsButton extends StatelessWidget {
               api: api,
               settings: settings,
               channels: channels,
+              channelStorage: channelStorage,
+              fieldSettingsStorage: fieldSettingsStorage,
               pinnedFieldsStorage: pinnedFieldsStorage,
+              channelSnapshotStorage: channelSnapshotStorage,
               backupService: backupService,
               onImported: onImported,
             ),
@@ -537,6 +626,12 @@ Future<bool?> _confirmDelete(BuildContext context, Channel channel) {
 class _ChannelListBody extends StatelessWidget {
   final ChannelListNotifier notifier;
   final AppLocalizations l10n;
+  final ChannelStorage channelStorage;
+  final BackupService backupService;
+  final VoidCallback onImported;
+  final bool issueBannerVisible;
+  final VoidCallback onDismissIssueBanner;
+  final VoidCallback onOpenRecovery;
   final Channel? selectedChannel;
   final ValueChanged<Channel> onTap;
   final ValueChanged<Channel> onDelete;
@@ -549,6 +644,12 @@ class _ChannelListBody extends StatelessWidget {
   const _ChannelListBody({
     required this.notifier,
     required this.l10n,
+    required this.channelStorage,
+    required this.backupService,
+    required this.onImported,
+    required this.issueBannerVisible,
+    required this.onDismissIssueBanner,
+    required this.onOpenRecovery,
     required this.onTap,
     required this.onDelete,
     required this.pinnedEntries,
@@ -571,6 +672,11 @@ class _ChannelListBody extends StatelessWidget {
             ),
           ),
           ChannelListError(:final message) => Center(child: Text(message)),
+          ChannelListCorrupted() => _CorruptedBody(
+            channelStorage: channelStorage,
+            backupService: backupService,
+            onChanged: onImported,
+          ),
           ChannelListLoaded(:final channels) =>
             channels.isEmpty
                 ? Center(child: Text(l10n.channelListEmpty))
@@ -631,14 +737,124 @@ class _ChannelListBody extends StatelessWidget {
                     },
                   ),
         };
-        return pinnedEntries.isEmpty
+        final content = pinnedEntries.isEmpty
             ? body
             : RefreshIndicator(
                 onRefresh: onPinnedRefresh,
                 semanticsLabel: l10n.pinnedSectionTitle,
                 child: body,
               );
+        if (!issueBannerVisible) return content;
+        return Column(
+          children: [
+            MaterialBanner(
+              leading: ExcludeSemantics(
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              content: Text(l10n.channelListIssueBannerText),
+              actions: [
+                TextButton(
+                  onPressed: onDismissIssueBanner,
+                  child: Text(l10n.channelListIssueBannerDismiss),
+                ),
+                TextButton(
+                  onPressed: onOpenRecovery,
+                  child: Text(l10n.channelListIssueBannerAction),
+                ),
+              ],
+            ),
+            Expanded(child: content),
+          ],
+        );
       },
+    );
+  }
+}
+
+/// Blocking body shown instead of the channel list when the saved channels
+/// could not be read at all. The original data is kept (see [ChannelStorage]),
+/// so this offers the same recovery actions as [RecoveryScreen] without
+/// forcing a navigation away from the (still live) AppBar and FAB.
+class _CorruptedBody extends StatelessWidget {
+  final ChannelStorage channelStorage;
+  final BackupService backupService;
+  final VoidCallback onChanged;
+
+  const _CorruptedBody({
+    required this.channelStorage,
+    required this.backupService,
+    required this.onChanged,
+  });
+
+  Future<void> _import(BuildContext context) async {
+    if (await runBackupImport(context, backupService)) onChanged();
+  }
+
+  Future<void> _save(BuildContext context) async {
+    final raw = channelStorage.corruptRaw;
+    if (raw == null) return;
+    await saveCorruptRaw(context, 'channels', raw);
+  }
+
+  Future<void> _discard(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!await confirmDiscard(context, l10n.recoveryStoreChannels)) return;
+    await channelStorage.discardCorrupt();
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final errorColor = Theme.of(context).colorScheme.error;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ExcludeSemantics(
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 48,
+                color: errorColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.channelListCorruptedTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(l10n.channelListCorruptedText, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _import(context),
+              icon: const Icon(Icons.download_outlined),
+              label: Text(l10n.recoveryImportBackup),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _save(context),
+              icon: const Icon(Icons.save_alt_outlined),
+              label: Text(l10n.channelListCorruptedSave),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => _discard(context),
+              icon: Icon(Icons.delete_outline, color: errorColor),
+              label: Text(
+                l10n.channelListCorruptedDiscard,
+                style: TextStyle(color: errorColor),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

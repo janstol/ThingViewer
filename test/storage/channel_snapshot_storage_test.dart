@@ -212,13 +212,50 @@ void main() {
     });
   });
 
-  test('a corrupt blob yields no snapshots instead of throwing', () async {
-    SharedPreferences.setMockInitialValues({'channelSnapshots': 'not json'});
-    final storage = ChannelSnapshotStorage(
-      await SharedPreferences.getInstance(),
-    );
+  group('a corrupt blob', () {
+    test('yields no snapshots instead of throwing', () async {
+      SharedPreferences.setMockInitialValues({
+        'channelSnapshots': 'not json',
+      });
+      final storage = ChannelSnapshotStorage(
+        await SharedPreferences.getInstance(),
+      );
 
-    expect(storage.snapshotFor(_channel), isNull);
+      expect(storage.snapshotFor(_channel), isNull);
+      expect(storage.issue?.total, isTrue);
+    });
+
+    test('is preserved via corruptRaw and survives a later write', () async {
+      SharedPreferences.setMockInitialValues({
+        'channelSnapshots': 'not json',
+      });
+      final storage = ChannelSnapshotStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.save(
+        _channel,
+        ChannelSnapshot(fetchedAt: DateTime.utc(2024, 1, 1)),
+      );
+
+      expect(storage.corruptRaw, 'not json');
+      expect(storage.snapshotFor(_channel), isNotNull);
+    });
+
+    test('discardCorrupt clears the quarantine and the issue', () async {
+      SharedPreferences.setMockInitialValues({
+        'channelSnapshots': 'not json',
+      });
+      final storage = ChannelSnapshotStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.discardCorrupt();
+
+      expect(storage.corruptRaw, isNull);
+      expect(storage.issue, isNull);
+      expect(storage.snapshotFor(_channel), isNull);
+    });
   });
 
   group('reload', () {

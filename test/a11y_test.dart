@@ -76,6 +76,11 @@ Future<SettingsNotifier> _settings() async {
   return SettingsNotifier(SettingsStorage(prefs));
 }
 
+Future<ChannelStorage> _channelStorage() async {
+  final prefs = await SharedPreferences.getInstance();
+  return ChannelStorage(prefs);
+}
+
 Future<FieldSettingsStorage> _fieldSettingsStorage() async {
   final prefs = await SharedPreferences.getInstance();
   return FieldSettingsStorage(prefs);
@@ -479,6 +484,9 @@ void main() {
               channels: const [_channel, _otherChannel],
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
               onImported: () {},
             ),
@@ -500,6 +508,9 @@ void main() {
               channels: const [_channel, _otherChannel],
               api: mockApi,
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelStorage: await _channelStorage(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
               backupService: await _backupService(),
               onImported: () {},
             ),

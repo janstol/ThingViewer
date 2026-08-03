@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
 import '../models/pinned_field.dart';
+import 'storage_recovery.dart';
 
 const _kPinnedFieldsKey = 'pinnedFields';
 
@@ -16,21 +17,29 @@ const _kPinnedFieldsKey = 'pinnedFields';
 /// delete, so a deleted-then-re-added channel keeps its pins.
 class PinnedFieldsStorage {
   final SharedPreferences _prefs;
-  final List<PinnedField> _pins;
+  late List<PinnedField> _pins;
+  StorageIssue? _issue;
 
-  PinnedFieldsStorage(this._prefs) : _pins = _load(_prefs);
+  PinnedFieldsStorage(this._prefs) {
+    _applyLoad(_load(_prefs));
+  }
 
-  static List<PinnedField> _load(SharedPreferences prefs) {
-    final raw = prefs.getString(_kPinnedFieldsKey);
-    if (raw == null || raw.isEmpty) return [];
-    try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      return list
-          .map((e) => PinnedField.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return [];
-    }
+  StorageIssue? get issue => _issue;
+
+  String? get corruptRaw => quarantinedRaw(_prefs, _kPinnedFieldsKey);
+
+  Future<void> discardCorrupt() async {
+    await clearQuarantine(_prefs, _kPinnedFieldsKey);
+    await _prefs.remove(_kPinnedFieldsKey);
+    reload();
+  }
+
+  static LoadOutcome<List<PinnedField>> _load(SharedPreferences prefs) =>
+      decodeStoredList(prefs, _kPinnedFieldsKey, PinnedField.fromJson);
+
+  void _applyLoad(LoadOutcome<List<PinnedField>> outcome) {
+    _pins = outcome.value;
+    _issue = outcome.issue;
   }
 
   /// All pins whose channel is in [channels], filtering out orphans.
@@ -96,9 +105,5 @@ class PinnedFieldsStorage {
 
   /// Re-reads the in-memory cache from [_prefs], picking up any changes
   /// written directly to storage (e.g. by a backup restore) since construction.
-  void reload() {
-    _pins
-      ..clear()
-      ..addAll(_load(_prefs));
-  }
+  void reload() => _applyLoad(_load(_prefs));
 }

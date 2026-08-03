@@ -2,26 +2,43 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_notifier.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
+import 'package:thingviewer/storage/storage_recovery.dart';
 
 // In-memory fake — no SharedPreferences needed.
 class _FakeChannelStorage implements ChannelStorage {
   List<Channel> _channels;
   bool throwOnLoad;
+  @override
+  StorageIssue? issue;
+  @override
+  String? corruptRaw;
+  bool discardCalled = false;
 
   _FakeChannelStorage({
     List<Channel> initial = const [],
     this.throwOnLoad = false,
+    this.issue,
   }) : _channels = List.of(initial);
 
   @override
-  List<Channel> loadChannels() {
+  List<Channel> loadChannels() => load().value;
+
+  @override
+  LoadOutcome<List<Channel>> load() {
     if (throwOnLoad) throw Exception('load error');
-    return List.of(_channels);
+    return LoadOutcome(List.of(_channels), issue);
   }
 
   @override
   Future<void> saveChannels(List<Channel> channels) async {
     _channels = List.of(channels);
+  }
+
+  @override
+  Future<void> discardCorrupt() async {
+    discardCalled = true;
+    issue = null;
+    corruptRaw = null;
   }
 }
 
@@ -64,6 +81,29 @@ void main() {
         _FakeChannelStorage(throwOnLoad: true),
       );
       expect(notifier.state, isA<ChannelListError>());
+      notifier.dispose();
+    });
+
+    test('is ChannelListCorrupted when the storage issue is total', () {
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(
+          issue: const StorageIssue(key: 'channels', skipped: 0, total: true),
+        ),
+      );
+      expect(notifier.state, isA<ChannelListCorrupted>());
+      notifier.dispose();
+    });
+
+    test('is ChannelListLoaded carrying the issue on a partial salvage', () {
+      final notifier = ChannelListNotifier(
+        _FakeChannelStorage(
+          initial: [_a],
+          issue: const StorageIssue(key: 'channels', skipped: 1, total: false),
+        ),
+      );
+      final state = notifier.state as ChannelListLoaded;
+      expect(state.channels, [_a]);
+      expect(state.issue?.skipped, 1);
       notifier.dispose();
     });
   });

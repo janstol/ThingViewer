@@ -42,6 +42,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelListDeleteSemantics => 'Delete channel';
 
   @override
+  String get channelListCorruptedTitle => 'Saved channels couldn\'t be read';
+
+  @override
+  String get channelListCorruptedText =>
+      'The data is unreadable but hasn\'t been overwritten. You can restore it from a backup, save the raw data to look at it later, or discard it and start fresh.';
+
+  @override
+  String get channelListCorruptedSave => 'Save raw data';
+
+  @override
+  String get channelListCorruptedDiscard => 'Discard and start fresh';
+
+  @override
+  String get channelListIssueBannerText =>
+      'Some saved data couldn\'t be fully read.';
+
+  @override
+  String get channelListIssueBannerDismiss => 'Dismiss';
+
+  @override
+  String get channelListIssueBannerAction => 'Details';
+
+  @override
   String get fieldServerUrl => 'Server URL';
 
   @override
@@ -356,6 +379,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsImport => 'Import';
 
   @override
+  String get settingsRecoverData => 'Recover unreadable data';
+
+  @override
   String get backupExportTitle => 'Export backup';
 
   @override
@@ -460,6 +486,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupImportSuccess => 'Backup imported';
+
+  @override
+  String get recoveryTitle => 'Recover data';
+
+  @override
+  String get recoveryImportBackup => 'Import a backup';
+
+  @override
+  String get recoveryNothingToRecover => 'Nothing to recover.';
+
+  @override
+  String get recoveryStoreChannels => 'Saved channels';
+
+  @override
+  String get recoveryStorePinnedFields => 'Pinned fields';
+
+  @override
+  String get recoveryStoreChartSettings => 'Chart settings';
+
+  @override
+  String get recoveryStoreCachedValues => 'Cached values';
+
+  @override
+  String get recoveryIssueTotal => 'This data couldn\'t be read at all.';
+
+  @override
+  String recoveryIssuePartial(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries couldn\'t be read and were skipped.',
+      one: '1 entry couldn\'t be read and was skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recoverySaveRawData => 'Save raw data';
+
+  @override
+  String get recoveryDiscard => 'Discard';
+
+  @override
+  String get recoverySaveSuccess => 'Raw data saved';
+
+  @override
+  String get recoveryDiscardTitle => 'Discard unreadable data?';
+
+  @override
+  String recoveryDiscardText(String name) {
+    return 'This permanently deletes the unreadable data for $name. This cannot be undone.';
+  }
 
   @override
   String get privacyPolicy => 'Privacy Policy';

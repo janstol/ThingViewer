@@ -157,11 +157,41 @@ void main() {
     });
   });
 
-  test('a corrupt blob yields no pins instead of throwing', () async {
-    SharedPreferences.setMockInitialValues({'pinnedFields': 'not json'});
-    final storage = PinnedFieldsStorage(await SharedPreferences.getInstance());
+  group('a corrupt blob', () {
+    test('yields no pins instead of throwing', () async {
+      SharedPreferences.setMockInitialValues({'pinnedFields': 'not json'});
+      final storage = PinnedFieldsStorage(
+        await SharedPreferences.getInstance(),
+      );
 
-    expect(storage.pins([_channel]), isEmpty);
+      expect(storage.pins([_channel]), isEmpty);
+      expect(storage.issue?.total, isTrue);
+    });
+
+    test('is preserved via corruptRaw and survives a later write', () async {
+      SharedPreferences.setMockInitialValues({'pinnedFields': 'not json'});
+      final storage = PinnedFieldsStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.toggle(_channel, 1);
+
+      expect(storage.corruptRaw, 'not json');
+      expect(storage.isPinned(_channel, 1), isTrue);
+    });
+
+    test('discardCorrupt clears the quarantine and the issue', () async {
+      SharedPreferences.setMockInitialValues({'pinnedFields': 'not json'});
+      final storage = PinnedFieldsStorage(
+        await SharedPreferences.getInstance(),
+      );
+
+      await storage.discardCorrupt();
+
+      expect(storage.corruptRaw, isNull);
+      expect(storage.issue, isNull);
+      expect(storage.isPinned(_channel, 1), isFalse);
+    });
   });
 
   group('exportJson / importJson', () {

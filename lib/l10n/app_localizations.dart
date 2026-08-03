@@ -160,6 +160,48 @@ abstract class AppLocalizations {
   /// **'Delete channel'**
   String get channelListDeleteSemantics;
 
+  /// No description provided for @channelListCorruptedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved channels couldn\'t be read'**
+  String get channelListCorruptedTitle;
+
+  /// No description provided for @channelListCorruptedText.
+  ///
+  /// In en, this message translates to:
+  /// **'The data is unreadable but hasn\'t been overwritten. You can restore it from a backup, save the raw data to look at it later, or discard it and start fresh.'**
+  String get channelListCorruptedText;
+
+  /// No description provided for @channelListCorruptedSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save raw data'**
+  String get channelListCorruptedSave;
+
+  /// No description provided for @channelListCorruptedDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard and start fresh'**
+  String get channelListCorruptedDiscard;
+
+  /// No description provided for @channelListIssueBannerText.
+  ///
+  /// In en, this message translates to:
+  /// **'Some saved data couldn\'t be fully read.'**
+  String get channelListIssueBannerText;
+
+  /// No description provided for @channelListIssueBannerDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get channelListIssueBannerDismiss;
+
+  /// No description provided for @channelListIssueBannerAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get channelListIssueBannerAction;
+
   /// No description provided for @fieldServerUrl.
   ///
   /// In en, this message translates to:
@@ -647,6 +689,12 @@ abstract class AppLocalizations {
   /// **'Import'**
   String get settingsImport;
 
+  /// No description provided for @settingsRecoverData.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover unreadable data'**
+  String get settingsRecoverData;
+
   /// No description provided for @backupExportTitle.
   ///
   /// In en, this message translates to:
@@ -790,6 +838,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backup imported'**
   String get backupImportSuccess;
+
+  /// No description provided for @recoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover data'**
+  String get recoveryTitle;
+
+  /// No description provided for @recoveryImportBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a backup'**
+  String get recoveryImportBackup;
+
+  /// No description provided for @recoveryNothingToRecover.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to recover.'**
+  String get recoveryNothingToRecover;
+
+  /// No description provided for @recoveryStoreChannels.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved channels'**
+  String get recoveryStoreChannels;
+
+  /// No description provided for @recoveryStorePinnedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned fields'**
+  String get recoveryStorePinnedFields;
+
+  /// No description provided for @recoveryStoreChartSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart settings'**
+  String get recoveryStoreChartSettings;
+
+  /// No description provided for @recoveryStoreCachedValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached values'**
+  String get recoveryStoreCachedValues;
+
+  /// No description provided for @recoveryIssueTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'This data couldn\'t be read at all.'**
+  String get recoveryIssueTotal;
+
+  /// No description provided for @recoveryIssuePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry couldn\'t be read and was skipped.} other{{count} entries couldn\'t be read and were skipped.}}'**
+  String recoveryIssuePartial(num count);
+
+  /// No description provided for @recoverySaveRawData.
+  ///
+  /// In en, this message translates to:
+  /// **'Save raw data'**
+  String get recoverySaveRawData;
+
+  /// No description provided for @recoveryDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get recoveryDiscard;
+
+  /// No description provided for @recoverySaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw data saved'**
+  String get recoverySaveSuccess;
+
+  /// No description provided for @recoveryDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unreadable data?'**
+  String get recoveryDiscardTitle;
+
+  /// No description provided for @recoveryDiscardText.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes the unreadable data for {name}. This cannot be undone.'**
+  String recoveryDiscardText(String name);
 
   /// No description provided for @privacyPolicy.
   ///

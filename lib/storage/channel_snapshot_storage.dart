@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
 import '../models/channel_snapshot.dart';
+import 'storage_recovery.dart';
 
 const _kChannelSnapshotsKey = 'channelSnapshots';
 
@@ -15,24 +16,30 @@ const _kChannelSnapshotsKey = 'channelSnapshots';
 /// and would bloat the export.
 class ChannelSnapshotStorage {
   final SharedPreferences _prefs;
-  final Map<String, ChannelSnapshot> _snapshots;
+  late Map<String, ChannelSnapshot> _snapshots;
+  StorageIssue? _issue;
 
-  ChannelSnapshotStorage(this._prefs) : _snapshots = _load(_prefs);
+  ChannelSnapshotStorage(this._prefs) {
+    _applyLoad(_load(_prefs));
+  }
 
-  static Map<String, ChannelSnapshot> _load(SharedPreferences prefs) {
-    final raw = prefs.getString(_kChannelSnapshotsKey);
-    if (raw == null || raw.isEmpty) return {};
-    try {
-      final map = jsonDecode(raw) as Map<String, dynamic>;
-      return {
-        for (final entry in map.entries)
-          entry.key: ChannelSnapshot.fromJson(
-            entry.value as Map<String, dynamic>,
-          ),
-      };
-    } catch (_) {
-      return {};
-    }
+  StorageIssue? get issue => _issue;
+
+  String? get corruptRaw => quarantinedRaw(_prefs, _kChannelSnapshotsKey);
+
+  Future<void> discardCorrupt() async {
+    await clearQuarantine(_prefs, _kChannelSnapshotsKey);
+    await _prefs.remove(_kChannelSnapshotsKey);
+    reload();
+  }
+
+  static LoadOutcome<Map<String, ChannelSnapshot>> _load(
+    SharedPreferences prefs,
+  ) => decodeStoredMap(prefs, _kChannelSnapshotsKey, ChannelSnapshot.fromJson);
+
+  void _applyLoad(LoadOutcome<Map<String, ChannelSnapshot>> outcome) {
+    _snapshots = outcome.value;
+    _issue = outcome.issue;
   }
 
   String _key(Channel channel) => '${channel.serverUrl}|${channel.id}';
@@ -66,9 +73,5 @@ class ChannelSnapshotStorage {
 
   /// Re-reads the in-memory cache from [_prefs], picking up any changes
   /// written directly to storage since construction.
-  void reload() {
-    _snapshots
-      ..clear()
-      ..addAll(_load(_prefs));
-  }
+  void reload() => _applyLoad(_load(_prefs));
 }
