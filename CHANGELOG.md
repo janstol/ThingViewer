@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Each GitHub Release now also includes a signed universal APK, for installing without the Play Store (e.g. via [Obtainium](https://github.com/ImranR98/Obtainium) on de-Googled Android). It's signed with the project's own upload key, separate from Play App Signing, so switching between the Play install and this one needs an uninstall/reinstall; use Settings → Backup to carry channels and settings across.
+- Each GitHub Release now also includes signed APKs (arm64-v8a and armeabi-v7a), for installing without the Play Store (e.g. via [Obtainium](https://github.com/ImranR98/Obtainium) on de-Googled Android). They're signed with the project's own upload key, separate from Play App Signing, so switching between the Play install and this one needs an uninstall/reinstall; use Settings → Backup to carry channels and settings across.
 
 ## [0.11.0] - 2026-08-14
 
