@@ -5,14 +5,23 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to rebuild and re-attach assets to (e.g. v0.11.0). Skips publishing to Play. Leave empty to build the current branch instead.'
+        required: false
+        type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
       - uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
@@ -49,12 +58,12 @@ jobs:
       - name: Rename APKs for release
         run: |
           cd build/app/outputs/flutter-apk
-          mv app-arm64-v8a-release.apk thingviewer-${{ github.ref_name }}-arm64-v8a.apk
-          mv app-armeabi-v7a-release.apk thingviewer-${{ github.ref_name }}-armeabi-v7a.apk
+          mv app-arm64-v8a-release.apk thingviewer-${RELEASE_TAG}-arm64-v8a.apk
+          mv app-armeabi-v7a-release.apk thingviewer-${RELEASE_TAG}-armeabi-v7a.apk
 
       - name: Extract changelog section
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_TAG#v}"
           awk -v ver="$VERSION" '
             $0 ~ "^## \\[" ver "\\]" { found=1; next }
             found && /^## \[/ { exit }
@@ -65,10 +74,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
           files: |
-            build/app/outputs/flutter-apk/thingviewer-${{ github.ref_name }}-arm64-v8a.apk
-            build/app/outputs/flutter-apk/thingviewer-${{ github.ref_name }}-armeabi-v7a.apk
+            build/app/outputs/flutter-apk/thingviewer-${{ env.RELEASE_TAG }}-arm64-v8a.apk
+            build/app/outputs/flutter-apk/thingviewer-${{ env.RELEASE_TAG }}-armeabi-v7a.apk
 
       - name: Upload App Bundle artifact
         uses: actions/upload-artifact@v7
@@ -80,7 +90,7 @@ jobs:
       - name: Upload debug symbols artifact
         uses: actions/upload-artifact@v7
         with:
-          name: release-symbols-${{ github.ref_name }}
+          name: release-symbols-${{ env.RELEASE_TAG }}
           path: build/symbols
           retention-days: 90
 
