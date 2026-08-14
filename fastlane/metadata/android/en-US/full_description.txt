@@ -1,0 +1,19 @@
+ThingViewer is a mobile app for viewing and visualizing data from ThingSpeak channels.
+
+Features:
+
+* Browse and manage multiple ThingSpeak channels, with a configurable start screen (channel list or a chosen channel's detail screen)
+* View latest field values per channel, including its description and website/source links when set, with pull-to-refresh
+* Visualize field data as line, spline, step, or column charts, with date and time range filtering
+* Per-field chart settings: custom title, axis labels, Y-axis min/max, fixed decimal rounding, and a "show change between readings" mode for counters
+* Automatically pages past ThingSpeak's per-request result cap, so large date ranges aren't silently truncated
+* Supports public and private (API key) channels
+* Custom server URL, for self-hosted ThingSpeak instances
+* Light, dark, and system theme
+* Configurable date and time formats, with an optional timezone indicator
+* Export and import a full backup (saved channels, app settings, and per-field chart overrides) as a single JSON file
+* Responsive layout, with a master-detail split on tablets
+
+No ads, no tracking, no account required beyond your own ThingSpeak channel credentials.
+
+Source code: https://github.com/janstol/ThingViewer
