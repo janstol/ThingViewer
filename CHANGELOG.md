@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-14
+
 ### Added
 
 - Individual fields can now be pinned from the field chart screen or a dedicated Settings → "Pinned fields" picker. Pinned fields show their latest value and last-update age in a "Pinned fields" section above the channel list, which is now its own "Channels" section; tapping a pinned field opens its chart. Pull-to-refresh on the channel list refreshes pinned values, and the section renders cached values immediately, before the network refresh completes. Included in backup export/import.
@@ -35,6 +37,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- The app no longer refuses to launch, with a "Something went wrong" dialog, on devices without the Google Play Store (e.g. de-Googled Android such as CalyxOS or GrapheneOS). The cause was a Play Console setting adding a Play Store installer check to distributed builds, not app code; the setting is now off.
 - API requests now time out after 20 seconds instead of leaving the chart or detail screen on a spinner indefinitely on a stalled connection.
 - Rapidly changing a field chart's date range no longer occasionally leaves a stale, older result on screen if a newer range finishes fetching first.
 - Backup import and export now work on macOS instead of failing to open a file dialog.
@@ -97,5 +100,6 @@ Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into
 - Migrated from Hive/get_it/BLoC to `SharedPreferences` + `ChangeNotifier`.
 - Updated dependencies to their latest versions compatible with existing constraints (`build_runner`, `equatable`, `path_provider_android`, and others).
 
+[0.11.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.11.0
 [0.10.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.10.0
 [0.9.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.9.0

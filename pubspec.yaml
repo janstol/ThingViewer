@@ -1,7 +1,7 @@
 name: thingviewer
 description: Mobile app for viewing and visualizing data from ThingSpeak.
 
-version: 0.10.0+1000 # (major * 10000) + (minor * 100) + patch
+version: 0.11.0+1100 # (major * 10000) + (minor * 100) + patch
 
 publish_to: none
 
