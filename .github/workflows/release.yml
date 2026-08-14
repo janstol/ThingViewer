@@ -40,6 +40,12 @@ jobs:
       - name: Build App Bundle
         run: flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
 
+      - name: Build APK
+        run: flutter build apk --release --obfuscate --split-debug-info=build/symbols
+
+      - name: Rename APK for release
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/thingviewer-${{ github.ref_name }}.apk
+
       - name: Extract changelog section
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -54,6 +60,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           body_path: release-notes.md
+          files: build/app/outputs/flutter-apk/thingviewer-${{ github.ref_name }}.apk
 
       - name: Upload App Bundle artifact
         uses: actions/upload-artifact@v7
