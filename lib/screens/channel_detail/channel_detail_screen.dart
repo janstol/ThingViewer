@@ -44,6 +44,14 @@ bool _hasTopHeader(Channel channel) =>
 bool _hasHeader(Channel channel, List<ChannelStatus> statuses) =>
     _hasTopHeader(channel) || statuses.isNotEmpty;
 
+// This screen's field list is a plain ListView, which already auto-pads
+// itself with MediaQuery.padding for the system nav bar. What it can't know
+// about is a FAB belonging to an *outer* Scaffold: when this screen is
+// embedded as the right-hand panel of the wide split layout
+// (ChannelListScreen's _WideLayout), that Scaffold's "add channel" FAB
+// floats over this panel's trailing edge. [fabClearance] adds room for it.
+const _kFabClearance = 56.0 + kFloatingActionButtonMargin * 2;
+
 void _openStatusLog(
   BuildContext context,
   List<ChannelStatus> statuses,
@@ -183,6 +191,7 @@ class ChannelDetailScreen extends StatefulWidget {
   final Future<void> Function(Channel original, Channel updated)?
   onChannelEdited;
   final VoidCallback? onPinnedChanged;
+  final bool fabClearance;
 
   const ChannelDetailScreen({
     super.key,
@@ -196,6 +205,7 @@ class ChannelDetailScreen extends StatefulWidget {
     this.onChannelUpdated,
     this.onChannelEdited,
     this.onPinnedChanged,
+    this.fabClearance = false,
   });
 
   @override
@@ -328,6 +338,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                       pinnedFieldsStorage: widget.pinnedFieldsStorage,
                       onPinnedChanged: widget.onPinnedChanged,
                       now: _now,
+                      fabClearance: widget.fabClearance,
                     ),
                   ),
                 ],
@@ -415,6 +426,7 @@ class _FieldList extends StatelessWidget {
   final PinnedFieldsStorage pinnedFieldsStorage;
   final VoidCallback? onPinnedChanged;
   final DateTime now;
+  final bool fabClearance;
 
   const _FieldList({
     required this.channel,
@@ -426,6 +438,7 @@ class _FieldList extends StatelessWidget {
     required this.pinnedFieldsStorage,
     this.onPinnedChanged,
     required this.now,
+    required this.fabClearance,
   });
 
   @override
@@ -440,6 +453,12 @@ class _FieldList extends StatelessWidget {
         final hasHeader = _hasHeader(channel, statuses);
         return ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: fabClearance
+              ? EdgeInsets.only(
+                  bottom:
+                      MediaQuery.paddingOf(context).bottom + _kFabClearance,
+                )
+              : null,
           itemCount: fields.length + (hasHeader ? 1 : 0),
           itemBuilder: (context, i) {
             if (hasHeader && i == 0) {

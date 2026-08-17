@@ -538,6 +538,7 @@ class _WideLayout extends StatelessWidget {
                     onChannelUpdated: notifier.updateChannel,
                     onChannelEdited: onChannelEdited,
                     onPinnedChanged: onPinnedChanged,
+                    fabClearance: true,
                   )
                 : Center(
                     child: Text(

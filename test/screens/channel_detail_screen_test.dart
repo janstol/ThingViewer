@@ -33,11 +33,41 @@ final _fields = [
 
 const _emptyFields = [Field(id: 1, label: 'Temp')];
 
+final _manyFields = List.generate(
+  20,
+  (i) => Field(
+    id: i + 1,
+    label: 'Field ${i + 1}',
+    values: [FieldValue(createdAt: DateTime(2024), value: i.toDouble())],
+  ),
+);
+
 Widget _wrap(Widget child) => MaterialApp(
   theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: child,
+);
+
+// Mirrors ChannelListScreen's wide (tablet) layout: a fixed-width left
+// panel, the detail screen filling the rest, and a FAB that floats over
+// the whole Scaffold, i.e. over the detail panel's trailing edge.
+Widget _wrapWideWithFab(Widget child) => MaterialApp(
+  theme: AppTheme.light,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: Scaffold(
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {},
+      child: const Icon(Icons.add),
+    ),
+    body: Row(
+      children: [
+        const SizedBox(width: 320),
+        Expanded(child: child),
+      ],
+    ),
+  ),
 );
 
 Future<SettingsNotifier> _settings() async {
@@ -553,4 +583,55 @@ void main() {
     expect(find.byIcon(Icons.chevron_right), findsNothing);
     expect(find.byType(Divider), findsNothing);
   });
+
+  testWidgets(
+    'the last field clears the FAB when embedded in the wide split layout',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        fieldCount: _manyFields.length,
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: _manyFields, statuses: []));
+
+      await tester.pumpWidget(
+        _wrapWideWithFab(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+            fabClearance: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final lastTile = find.widgetWithText(ListTile, 'Field 20');
+      await tester.dragUntilVisible(
+        lastTile,
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+
+      final tileRect = tester.getRect(lastTile);
+      final fabRect = tester.getRect(find.byType(FloatingActionButton));
+
+      expect(
+        tileRect.overlaps(fabRect),
+        isFalse,
+        reason: 'last field row must not sit under the FAB',
+      );
+    },
+  );
 }

@@ -11,7 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- On Android 15+ with the 3-button navigation bar, the last channel in the list could end up hidden behind the nav bar and/or the "add channel" button, with no way to scroll it further into view.
+- On Android 15+ with the 3-button navigation bar, the last channel in the list could end up hidden behind the nav bar and/or the "add channel" button, with no way to scroll it further into view. On tablets, the last field on a channel's detail screen could be hidden behind the same button.
 
 ## [0.11.0] - 2026-08-14
 
