@@ -3,11 +3,7 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
-
-### Added
-
-- Each GitHub Release now also includes signed APKs (arm64-v8a and armeabi-v7a), for installing without the Play Store (e.g. via [Obtainium](https://github.com/ImranR98/Obtainium) on de-Googled Android). They're signed with the project's own upload key, separate from Play App Signing, so switching between the Play install and this one needs an uninstall/reinstall; use Settings → Backup to carry channels and settings across.
+## [0.11.1] - 2026-08-17
 
 ### Fixed
 
@@ -17,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Each GitHub Release now also includes signed APKs (arm64-v8a and armeabi-v7a), for installing without the Play Store (e.g. via [Obtainium](https://github.com/ImranR98/Obtainium) on de-Googled Android). They're signed with the project's own upload key, separate from Play App Signing, so switching between the Play install and this one needs an uninstall/reinstall; use Settings → Backup to carry channels and settings across.
 - Individual fields can now be pinned from the field chart screen or a dedicated Settings → "Pinned fields" picker. Pinned fields show their latest value and last-update age in a "Pinned fields" section above the channel list, which is now its own "Channels" section; tapping a pinned field opens its chart. Pull-to-refresh on the channel list refreshes pinned values, and the section renders cached values immediately, before the network refresh completes. Included in backup export/import.
 - A "Last entry time" setting controls whether each field's "Last entry" line on the channel detail screen shows the timestamp, a relative age ("5 min ago"), or both (default). The age updates while the screen is open.
 - The newest channel status message from ThingSpeak now shows on the channel detail screen, tappable to a log of recent status messages.
