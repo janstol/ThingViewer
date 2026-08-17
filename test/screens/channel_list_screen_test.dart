@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -5,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
@@ -398,4 +400,88 @@ void main() {
     expect(find.text('Broken Channel'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'tapping a pinned field whose last reading is older than the default '
+    'chart range still shows values',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel]),
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+      final pinnedFieldsStorage = await _pinnedFieldsStorage();
+      await pinnedFieldsStorage.toggle(_channel, 1);
+      final channelSnapshotStorage = await _channelSnapshotStorage();
+      final staleValueAt = DateTime.now().subtract(const Duration(days: 30));
+      await channelSnapshotStorage.save(
+        _channel,
+        ChannelSnapshot(
+          fields: [
+            FieldSnapshot(
+              id: 1,
+              label: 'Temp',
+              value: 23.5,
+              valueAt: staleValueAt,
+            ),
+          ],
+          fetchedAt: DateTime.now(),
+        ),
+      );
+
+      when(mockApi.readFeed(any, any)).thenAnswer(
+        (_) async => FeedData(
+          fields: [
+            Field(
+              id: 1,
+              label: 'Temp',
+              values: [FieldValue(createdAt: staleValueAt, value: 23.5)],
+            ),
+          ],
+          statuses: [],
+        ),
+      );
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenAnswer(
+        (_) async => FieldRange(
+          field: Field(
+            id: 1,
+            label: 'Temp',
+            values: [FieldValue(createdAt: staleValueAt, value: 23.5)],
+          ),
+          truncated: false,
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: pinnedFieldsStorage,
+            channelSnapshotStorage: channelSnapshotStorage,
+            backupService: await _backupService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Temp'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No values for the selected date range.'),
+        findsNothing,
+      );
+      expect(find.byType(LineChart), findsOneWidget);
+    },
+  );
 }

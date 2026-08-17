@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Opening a pinned field's chart could show "No values for the selected date range" for a field that hadn't reported in over a week, even though the same field opened via the channel's field list showed its data. The chart's default 7-day window was anchoring on the current time instead of the field's last known reading.
+
 ### Changed
 
 - Bumped the Flutter SDK to 3.47.0 (Dart 3.13.0), unblocking Dependabot updates for `intl`, `mockito`, and `build_runner` that were held back by the SDK's `flutter_localizations`/`flutter_test` version pins.

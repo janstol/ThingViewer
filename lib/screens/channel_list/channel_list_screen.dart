@@ -155,12 +155,25 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
   }
 
   void _openPinnedField(PinnedEntry entry) {
+    final snapshot = entry.snapshot;
+    final value = snapshot?.value;
+    final valueAt = snapshot?.valueAt;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FieldChartScreen(
           channel: entry.channel,
-          field: Field(id: entry.pin.fieldId, label: entry.snapshot?.label),
+          // Seed the field with its cached snapshot value so the chart's
+          // default range anchors to it, not to now() — otherwise a field
+          // that hasn't reported in a while opens on an empty window even
+          // though older data exists (see FieldChartNotifier._defaultRange).
+          field: Field(
+            id: entry.pin.fieldId,
+            label: snapshot?.label,
+            values: value != null && valueAt != null
+                ? [FieldValue(createdAt: valueAt, value: value)]
+                : const [],
+          ),
           api: widget.api,
           settings: widget.settings,
           fieldSettingsStorage: widget.fieldSettingsStorage,
