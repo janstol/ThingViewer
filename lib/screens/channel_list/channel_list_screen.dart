@@ -27,6 +27,11 @@ import 'pinned_section.dart';
 
 const _kTabletBreakpoint = 600.0;
 
+// ReorderableListView, unlike ListView, does not auto-pad itself with
+// MediaQuery.padding, and Scaffold floats the FAB over the list's trailing
+// edge. Clear both so the last row's drag handle stays tappable.
+const _kFabClearance = 56.0 + kFloatingActionButtonMargin * 2;
+
 class ChannelListScreen extends StatefulWidget {
   final ThingSpeakApi api;
   final ChannelStorage channelStorage;
@@ -397,6 +402,7 @@ class _NarrowLayout extends StatelessWidget {
         onEditPinned: onEditPinned,
         onTapPinned: onTapPinned,
         onPinnedRefresh: onPinnedRefresh,
+        fabClearance: true,
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: l10n.addChannelTooltip,
@@ -510,6 +516,7 @@ class _WideLayout extends StatelessWidget {
               onEditPinned: onEditPinned,
               onTapPinned: onTapPinned,
               onPinnedRefresh: onPinnedRefresh,
+              fabClearance: false,
             ),
           ),
           const VerticalDivider(width: 1),
@@ -644,6 +651,7 @@ class _ChannelListBody extends StatelessWidget {
   final VoidCallback onEditPinned;
   final ValueChanged<PinnedEntry> onTapPinned;
   final Future<void> Function() onPinnedRefresh;
+  final bool fabClearance;
 
   const _ChannelListBody({
     required this.notifier,
@@ -662,6 +670,7 @@ class _ChannelListBody extends StatelessWidget {
     required this.onEditPinned,
     required this.onTapPinned,
     required this.onPinnedRefresh,
+    required this.fabClearance,
     this.selectedChannel,
   });
 
@@ -687,6 +696,11 @@ class _ChannelListBody extends StatelessWidget {
             channels.isEmpty
                 ? Center(child: Text(l10n.channelListEmpty))
                 : ReorderableListView.builder(
+                    padding: EdgeInsets.only(
+                      bottom:
+                          MediaQuery.paddingOf(context).bottom +
+                          (fabClearance ? _kFabClearance : 0),
+                    ),
                     header: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,

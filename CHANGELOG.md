@@ -9,6 +9,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Each GitHub Release now also includes signed APKs (arm64-v8a and armeabi-v7a), for installing without the Play Store (e.g. via [Obtainium](https://github.com/ImranR98/Obtainium) on de-Googled Android). They're signed with the project's own upload key, separate from Play App Signing, so switching between the Play install and this one needs an uninstall/reinstall; use Settings → Backup to carry channels and settings across.
 
+### Fixed
+
+- On Android 15+ with the 3-button navigation bar, the last channel in the list could end up hidden behind the nav bar and/or the "add channel" button, with no way to scroll it further into view.
+
 ## [0.11.0] - 2026-08-14
 
 ### Added

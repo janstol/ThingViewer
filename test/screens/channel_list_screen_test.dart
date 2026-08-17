@@ -67,6 +67,22 @@ Widget _wrapScaled(Widget child, double scale) => MaterialApp(
   home: child,
 );
 
+// Simulates the opaque 3-button nav bar Android reserves at the bottom of
+// the window once the app draws edge-to-edge (Android 15+ / API 35+).
+Widget _wrapWithBottomInset(Widget child, double bottom) => MaterialApp(
+  theme: AppTheme.light,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(
+      padding: EdgeInsets.only(bottom: bottom),
+      viewPadding: EdgeInsets.only(bottom: bottom),
+    ),
+    child: child!,
+  ),
+  home: child,
+);
+
 Future<SettingsNotifier> _settings() async {
   final prefs = await SharedPreferences.getInstance();
   return SettingsNotifier(SettingsStorage(prefs));
@@ -289,6 +305,71 @@ void main() {
       expect(find.text('Other Channel'), findsOneWidget);
     });
   });
+
+  testWidgets(
+    'the last channel clears the FAB and the nav bar inset when scrolled '
+    'into view',
+    (tester) async {
+      // Narrow layout, small enough that 12 channels overflow the viewport.
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const bottomInset = 48.0;
+      final channels = List.generate(
+        12,
+        (i) => Channel(
+          id: i + 1,
+          serverUrl: 'https://api.thingspeak.com',
+          isPublic: true,
+          name: 'Channel ${i + 1}',
+        ),
+      );
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson(channels),
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+
+      await tester.pumpWidget(
+        _wrapWithBottomInset(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+            backupService: await _backupService(),
+          ),
+          bottomInset,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final lastTile = find.widgetWithText(ListTile, 'Channel 12');
+      await tester.dragUntilVisible(
+        lastTile,
+        find.byType(Scrollable),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+
+      final tileRect = tester.getRect(lastTile);
+      final fabRect = tester.getRect(find.byType(FloatingActionButton));
+
+      expect(
+        tileRect.bottom,
+        lessThanOrEqualTo(800 - bottomInset),
+        reason: 'last tile must not sit under the simulated nav bar',
+      );
+      expect(
+        tileRect.overlaps(fabRect),
+        isFalse,
+        reason: 'last tile must not sit under the FAB',
+      );
+    },
+  );
 
   testWidgets('the auth-error subtitle does not overflow at 2x text scale', (
     tester,
