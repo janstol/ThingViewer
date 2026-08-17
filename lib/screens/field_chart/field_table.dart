@@ -69,7 +69,7 @@ class _FieldTableState extends State<FieldTable> {
     return Column(
       children: [
         Semantics(
-          header: true,
+          headingLevel: 1,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(

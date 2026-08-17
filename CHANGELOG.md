@@ -3,6 +3,17 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- Bumped the Flutter SDK to 3.47.0 (Dart 3.13.0), unblocking Dependabot updates for `intl`, `mockito`, and `build_runner` that were held back by the SDK's `flutter_localizations`/`flutter_test` version pins.
+- Raised the iOS deployment target to 15.0 and the macOS deployment target to 12.0, following Flutter 3.47.0's minimums.
+
+### Accessibility
+
+- Section headings (Settings sections, the field table's Time/Value header) now use `Semantics(headingLevel: 1)` instead of `Semantics(header: true)`. Flutter 3.47.0 made the `header` property a no-op on Android and iOS; headings are announced correctly again.
+
 ## [0.11.1] - 2026-08-17
 
 ### Fixed

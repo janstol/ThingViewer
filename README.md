@@ -46,7 +46,7 @@ Android is the actively supported and tested target. Web is built and deployed t
 ### Requirements
 
 - [mise](https://mise.jdx.dev/) — manages the Flutter version (`mise.toml` pins it)
-- Flutter 3.44.8 / Dart 3.12.2
+- Flutter 3.47.0 / Dart 3.13.0
 
 Commands below assume an activated mise shell (`mise activate` / `mise shell`). If mise isn't activated, prefix each command with `mise exec --`, e.g. `mise exec -- flutter test`.
 

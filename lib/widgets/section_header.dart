@@ -13,7 +13,7 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final label = Semantics(
-      header: true,
+      headingLevel: 1,
       child: Text(
         title,
         style: theme.textTheme.labelLarge?.copyWith(
