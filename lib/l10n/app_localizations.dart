@@ -1091,6 +1091,12 @@ abstract class AppLocalizations {
   /// **'Stats bar'**
   String get fieldSettingsSectionStats;
 
+  /// No description provided for @fieldSettingsSectionMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart markers'**
+  String get fieldSettingsSectionMarkers;
+
   /// No description provided for @fieldSettingsType.
   ///
   /// In en, this message translates to:
@@ -1228,6 +1234,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show maximum'**
   String get fieldSettingsShowMax;
+
+  /// No description provided for @fieldSettingsMarkMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark minimum on chart'**
+  String get fieldSettingsMarkMin;
+
+  /// No description provided for @fieldSettingsMarkMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark maximum on chart'**
+  String get fieldSettingsMarkMax;
 
   /// No description provided for @fieldSettingsReset.
   ///

@@ -16,28 +16,45 @@ const _dataAccentDark = Color(0xFF3DD672);
 const _changeAccentLight = Color(0xFFB24C00);
 const _changeAccentDark = Color(0xFFFF6D00);
 
+// Same contrast-verified hex pair as changeAccent above, kept as its own
+// named role (chart min/max markers) so the two can diverge later.
+const _markerAccentLight = Color(0xFFB24C00);
+const _markerAccentDark = Color(0xFFFF6D00);
+
 /// Extra brand colour roles that don't map onto a Material [ColorScheme]
 /// role (e.g. a chart series colour distinct from the primary fill colour).
 @immutable
 class BrandColors extends ThemeExtension<BrandColors> {
   final Color dataAccent;
   final Color changeAccent;
+  final Color markerAccent;
 
-  const BrandColors({required this.dataAccent, required this.changeAccent});
+  const BrandColors({
+    required this.dataAccent,
+    required this.changeAccent,
+    required this.markerAccent,
+  });
 
   static const light = BrandColors(
     dataAccent: _dataAccentLight,
     changeAccent: _changeAccentLight,
+    markerAccent: _markerAccentLight,
   );
   static const dark = BrandColors(
     dataAccent: _dataAccentDark,
     changeAccent: _changeAccentDark,
+    markerAccent: _markerAccentDark,
   );
 
   @override
-  BrandColors copyWith({Color? dataAccent, Color? changeAccent}) => BrandColors(
+  BrandColors copyWith({
+    Color? dataAccent,
+    Color? changeAccent,
+    Color? markerAccent,
+  }) => BrandColors(
     dataAccent: dataAccent ?? this.dataAccent,
     changeAccent: changeAccent ?? this.changeAccent,
+    markerAccent: markerAccent ?? this.markerAccent,
   );
 
   @override
@@ -46,6 +63,7 @@ class BrandColors extends ThemeExtension<BrandColors> {
     return BrandColors(
       dataAccent: Color.lerp(dataAccent, other.dataAccent, t)!,
       changeAccent: Color.lerp(changeAccent, other.changeAccent, t)!,
+      markerAccent: Color.lerp(markerAccent, other.markerAccent, t)!,
     );
   }
 }

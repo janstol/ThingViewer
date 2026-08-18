@@ -609,6 +609,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldSettingsSectionStats => 'Stats bar';
 
   @override
+  String get fieldSettingsSectionMarkers => 'Chart markers';
+
+  @override
   String get fieldSettingsType => 'Type';
 
   @override
@@ -678,6 +681,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fieldSettingsShowMax => 'Show maximum';
+
+  @override
+  String get fieldSettingsMarkMin => 'Mark minimum on chart';
+
+  @override
+  String get fieldSettingsMarkMax => 'Mark maximum on chart';
 
   @override
   String get fieldSettingsReset => 'Reset to defaults';

@@ -40,6 +40,14 @@ void main() {
         FieldChartSettings.defaults.copyWith(showMax: false).isDefault,
         isFalse,
       );
+      expect(
+        FieldChartSettings.defaults.copyWith(markMin: true).isDefault,
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.copyWith(markMax: true).isDefault,
+        isFalse,
+      );
     });
   });
 
@@ -63,6 +71,8 @@ void main() {
         showAverage: false,
         showMin: false,
         showMax: false,
+        markMin: true,
+        markMax: true,
       );
 
       expect(settings.toJson(), {
@@ -79,6 +89,8 @@ void main() {
         'showAverage': false,
         'showMin': false,
         'showMax': false,
+        'markMin': true,
+        'markMax': true,
       });
     });
 
@@ -101,6 +113,11 @@ void main() {
         expect(FieldChartSettings.defaults.toJson().containsKey('showMax'), isFalse);
       },
     );
+
+    test('markMin/markMax are omitted when false, like showDelta', () {
+      expect(FieldChartSettings.defaults.toJson().containsKey('markMin'), isFalse);
+      expect(FieldChartSettings.defaults.toJson().containsKey('markMax'), isFalse);
+    });
   });
 
   group('fromJson round-trip', () {
@@ -119,6 +136,8 @@ void main() {
         showAverage: false,
         showMin: false,
         showMax: false,
+        markMin: true,
+        markMax: true,
       );
 
       final roundTripped = FieldChartSettings.fromJson(settings.toJson());
@@ -153,6 +172,20 @@ void main() {
         expect(roundTripped.showAverage, isTrue);
         expect(roundTripped.showMin, isTrue);
         expect(roundTripped.showMax, isTrue);
+      },
+    );
+
+    test(
+      'settings stored before markMin/markMax existed still parse, '
+      'defaulting to off',
+      () {
+        final roundTripped = FieldChartSettings.fromJson({
+          'type': 'spline',
+          'showDelta': true,
+        });
+
+        expect(roundTripped.markMin, isFalse);
+        expect(roundTripped.markMax, isFalse);
       },
     );
 

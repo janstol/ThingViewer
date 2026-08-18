@@ -425,14 +425,9 @@ class _StatsBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final style = Theme.of(context).textTheme.bodySmall;
     final stats = this.stats;
-    final rowDecimals =
-        chartSettings.decimals ??
-        (stats == null
-            ? null
-            : [
-                autoDecimalsFor(stats.min),
-                autoDecimalsFor(stats.max),
-              ].reduce((a, b) => a > b ? a : b));
+    final rowDecimals = stats == null
+        ? chartSettings.decimals
+        : sharedDecimals(stats, chartSettings.decimals);
     String valueText(double value) =>
         formatFieldValue(value, decimals: rowDecimals);
 
@@ -516,9 +511,15 @@ class _ChartState extends State<_Chart> {
   late bool _isSinglePoint;
   late List<FlSpot> _cachedSpots;
 
-  /// Recomputes [_displayValues] and the derived full-range fields. These
-  /// are read repeatedly per gesture frame during pinch-zoom, so they are
-  /// computed once here rather than on every access.
+  // Min/max stats for the whole currently filtered series — not the
+  // pinch-zoom window, so the marker labels always agree with the stats
+  // row and don't need recomputing per gesture frame. Null for an empty
+  // series (see computeFieldStats).
+  FieldStats? _markerStats;
+
+  /// Recomputes [_displayValues], the derived full-range fields, and
+  /// [_markerStats]. These are read repeatedly per gesture frame during
+  /// pinch-zoom, so they are computed once here rather than on every access.
   void _recomputeDisplayValues() {
     _displayValues = widget.chartSettings.showDelta
         ? deltaValues(widget.values)
@@ -535,6 +536,7 @@ class _ChartState extends State<_Chart> {
           .toDouble();
       _fullRange = _fullMaxX - _fullMinX;
     }
+    _markerStats = computeFieldStats(_statsValues);
   }
 
   /// Recomputes the rendered line-chart spot list. Depends on
@@ -703,7 +705,8 @@ class _ChartState extends State<_Chart> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = Theme.of(context).extension<BrandColors>()!.dataAccent;
+    final brand = Theme.of(context).extension<BrandColors>()!;
+    final color = brand.dataAccent;
     final chartSettings = widget.chartSettings;
 
     return Semantics(
@@ -723,8 +726,18 @@ class _ChartState extends State<_Chart> {
                     onPointerUp: _pointerUp,
                     onPointerCancel: _pointerCancel,
                     child: chartSettings.type == ChartType.column
-                        ? _buildBarChart(colorScheme, color, chartSettings)
-                        : _buildLineChart(colorScheme, color, chartSettings),
+                        ? _buildBarChart(
+                            colorScheme,
+                            brand,
+                            color,
+                            chartSettings,
+                          )
+                        : _buildLineChart(
+                            colorScheme,
+                            brand,
+                            color,
+                            chartSettings,
+                          ),
                   );
                 },
               );
@@ -752,20 +765,139 @@ class _ChartState extends State<_Chart> {
     ];
   }
 
+  /// Dashed horizontal reference lines at [FieldStats.min]/[FieldStats.max]
+  /// of the whole currently filtered series — not the pinch-zoom window, so
+  /// the labels always agree with the stats row and don't need recomputing
+  /// per gesture frame. [sharedDecimals] keeps the label text formatted
+  /// identically to the stats row.
+  ExtraLinesData _markerLines(
+    ColorScheme colorScheme,
+    BrandColors brand,
+    FieldChartSettings chartSettings,
+  ) {
+    final stats = _markerStats;
+    if (stats == null || !(chartSettings.markMin || chartSettings.markMax)) {
+      return const ExtraLinesData();
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final decimals = sharedDecimals(stats, chartSettings.decimals);
+    String text(double v) => formatFieldValue(v, decimals: decimals);
+    // A solid backing behind the label text, not just its colour, so it
+    // stays legible wherever the line lands — a column chart's bars fill
+    // solid to the baseline, and the min marker often sits right on top of
+    // one, where the marker's own colour alone lost contrast against it.
+    final style = TextStyle(
+      color: brand.markerAccent,
+      fontWeight: FontWeight.bold,
+      fontSize: 10,
+      backgroundColor: colorScheme.surface,
+    );
+
+    // A flat series (min == max) with both toggles on would draw two
+    // coincident dashed lines with overlapping labels — collapse to one.
+    final skipMin = stats.min == stats.max && chartSettings.markMax;
+
+    return ExtraLinesData(
+      horizontalLines: [
+        if (chartSettings.markMax)
+          HorizontalLine(
+            y: stats.max,
+            color: brand.markerAccent,
+            strokeWidth: 1,
+            dashArray: const [4, 4],
+            label: HorizontalLineLabel(
+              show: true,
+              alignment: Alignment.topRight,
+              style: style,
+              labelResolver: (_) =>
+                  '${l10n.fieldChartStatMax} ${text(stats.max)}',
+            ),
+          ),
+        if (chartSettings.markMin && !skipMin)
+          HorizontalLine(
+            y: stats.min,
+            color: brand.markerAccent,
+            strokeWidth: 1,
+            dashArray: const [4, 4],
+            label: HorizontalLineLabel(
+              show: true,
+              alignment: Alignment.bottomRight,
+              style: style,
+              labelResolver: (_) =>
+                  '${l10n.fieldChartStatMin} ${text(stats.min)}',
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Y-axis bounds to pass to the chart. When a bound isn't manually
+  /// overridden and its marker is on, pads it outward from the series
+  /// extreme by a fraction of the data range — otherwise the marker's line
+  /// and label sit exactly on the chart's own auto-computed axis boundary
+  /// and collide with the axis's own tick label there (and, at the bottom,
+  /// with the rotated x-axis date labels). A manually set
+  /// [FieldChartSettings.yMin]/[FieldChartSettings.yMax] is left untouched
+  /// — that's a deliberate user choice, not this widget's to second-guess.
+  (double?, double?) _effectiveYBounds(FieldChartSettings chartSettings) {
+    final stats = _markerStats;
+    if (stats == null) return (chartSettings.yMin, chartSettings.yMax);
+
+    final range = stats.max - stats.min;
+    // A flat (or near-flat) series has no range to derive a margin from —
+    // fall back to a fraction of the value's own magnitude, or a constant
+    // for an all-zero series.
+    final margin = range > 0
+        ? range * 0.1
+        : (stats.max != 0 ? stats.max.abs() * 0.1 : 1.0);
+
+    final minY = chartSettings.yMin ??
+        (chartSettings.markMin ? stats.min - margin : null);
+    final maxY = chartSettings.yMax ??
+        (chartSettings.markMax ? stats.max + margin : null);
+    return (minY, maxY);
+  }
+
+  /// Whether [spot] is the marker dot for a toggled-on extreme. Exact
+  /// double comparison is safe here — [_cachedSpots] and [_markerStats] are
+  /// both derived from [_displayValues] without any intervening rounding,
+  /// so a real match compares bit-for-bit equal.
+  bool _isMarkerSpot(FlSpot spot, FieldChartSettings chartSettings) {
+    final stats = _markerStats;
+    if (stats == null) return false;
+    if (chartSettings.markMax &&
+        spot.x == stats.maxAt.millisecondsSinceEpoch.toDouble() &&
+        spot.y == stats.max) {
+      return true;
+    }
+    if (chartSettings.markMin &&
+        spot.x == stats.minAt.millisecondsSinceEpoch.toDouble() &&
+        spot.y == stats.min) {
+      return true;
+    }
+    return false;
+  }
+
   Widget _buildLineChart(
     ColorScheme colorScheme,
+    BrandColors brand,
     Color color,
     FieldChartSettings chartSettings,
   ) {
     final isScatter = chartSettings.type == ChartType.scatter;
     final spots = _cachedSpots;
+    final hasMarkers =
+        _markerStats != null &&
+        (chartSettings.markMin || chartSettings.markMax);
+    final (minY, maxY) = _effectiveYBounds(chartSettings);
 
     return LineChart(
       LineChartData(
         minX: _minX,
         maxX: _maxX,
-        minY: chartSettings.yMin,
-        maxY: chartSettings.yMax,
+        minY: minY,
+        maxY: maxY,
+        extraLinesData: _markerLines(colorScheme, brand, chartSettings),
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -774,9 +906,20 @@ class _ChartState extends State<_Chart> {
             color: color,
             barWidth: isScatter ? 0 : 2,
             dotData: FlDotData(
-              show: isScatter,
-              getDotPainter: (_, _, _, _) =>
-                  FlDotCirclePainter(radius: 2.5, color: color),
+              show: isScatter || hasMarkers,
+              checkToShowDot: (spot, _) =>
+                  isScatter || _isMarkerSpot(spot, chartSettings),
+              getDotPainter: (spot, _, _, _) => _isMarkerSpot(
+                spot,
+                chartSettings,
+              )
+                  ? FlDotCirclePainter(
+                      radius: 4,
+                      color: brand.markerAccent,
+                      strokeWidth: 1.5,
+                      strokeColor: colorScheme.surface,
+                    )
+                  : FlDotCirclePainter(radius: 2.5, color: color),
             ),
             belowBarData: BarAreaData(
               show: !isScatter,
@@ -853,6 +996,7 @@ class _ChartState extends State<_Chart> {
 
   Widget _buildBarChart(
     ColorScheme colorScheme,
+    BrandColors brand,
     Color color,
     FieldChartSettings chartSettings,
   ) {
@@ -870,7 +1014,15 @@ class _ChartState extends State<_Chart> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        _barChart(colorScheme, color, chartSettings, bars, barWidth, labelStep),
+        _barChart(
+          colorScheme,
+          brand,
+          color,
+          chartSettings,
+          bars,
+          barWidth,
+          labelStep,
+        ),
         if (bars.isEmpty)
           Text(AppLocalizations.of(context)!.fieldChartNoValuesInZoom),
       ],
@@ -879,12 +1031,14 @@ class _ChartState extends State<_Chart> {
 
   Widget _barChart(
     ColorScheme colorScheme,
+    BrandColors brand,
     Color color,
     FieldChartSettings chartSettings,
     List<FieldValue> bars,
     double barWidth,
     int labelStep,
   ) {
+    final (minY, maxY) = _effectiveYBounds(chartSettings);
     return BarChart(
       // The bar count changes on every frame during pinch-zoom/pan (each
       // rebuild re-buckets the visible window). fl_chart's default 150ms
@@ -895,8 +1049,14 @@ class _ChartState extends State<_Chart> {
       // keeps data and touch cache in sync.
       duration: Duration.zero,
       BarChartData(
-        minY: chartSettings.yMin,
-        maxY: chartSettings.yMax,
+        minY: minY,
+        maxY: maxY,
+        // Bars are bucket-averaged (bucketAverage, <= _maxBars), so the true
+        // extreme reading may not survive as a bar value — only the
+        // labeled reference line is drawn here, no dot. The line can sit
+        // above the tallest bar without clipping since it marks the real
+        // reading, not a bucket average.
+        extraLinesData: _markerLines(colorScheme, brand, chartSettings),
         barGroups: [
           for (var i = 0; i < bars.length; i++)
             BarChartGroupData(

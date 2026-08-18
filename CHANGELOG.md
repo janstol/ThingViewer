@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - The field chart screen now shows a stats row (count, sum, average, minimum, maximum) for the currently filtered date range, above the chart/table. Follows the "show change between readings" setting, so a counter field's sum reads as the total change over the window rather than the raw counter total. Each stat can be individually shown or hidden from a new "Stats bar" section in the field's chart settings.
+- The field chart can now mark the minimum and maximum readings of the currently filtered series directly on the chart: a highlighted dot on line-family charts, plus a dashed reference line and value label on every chart type, including Column. Off by default, toggled per field from a new "Chart markers" section in the field's chart settings.
 
 ### Fixed
 

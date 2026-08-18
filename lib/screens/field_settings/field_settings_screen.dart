@@ -49,6 +49,8 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
     bool? showAverage,
     bool? showMin,
     bool? showMax,
+    bool? markMin,
+    bool? markMax,
   }) {
     final next = FieldChartSettings(
       type: type ?? _settings.type,
@@ -70,6 +72,8 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
       showAverage: showAverage ?? _settings.showAverage,
       showMin: showMin ?? _settings.showMin,
       showMax: showMax ?? _settings.showMax,
+      markMin: markMin ?? _settings.markMin,
+      markMax: markMax ?? _settings.markMax,
     );
     setState(() => _settings = next);
     widget.onChanged(next);
@@ -183,6 +187,19 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
             title: Text(l10n.fieldSettingsShowMax),
             value: _settings.showMax,
             onChanged: (v) => _apply(showMax: v),
+          ),
+          SectionHeader(title: l10n.fieldSettingsSectionMarkers),
+          SwitchListTile(
+            secondary: const Icon(Icons.south),
+            title: Text(l10n.fieldSettingsMarkMin),
+            value: _settings.markMin,
+            onChanged: (v) => _apply(markMin: v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.north),
+            title: Text(l10n.fieldSettingsMarkMax),
+            value: _settings.markMax,
+            onChanged: (v) => _apply(markMax: v),
           ),
           const SizedBox(height: 8),
           ListTile(

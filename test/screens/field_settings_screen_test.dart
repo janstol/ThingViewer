@@ -128,6 +128,38 @@ void main() {
     expect(changed!.showMax, isTrue);
   });
 
+  testWidgets('toggling the marker switches fires onChanged with just that '
+      'field flipped', (tester) async {
+    FieldChartSettings? changed;
+
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: FieldChartSettings.defaults,
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Mark minimum on chart'), 200);
+    await tester.tap(find.text('Mark minimum on chart'));
+    await tester.pumpAndSettle();
+
+    expect(changed, isNotNull);
+    expect(changed!.markMin, isTrue);
+    expect(changed!.markMax, isFalse);
+
+    await tester.scrollUntilVisible(find.text('Mark maximum on chart'), 200);
+    await tester.tap(find.text('Mark maximum on chart'));
+    await tester.pumpAndSettle();
+
+    expect(changed!.markMin, isTrue);
+    expect(changed!.markMax, isTrue);
+  });
+
   testWidgets('setting yMin >= yMax is rejected, previous value kept', (
     tester,
   ) async {

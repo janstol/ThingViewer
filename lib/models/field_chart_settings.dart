@@ -29,6 +29,8 @@ class FieldChartSettings {
   final bool showAverage;
   final bool showMin;
   final bool showMax;
+  final bool markMin;
+  final bool markMax;
 
   const FieldChartSettings({
     this.type = ChartType.line,
@@ -44,6 +46,8 @@ class FieldChartSettings {
     this.showAverage = true,
     this.showMin = true,
     this.showMax = true,
+    this.markMin = false,
+    this.markMax = false,
   });
 
   static const defaults = FieldChartSettings();
@@ -61,7 +65,9 @@ class FieldChartSettings {
       showSum == true &&
       showAverage == true &&
       showMin == true &&
-      showMax == true;
+      showMax == true &&
+      markMin == false &&
+      markMax == false;
 
   FieldChartSettings copyWith({
     ChartType? type,
@@ -77,6 +83,8 @@ class FieldChartSettings {
     bool? showAverage,
     bool? showMin,
     bool? showMax,
+    bool? markMin,
+    bool? markMax,
   }) {
     return FieldChartSettings(
       type: type ?? this.type,
@@ -92,6 +100,8 @@ class FieldChartSettings {
       showAverage: showAverage ?? this.showAverage,
       showMin: showMin ?? this.showMin,
       showMax: showMax ?? this.showMax,
+      markMin: markMin ?? this.markMin,
+      markMax: markMax ?? this.markMax,
     );
   }
 
@@ -111,6 +121,8 @@ class FieldChartSettings {
     if (!showAverage) 'showAverage': showAverage,
     if (!showMin) 'showMin': showMin,
     if (!showMax) 'showMax': showMax,
+    if (markMin) 'markMin': markMin,
+    if (markMax) 'markMax': markMax,
   };
 
   factory FieldChartSettings.fromJson(Map<String, dynamic> json) =>
@@ -128,6 +140,8 @@ class FieldChartSettings {
         showAverage: json['showAverage'] as bool? ?? true,
         showMin: json['showMin'] as bool? ?? true,
         showMax: json['showMax'] as bool? ?? true,
+        markMin: json['markMin'] as bool? ?? false,
+        markMax: json['markMax'] as bool? ?? false,
       );
 
   @override
@@ -145,7 +159,9 @@ class FieldChartSettings {
       showSum == other.showSum &&
       showAverage == other.showAverage &&
       showMin == other.showMin &&
-      showMax == other.showMax;
+      showMax == other.showMax &&
+      markMin == other.markMin &&
+      markMax == other.markMax;
 
   @override
   int get hashCode => Object.hash(
@@ -159,5 +175,6 @@ class FieldChartSettings {
     showDelta,
     gapOnInvalid,
     Object.hash(showSum, showAverage, showMin, showMax),
+    Object.hash(markMin, markMax),
   );
 }
