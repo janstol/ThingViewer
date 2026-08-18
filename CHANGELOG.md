@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Opening a pinned field's chart could show "No values for the selected date range" for a field that hadn't reported in over a week, even though the same field opened via the channel's field list showed its data. The chart's default 7-day window was anchoring on the current time instead of the field's last known reading.
+- On Android 15+ with the 3-button navigation bar, the chart screen's Filter button and its date-range sheet's buttons were partly hidden behind the nav bar, as was the Save button on the add/edit channel screen when scrolled to the bottom.
 
 ### Changed
 

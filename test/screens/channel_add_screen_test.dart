@@ -27,6 +27,21 @@ Widget _wrap(Widget child) => MaterialApp(
   home: child,
 );
 
+// Simulates the opaque 3-button nav bar Android reserves at the bottom of
+// the window once the app draws edge-to-edge (Android 15+ / API 35+).
+Widget _wrapWithBottomInset(Widget child, double bottom) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(
+      padding: EdgeInsets.only(bottom: bottom),
+      viewPadding: EdgeInsets.only(bottom: bottom),
+    ),
+    child: child!,
+  ),
+  home: child,
+);
+
 Future<void> _tapSave(WidgetTester tester) async {
   await tester.tap(find.text('Save'));
   await tester.pumpAndSettle();
@@ -157,6 +172,39 @@ void main() {
 
     expect(find.text('This channel is already in your list.'), findsNothing);
   });
+
+  testWidgets(
+    'the Save button clears the simulated nav bar inset when scrolled into view',
+    (tester) async {
+      // Short enough that the form overflows the viewport and needs scrolling.
+      tester.view.physicalSize = const Size(400, 500);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const bottomInset = 48.0;
+
+      await tester.pumpWidget(
+        _wrapWithBottomInset(ChannelAddScreen(api: mockApi), bottomInset),
+      );
+      await tester.pumpAndSettle();
+
+      final saveButton = find.widgetWithText(FilledButton, 'Save');
+      await tester.dragUntilVisible(
+        saveButton,
+        find.byType(Scrollable),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+
+      final saveRect = tester.getRect(saveButton);
+      expect(
+        saveRect.bottom,
+        lessThanOrEqualTo(500 - bottomInset),
+        reason: 'Save button must not sit under the simulated nav bar',
+      );
+    },
+  );
 
   testWidgets(
     'duplicate check still trips when editing into a different saved channel',

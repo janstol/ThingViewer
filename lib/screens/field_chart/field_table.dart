@@ -97,6 +97,10 @@ class _FieldTableState extends State<FieldTable> {
             thumbVisibility: true,
             interactive: true,
             child: ListView.separated(
+              // Not the bottom-most widget (pager and Filter button sit
+              // below it) — the default nav-bar auto-padding would just
+              // reserve dead scroll space here.
+              padding: EdgeInsets.zero,
               itemCount: pageValues.length,
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, i) {

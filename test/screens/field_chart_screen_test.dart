@@ -69,6 +69,22 @@ Widget _wrapScaled(Widget child, double scale) => MaterialApp(
   home: child,
 );
 
+// Simulates the opaque 3-button nav bar Android reserves at the bottom of
+// the window once the app draws edge-to-edge (Android 15+ / API 35+).
+Widget _wrapWithBottomInset(Widget child, double bottom) => MaterialApp(
+  theme: AppTheme.light,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(
+      padding: EdgeInsets.only(bottom: bottom),
+      viewPadding: EdgeInsets.only(bottom: bottom),
+    ),
+    child: child!,
+  ),
+  home: child,
+);
+
 String _compactDate(DateTime d) =>
     '${d.month.toString().padLeft(2, '0')}/'
     '${d.day.toString().padLeft(2, '0')}/'
@@ -603,6 +619,82 @@ void main() {
       expect(getTitles(20.0, meta), isA<SizedBox>());
     },
   );
+
+  group('edge-to-edge nav bar clearance', () {
+    testWidgets('the Filter button clears the simulated nav bar inset', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const bottomInset = 48.0;
+
+      await tester.pumpWidget(
+        _wrapWithBottomInset(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+          bottomInset,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final buttonRect = tester.getRect(
+        find.widgetWithText(FilledButton, 'Filter'),
+      );
+      expect(
+        buttonRect.bottom,
+        lessThanOrEqualTo(800 - bottomInset),
+        reason: 'Filter button must not sit under the simulated nav bar',
+      );
+    });
+
+    testWidgets(
+      'the filter sheet Apply button clears the simulated nav bar inset',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        const bottomInset = 48.0;
+
+        await tester.pumpWidget(
+          _wrapWithBottomInset(
+            FieldChartScreen(
+              channel: _channel,
+              field: _field,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            ),
+            bottomInset,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Filter'));
+        await tester.pumpAndSettle();
+
+        final applyRect = tester.getRect(
+          find.widgetWithText(FilledButton, 'Apply'),
+        );
+        expect(
+          applyRect.bottom,
+          lessThanOrEqualTo(800 - bottomInset),
+          reason: 'Apply button must not sit under the simulated nav bar',
+        );
+      },
+    );
+  });
 
   group('filter sheet', () {
     testWidgets('cancelling leaves the current range unchanged', (

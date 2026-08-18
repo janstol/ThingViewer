@@ -342,12 +342,19 @@ class _FilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: FilledButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.filter_list),
-        label: Text(l10n.filterTitle),
+    // With edge-to-edge drawing (Flutter 3.47+ targeting API 35+), this
+    // button sits at the bottom of the Scaffold body, which the system nav
+    // bar would otherwise cover. top: false because the AppBar already
+    // handles the top inset.
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: FilledButton.icon(
+          onPressed: onPressed,
+          icon: const Icon(Icons.filter_list),
+          label: Text(l10n.filterTitle),
+        ),
       ),
     );
   }
@@ -879,43 +886,52 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.filterTitle, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          ListTile(
-            title: Text(l10n.filterFrom),
-            subtitle: Text(widget.settings.formatDateTime(_range.start)),
-            onTap: () => _pickFrom(context),
-          ),
-          ListTile(
-            title: Text(l10n.filterTo),
-            subtitle: Text(widget.settings.formatDateTime(_range.end)),
-            onTap: () => _pickTo(context),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.labelCancel),
+    // showModalBottomSheet defaults to useSafeArea: false, so the sheet
+    // paints to the window edge and the system nav bar would otherwise
+    // cover the Cancel/Apply row. top: false since this is a bottom sheet.
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.filterTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              title: Text(l10n.filterFrom),
+              subtitle: Text(widget.settings.formatDateTime(_range.start)),
+              onTap: () => _pickFrom(context),
+            ),
+            ListTile(
+              title: Text(l10n.filterTo),
+              subtitle: Text(widget.settings.formatDateTime(_range.end)),
+              onTap: () => _pickTo(context),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(l10n.labelCancel),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(context, _range),
-                  child: Text(l10n.labelApply),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context, _range),
+                    child: Text(l10n.labelApply),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

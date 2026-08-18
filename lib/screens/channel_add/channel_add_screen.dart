@@ -68,7 +68,14 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          // Explicit padding suppresses ListView's automatic nav-bar
+          // inset, so it's added back here to keep Save clear of it.
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + MediaQuery.paddingOf(context).bottom,
+          ),
           children: [
             TextFormField(
               controller: _serverUrlController,
