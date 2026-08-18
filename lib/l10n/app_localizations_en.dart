@@ -206,6 +206,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get fieldChartStatSum => 'Sum';
+
+  @override
+  String get fieldChartStatAverage => 'Avg';
+
+  @override
+  String get fieldChartStatMin => 'Min';
+
+  @override
+  String get fieldChartStatMax => 'Max';
+
+  @override
+  String get fieldChartStatAverageSpoken => 'Average';
+
+  @override
+  String get fieldChartStatMinSpoken => 'Minimum';
+
+  @override
+  String get fieldChartStatMaxSpoken => 'Maximum';
+
+  @override
   String get fieldTableTooltip => 'Table view';
 
   @override
@@ -585,6 +606,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldSettingsSectionData => 'Data';
 
   @override
+  String get fieldSettingsSectionStats => 'Stats bar';
+
+  @override
   String get fieldSettingsType => 'Type';
 
   @override
@@ -642,6 +666,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fieldSettingsGapOnInvalidSubtitle =>
       'Show a gap for NaN readings instead of connecting the line across them';
+
+  @override
+  String get fieldSettingsShowSum => 'Show sum';
+
+  @override
+  String get fieldSettingsShowAverage => 'Show average';
+
+  @override
+  String get fieldSettingsShowMin => 'Show minimum';
+
+  @override
+  String get fieldSettingsShowMax => 'Show maximum';
 
   @override
   String get fieldSettingsReset => 'Reset to defaults';

@@ -45,6 +45,10 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
     Object? decimals = _unset,
     bool? showDelta,
     bool? gapOnInvalid,
+    bool? showSum,
+    bool? showAverage,
+    bool? showMin,
+    bool? showMax,
   }) {
     final next = FieldChartSettings(
       type: type ?? _settings.type,
@@ -62,6 +66,10 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
           : decimals as int?,
       showDelta: showDelta ?? _settings.showDelta,
       gapOnInvalid: gapOnInvalid ?? _settings.gapOnInvalid,
+      showSum: showSum ?? _settings.showSum,
+      showAverage: showAverage ?? _settings.showAverage,
+      showMin: showMin ?? _settings.showMin,
+      showMax: showMax ?? _settings.showMax,
     );
     setState(() => _settings = next);
     widget.onChanged(next);
@@ -150,6 +158,31 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
             subtitle: Text(l10n.fieldSettingsGapOnInvalidSubtitle),
             value: _settings.gapOnInvalid,
             onChanged: (v) => _apply(gapOnInvalid: v),
+          ),
+          SectionHeader(title: l10n.fieldSettingsSectionStats),
+          SwitchListTile(
+            secondary: const Icon(Icons.functions),
+            title: Text(l10n.fieldSettingsShowSum),
+            value: _settings.showSum,
+            onChanged: (v) => _apply(showSum: v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.equalizer),
+            title: Text(l10n.fieldSettingsShowAverage),
+            value: _settings.showAverage,
+            onChanged: (v) => _apply(showAverage: v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.arrow_downward),
+            title: Text(l10n.fieldSettingsShowMin),
+            value: _settings.showMin,
+            onChanged: (v) => _apply(showMin: v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.arrow_upward),
+            title: Text(l10n.fieldSettingsShowMax),
+            value: _settings.showMax,
+            onChanged: (v) => _apply(showMax: v),
           ),
           const SizedBox(height: 8),
           ListTile(

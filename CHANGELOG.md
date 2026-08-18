@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- The field chart screen now shows a stats row (count, sum, average, minimum, maximum) for the currently filtered date range, above the chart/table. Follows the "show change between readings" setting, so a counter field's sum reads as the total change over the window rather than the raw counter total. Each stat can be individually shown or hidden from a new "Stats bar" section in the field's chart settings.
+
 ### Fixed
 
 - Opening a pinned field's chart could show "No values for the selected date range" for a field that hadn't reported in over a week, even though the same field opened via the channel's field list showed its data. The chart's default 7-day window was anchoring on the current time instead of the field's last known reading.
@@ -18,6 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Accessibility
 
 - Section headings (Settings sections, the field table's Time/Value header) now use `Semantics(headingLevel: 1)` instead of `Semantics(header: true)`. Flutter 3.47.0 made the `header` property a no-op on Android and iOS; headings are announced correctly again.
+- The new stats row's "Avg"/"Min"/"Max" entries are read aloud as "Average"/"Minimum"/"Maximum", not the abbreviated visible text.
 
 ## [0.11.1] - 2026-08-17
 

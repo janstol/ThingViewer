@@ -376,6 +376,48 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Showing 1 value} other{Showing {count} values}}'**
   String fieldChartShowingValues(num count);
 
+  /// No description provided for @fieldChartStatSum.
+  ///
+  /// In en, this message translates to:
+  /// **'Sum'**
+  String get fieldChartStatSum;
+
+  /// No description provided for @fieldChartStatAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg'**
+  String get fieldChartStatAverage;
+
+  /// No description provided for @fieldChartStatMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Min'**
+  String get fieldChartStatMin;
+
+  /// No description provided for @fieldChartStatMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get fieldChartStatMax;
+
+  /// No description provided for @fieldChartStatAverageSpoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get fieldChartStatAverageSpoken;
+
+  /// No description provided for @fieldChartStatMinSpoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum'**
+  String get fieldChartStatMinSpoken;
+
+  /// No description provided for @fieldChartStatMaxSpoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum'**
+  String get fieldChartStatMaxSpoken;
+
   /// No description provided for @fieldTableTooltip.
   ///
   /// In en, this message translates to:
@@ -1043,6 +1085,12 @@ abstract class AppLocalizations {
   /// **'Data'**
   String get fieldSettingsSectionData;
 
+  /// No description provided for @fieldSettingsSectionStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats bar'**
+  String get fieldSettingsSectionStats;
+
   /// No description provided for @fieldSettingsType.
   ///
   /// In en, this message translates to:
@@ -1156,6 +1204,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show a gap for NaN readings instead of connecting the line across them'**
   String get fieldSettingsGapOnInvalidSubtitle;
+
+  /// No description provided for @fieldSettingsShowSum.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sum'**
+  String get fieldSettingsShowSum;
+
+  /// No description provided for @fieldSettingsShowAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Show average'**
+  String get fieldSettingsShowAverage;
+
+  /// No description provided for @fieldSettingsShowMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Show minimum'**
+  String get fieldSettingsShowMin;
+
+  /// No description provided for @fieldSettingsShowMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Show maximum'**
+  String get fieldSettingsShowMax;
 
   /// No description provided for @fieldSettingsReset.
   ///

@@ -30,6 +30,22 @@ String formatFieldValue(double value, {int? decimals}) {
   return s;
 }
 
+/// The number of decimal places [formatFieldValue] would show for [value]
+/// in auto mode (no explicit `decimals` override) — i.e. after trailing
+/// zeros are trimmed down to [_minDecimals].
+///
+/// Lets a caller displaying several *different* values together (e.g. a
+/// stats summary) work out one shared decimal count from a subset of them,
+/// instead of each value trimming to its own independent length — a
+/// division like an average almost never terminates as early as a raw
+/// reading or a sum of them does, so left independent the two read as
+/// inconsistently rounded side by side.
+int autoDecimalsFor(double value) {
+  final formatted = formatFieldValue(value);
+  final dot = formatted.indexOf('.');
+  return dot == -1 ? 0 : formatted.length - dot - 1;
+}
+
 /// Pairs consecutive readings into `value[n] - value[n-1]`, keeping `t[n]`.
 ///
 /// Turns a monotonically increasing counter into a per-reading rate. Returns

@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../models/field_chart_settings.dart';
+import '../../models/field_stats.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
 import '../../theme.dart';
@@ -106,6 +107,14 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
     );
   }
 
+  /// The series currently shown for [values] — delta-adjusted if
+  /// [FieldChartSettings.showDelta] is on, unchanged otherwise. The single
+  /// place that decision is made outside `_Chart`'s own
+  /// `_recomputeDisplayValues`, so CSV export and the stats bar can't drift
+  /// from what the chart and table actually display.
+  List<FieldValue> _seriesFor(List<FieldValue> values) =>
+      _chartSettings.showDelta ? deltaValues(values) : values;
+
   /// The values currently shown in the table, delta-adjusted if
   /// [FieldChartSettings.showDelta] is on — the same series the table
   /// itself displays, just not reversed to newest-first. Null when there
@@ -118,7 +127,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       FieldChartLoading() => null,
     };
     if (values == null || values.isEmpty) return null;
-    return _chartSettings.showDelta ? deltaValues(values) : values;
+    return _seriesFor(values);
   }
 
   Future<void> _exportCsv(BuildContext context) async {
@@ -227,6 +236,15 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                 };
                 return Column(
                   children: [
+                    if (cachedValues.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _StatsBar(
+                          count: cachedValues.length,
+                          stats: computeFieldStats(_seriesFor(cachedValues)),
+                          chartSettings: _chartSettings,
+                        ),
+                      ),
                     Expanded(
                       child: cachedValues.isEmpty
                           ? Center(child: Text(message))
@@ -266,9 +284,10 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    l10n.fieldChartShowingValues(values.length),
-                    style: Theme.of(context).textTheme.bodySmall,
+                  child: _StatsBar(
+                    count: values.length,
+                    stats: computeFieldStats(_seriesFor(values)),
+                    chartSettings: _chartSettings,
                   ),
                 ),
                 if (truncated)
@@ -356,6 +375,104 @@ class _FilterButton extends StatelessWidget {
           label: Text(l10n.filterTitle),
         ),
       ),
+    );
+  }
+}
+
+/// Aggregate stats strip shown above the chart/table content (and above the
+/// truncation warning, when present). [stats] is computed over the series
+/// currently on screen — the delta series when
+/// [FieldChartSettings.showDelta] is on, same as the chart and table — so a
+/// sum over a counter field reads as "pulses in this window" rather than the
+/// raw counter total. [count] stays the raw number of readings loaded,
+/// unaffected by [FieldChartSettings.showDelta], matching what this row
+/// replaced, and is always shown — only the sum/average/min/max entries are
+/// individually toggleable, via [FieldChartSettings.showSum] and friends.
+///
+/// In auto mode ([FieldChartSettings.decimals] unset), min/max always carry
+/// the field's real reading precision — sum, being just an addition of the
+/// same readings, naturally shares it too, but average is a division and
+/// almost never terminates that early. Left to trim independently (as
+/// [formatFieldValue] does everywhere else), the average reads as
+/// oddly over-precise next to the rest of the row, so this widget rounds
+/// the whole row to whatever min/max need instead of trimming each entry on
+/// its own. A fixed [FieldChartSettings.decimals] override already forces
+/// one shared count for every entry, so this only applies in auto mode.
+///
+/// "Avg"/"Min"/"Max" are compact abbreviations kept short so the row fits
+/// several entries per line — fine to read, but with no guaranteed TTS
+/// pronunciation. Each entry that abbreviates carries its own spoken label
+/// ("Average"/"Minimum"/"Maximum") via `Semantics.excludeSemantics`, the
+/// same visible-vs-spoken split `_Chart` already uses for its own summary.
+///
+/// Uses [Wrap] rather than a fixed-width [Row] so the strip doesn't clip at
+/// large system text sizes — it wraps onto more lines instead. Each
+/// label/value pair is a single [Text], wrapped in [MergeSemantics] so it
+/// announces as one node.
+class _StatsBar extends StatelessWidget {
+  final int count;
+  final FieldStats? stats;
+  final FieldChartSettings chartSettings;
+
+  const _StatsBar({
+    required this.count,
+    required this.stats,
+    required this.chartSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final style = Theme.of(context).textTheme.bodySmall;
+    final stats = this.stats;
+    final rowDecimals =
+        chartSettings.decimals ??
+        (stats == null
+            ? null
+            : [
+                autoDecimalsFor(stats.min),
+                autoDecimalsFor(stats.max),
+              ].reduce((a, b) => a > b ? a : b));
+    String valueText(double value) =>
+        formatFieldValue(value, decimals: rowDecimals);
+
+    Widget entry(String text, {String? spokenLabel}) => Semantics(
+      label: spokenLabel ?? text,
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Text(text, style: style),
+      ),
+    );
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      runSpacing: 2,
+      children: [
+        entry(l10n.fieldChartShowingValues(count)),
+        if (stats != null) ...[
+          if (chartSettings.showSum)
+            entry('${l10n.fieldChartStatSum} ${valueText(stats.sum)}'),
+          if (chartSettings.showAverage)
+            entry(
+              '${l10n.fieldChartStatAverage} ${valueText(stats.average)}',
+              spokenLabel:
+                  '${l10n.fieldChartStatAverageSpoken} ${valueText(stats.average)}',
+            ),
+          if (chartSettings.showMin)
+            entry(
+              '${l10n.fieldChartStatMin} ${valueText(stats.min)}',
+              spokenLabel:
+                  '${l10n.fieldChartStatMinSpoken} ${valueText(stats.min)}',
+            ),
+          if (chartSettings.showMax)
+            entry(
+              '${l10n.fieldChartStatMax} ${valueText(stats.max)}',
+              spokenLabel:
+                  '${l10n.fieldChartStatMaxSpoken} ${valueText(stats.max)}',
+            ),
+        ],
+      ],
     );
   }
 }
@@ -570,19 +687,14 @@ class _ChartState extends State<_Chart> {
   ) {
     final l10n = AppLocalizations.of(context)!;
     final values = _statsValues;
-    if (values.isEmpty) return widget.title;
-    var min = values.first.value;
-    var max = values.first.value;
-    for (final v in values) {
-      if (v.value < min) min = v.value;
-      if (v.value > max) max = v.value;
-    }
+    final stats = computeFieldStats(values);
+    if (stats == null) return widget.title;
     final latest = values.last;
     return l10n.fieldChartSemantics(
       widget.title,
-      values.length,
-      _valueText(min, chartSettings),
-      _valueText(max, chartSettings),
+      stats.count,
+      _valueText(stats.min, chartSettings),
+      _valueText(stats.max, chartSettings),
       _valueText(latest.value, chartSettings),
       _dateText(latest.createdAt),
     );

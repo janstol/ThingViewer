@@ -25,6 +25,10 @@ class FieldChartSettings {
   final int? decimals;
   final bool showDelta;
   final bool gapOnInvalid;
+  final bool showSum;
+  final bool showAverage;
+  final bool showMin;
+  final bool showMax;
 
   const FieldChartSettings({
     this.type = ChartType.line,
@@ -36,6 +40,10 @@ class FieldChartSettings {
     this.decimals,
     this.showDelta = false,
     this.gapOnInvalid = false,
+    this.showSum = true,
+    this.showAverage = true,
+    this.showMin = true,
+    this.showMax = true,
   });
 
   static const defaults = FieldChartSettings();
@@ -49,7 +57,11 @@ class FieldChartSettings {
       yMax == null &&
       decimals == null &&
       showDelta == false &&
-      gapOnInvalid == false;
+      gapOnInvalid == false &&
+      showSum == true &&
+      showAverage == true &&
+      showMin == true &&
+      showMax == true;
 
   FieldChartSettings copyWith({
     ChartType? type,
@@ -61,6 +73,10 @@ class FieldChartSettings {
     int? decimals,
     bool? showDelta,
     bool? gapOnInvalid,
+    bool? showSum,
+    bool? showAverage,
+    bool? showMin,
+    bool? showMax,
   }) {
     return FieldChartSettings(
       type: type ?? this.type,
@@ -72,6 +88,10 @@ class FieldChartSettings {
       decimals: decimals ?? this.decimals,
       showDelta: showDelta ?? this.showDelta,
       gapOnInvalid: gapOnInvalid ?? this.gapOnInvalid,
+      showSum: showSum ?? this.showSum,
+      showAverage: showAverage ?? this.showAverage,
+      showMin: showMin ?? this.showMin,
+      showMax: showMax ?? this.showMax,
     );
   }
 
@@ -85,6 +105,12 @@ class FieldChartSettings {
     if (decimals != null) 'decimals': decimals,
     if (showDelta) 'showDelta': showDelta,
     if (gapOnInvalid) 'gapOnInvalid': gapOnInvalid,
+    // These four default to true (shown), unlike the flags above, so only
+    // the opted-out (false) case needs to be persisted.
+    if (!showSum) 'showSum': showSum,
+    if (!showAverage) 'showAverage': showAverage,
+    if (!showMin) 'showMin': showMin,
+    if (!showMax) 'showMax': showMax,
   };
 
   factory FieldChartSettings.fromJson(Map<String, dynamic> json) =>
@@ -98,6 +124,10 @@ class FieldChartSettings {
         decimals: _parseInt(json['decimals']),
         showDelta: json['showDelta'] as bool? ?? false,
         gapOnInvalid: json['gapOnInvalid'] as bool? ?? false,
+        showSum: json['showSum'] as bool? ?? true,
+        showAverage: json['showAverage'] as bool? ?? true,
+        showMin: json['showMin'] as bool? ?? true,
+        showMax: json['showMax'] as bool? ?? true,
       );
 
   @override
@@ -111,7 +141,11 @@ class FieldChartSettings {
       yMax == other.yMax &&
       decimals == other.decimals &&
       showDelta == other.showDelta &&
-      gapOnInvalid == other.gapOnInvalid;
+      gapOnInvalid == other.gapOnInvalid &&
+      showSum == other.showSum &&
+      showAverage == other.showAverage &&
+      showMin == other.showMin &&
+      showMax == other.showMax;
 
   @override
   int get hashCode => Object.hash(
@@ -124,5 +158,6 @@ class FieldChartSettings {
     decimals,
     showDelta,
     gapOnInvalid,
+    Object.hash(showSum, showAverage, showMin, showMax),
   );
 }

@@ -43,6 +43,24 @@ void main() {
     });
   });
 
+  group('autoDecimalsFor', () {
+    test('a whole number needs the minimum 2 decimals', () {
+      expect(autoDecimalsFor(21.0), 2);
+    });
+
+    test('a value with one real decimal still needs the minimum 2', () {
+      expect(autoDecimalsFor(21.5), 2);
+    });
+
+    test('a value needing more than the minimum reports its real count', () {
+      expect(autoDecimalsFor(12.3456), 4);
+    });
+
+    test('a value beyond the cap reports the capped count', () {
+      expect(autoDecimalsFor(49.2871934), 6);
+    });
+  });
+
   group('deltaValues', () {
     test('empty input returns empty output', () {
       expect(deltaValues([]), isEmpty);

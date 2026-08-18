@@ -100,6 +100,34 @@ void main() {
     expect(changed, FieldChartSettings.defaults);
   });
 
+  testWidgets('toggling a stats-bar switch fires onChanged with just that '
+      'field flipped', (tester) async {
+    FieldChartSettings? changed;
+
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: FieldChartSettings.defaults,
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Show sum'), 200);
+    await tester.tap(find.text('Show sum'));
+    await tester.pumpAndSettle();
+
+    expect(changed, isNotNull);
+    expect(changed!.showSum, isFalse);
+    // Untouched toggles stay at their default (shown).
+    expect(changed!.showAverage, isTrue);
+    expect(changed!.showMin, isTrue);
+    expect(changed!.showMax, isTrue);
+  });
+
   testWidgets('setting yMin >= yMax is rejected, previous value kept', (
     tester,
   ) async {

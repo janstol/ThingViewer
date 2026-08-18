@@ -1122,6 +1122,232 @@ void main() {
     });
   });
 
+  group('stats bar', () {
+    testWidgets('renders in the loaded state with the expected formatted '
+        'numbers', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // _field.values = 1, 2, 3 -> count 3, sum 6, avg 2, min 1, max 3.
+      expect(find.text('Showing 3 values'), findsOneWidget);
+      expect(find.text('Sum 6.00'), findsOneWidget);
+      expect(find.text('Avg 2.00'), findsOneWidget);
+      expect(find.text('Min 1.00'), findsOneWidget);
+      expect(find.text('Max 3.00'), findsOneWidget);
+    });
+
+    testWidgets('reflects the delta series when showDelta is on', (
+      tester,
+    ) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(showDelta: true, decimals: 0),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Deltas of 1, 2, 3 are 1 and 1 -> sum 2, avg 1, min 1, max 1. The
+      // count stays the raw reading count, unaffected by showDelta.
+      expect(find.text('Showing 3 values'), findsOneWidget);
+      expect(find.text('Sum 2'), findsOneWidget);
+      expect(find.text('Avg 1'), findsOneWidget);
+      expect(find.text('Min 1'), findsOneWidget);
+      expect(find.text('Max 1'), findsOneWidget);
+    });
+
+    testWidgets('appears in the error state with cached values', (
+      tester,
+    ) async {
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenThrow(ApiException(ApiErrorCode.network));
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(decimals: 0),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Showing 3 values'), findsOneWidget);
+      expect(find.text('Sum 6'), findsOneWidget);
+      expect(find.text('Avg 2'), findsOneWidget);
+      expect(find.text('Min 1'), findsOneWidget);
+      expect(find.text('Max 3'), findsOneWidget);
+    });
+
+    testWidgets('hides only the toggled-off entries, count and the rest '
+        'stay', (tester) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(
+          decimals: 0,
+          showSum: false,
+          showMin: false,
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Showing 3 values'), findsOneWidget);
+      expect(find.text('Sum 6'), findsNothing);
+      expect(find.text('Min 1'), findsNothing);
+      expect(find.text('Avg 2'), findsOneWidget);
+      expect(find.text('Max 3'), findsOneWidget);
+    });
+
+    testWidgets(
+      'in auto mode, the whole row rounds to the precision min/max need, '
+      'not each entry independently',
+      (tester) async {
+        // Average 4/3 = 1.333... never terminates at 2 decimals the way
+        // sum/min/max (whole-number readings) do — reproduces the
+        // inconsistent-rounding report.
+        final unevenField = Field(
+          id: 1,
+          label: 'Temp',
+          values: [
+            FieldValue(createdAt: _now.subtract(const Duration(days: 2)), value: 1),
+            FieldValue(createdAt: _now.subtract(const Duration(days: 1)), value: 1),
+            FieldValue(createdAt: _now, value: 2),
+          ],
+        );
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async => FieldRange(field: unevenField, truncated: false),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            FieldChartScreen(
+              channel: _channel,
+              field: unevenField,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // min/max (1, 2) only need 2 decimals; the whole row -- including
+        // the average, which on its own would show '1.333333' -- rounds to
+        // that shared count instead.
+        expect(find.text('Sum 4.00'), findsOneWidget);
+        expect(find.text('Avg 1.33'), findsOneWidget);
+        expect(find.text('Min 1.00'), findsOneWidget);
+        expect(find.text('Max 2.00'), findsOneWidget);
+        expect(find.text('Avg 1.333333'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Avg/Min/Max carry a full-word spoken label distinct from the '
+      'visible abbreviation; Sum has none to translate',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+
+        await tester.pumpWidget(
+          _wrap(
+            FieldChartScreen(
+              channel: _channel,
+              field: _field,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Visible text stays abbreviated.
+        expect(find.text('Avg 2.00'), findsOneWidget);
+        expect(find.text('Min 1.00'), findsOneWidget);
+        expect(find.text('Max 3.00'), findsOneWidget);
+
+        // The abbreviation is excluded from what a screen reader hears.
+        expect(find.bySemanticsLabel('Avg 2.00'), findsNothing);
+        expect(find.bySemanticsLabel('Min 1.00'), findsNothing);
+        expect(find.bySemanticsLabel('Max 3.00'), findsNothing);
+
+        // The spoken label uses the full word instead.
+        expect(find.bySemanticsLabel('Average 2.00'), findsOneWidget);
+        expect(find.bySemanticsLabel('Minimum 1.00'), findsOneWidget);
+        expect(find.bySemanticsLabel('Maximum 3.00'), findsOneWidget);
+        expect(find.bySemanticsLabel('Sum 6.00'), findsOneWidget);
+
+        handle.dispose();
+      },
+    );
+  });
+
   testWidgets('chart axes do not overflow at 2x text scale', (tester) async {
     await tester.pumpWidget(
       _wrapScaled(
