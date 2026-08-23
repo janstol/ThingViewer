@@ -294,6 +294,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String fieldChartRangeLabel(String start, String end) {
+    return '$start - $end';
+  }
+
+  @override
+  String fieldChartRangeSemantics(String start, String end) {
+    return 'Date range $start to $end';
+  }
+
+  @override
   String get filterTitle => 'Filter';
 
   @override

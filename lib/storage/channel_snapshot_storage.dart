@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
@@ -14,7 +15,12 @@ const _kChannelSnapshotsKey = 'channelSnapshots';
 /// same separator rationale as there. Deliberately not part of the backup
 /// format — this is derived data, re-populated on the next successful fetch,
 /// and would bloat the export.
-class ChannelSnapshotStorage {
+///
+/// A [ChangeNotifier] because it is the shared single instance and [save] is
+/// its only mutation point — the channel list reacts to a snapshot written by
+/// the channel detail screen or a pinned-fields refresh through this, not
+/// through any navigation callback.
+class ChannelSnapshotStorage extends ChangeNotifier {
   final SharedPreferences _prefs;
   late Map<String, ChannelSnapshot> _snapshots;
   StorageIssue? _issue;
@@ -51,10 +57,14 @@ class ChannelSnapshotStorage {
     final existing = _snapshots[key];
     _snapshots[key] = existing == null ? snapshot : snapshot.mergedWith(existing);
     await _persist();
+    notifyListeners();
   }
 
   Future<void> remove(Channel channel) async {
-    if (_snapshots.remove(_key(channel)) != null) await _persist();
+    if (_snapshots.remove(_key(channel)) != null) {
+      await _persist();
+      notifyListeners();
+    }
   }
 
   /// Re-keys the entry stored under [from]'s identity onto [to]'s, for when
@@ -64,6 +74,7 @@ class ChannelSnapshotStorage {
     if (snapshot == null) return;
     _snapshots[_key(to)] = snapshot;
     await _persist();
+    notifyListeners();
   }
 
   Future<void> _persist() => _prefs.setString(
@@ -73,5 +84,8 @@ class ChannelSnapshotStorage {
 
   /// Re-reads the in-memory cache from [_prefs], picking up any changes
   /// written directly to storage since construction.
-  void reload() => _applyLoad(_load(_prefs));
+  void reload() {
+    _applyLoad(_load(_prefs));
+    notifyListeners();
+  }
 }

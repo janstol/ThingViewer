@@ -126,6 +126,20 @@
       "latestTime": { "type": "String" }
     }
   },
+  "fieldChartRangeLabel": "{start} - {end}",
+  "@fieldChartRangeLabel": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "fieldChartRangeSemantics": "Date range {start} to {end}",
+  "@fieldChartRangeSemantics": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
   "filterTitle": "Filter",
   "filterFrom": "From",
   "filterTo": "To",

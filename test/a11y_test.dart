@@ -240,6 +240,23 @@ void main() {
           'channels': Channel.listToJson([_channel, _otherChannel]),
         });
         final storage = ChannelStorage(await SharedPreferences.getInstance());
+        final channelSnapshotStorage = await _channelSnapshotStorage();
+        // Covers the row's data line under the contrast/tap-target checks —
+        // the identity line's demoted style and the accent-coloured values.
+        await channelSnapshotStorage.save(
+          _channel,
+          ChannelSnapshot(
+            fields: [
+              FieldSnapshot(
+                id: 1,
+                label: 'Temp',
+                value: 23.5,
+                valueAt: _now.subtract(const Duration(days: 1)),
+              ),
+            ],
+            fetchedAt: _now,
+          ),
+        );
 
         await tester.pumpWidget(
           _wrap(
@@ -249,7 +266,7 @@ void main() {
               settings: await _settings(),
               fieldSettingsStorage: await _fieldSettingsStorage(),
               pinnedFieldsStorage: await _pinnedFieldsStorage(),
-              channelSnapshotStorage: await _channelSnapshotStorage(),
+              channelSnapshotStorage: channelSnapshotStorage,
               backupService: await _backupService(),
             ),
             themeMode,

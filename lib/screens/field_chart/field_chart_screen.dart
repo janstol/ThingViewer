@@ -225,6 +225,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
             :final cachedValues,
             :final errorCode,
             :final serverMessage,
+            :final range,
           ) =>
             Builder(
               builder: (context) {
@@ -234,21 +235,47 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                   ApiErrorCode.credentials => l10n.errorApiCredentials,
                   ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
                 };
+                if (cachedValues.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          message,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton.icon(
+                          onPressed: () => _showFilterSheet(context),
+                          icon: const Icon(Icons.filter_list),
+                          label: Text(l10n.filterTitle),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return Column(
                   children: [
-                    if (cachedValues.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _StatsBar(
-                          count: cachedValues.length,
-                          stats: computeFieldStats(_seriesFor(cachedValues)),
-                          chartSettings: _chartSettings,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _RangeChip(
+                        range: range,
+                        settings: widget.settings,
+                        onPressed: () => _showFilterSheet(context),
                       ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _StatsBar(
+                        count: cachedValues.length,
+                        stats: computeFieldStats(_seriesFor(cachedValues)),
+                        chartSettings: _chartSettings,
+                      ),
+                    ),
                     Expanded(
-                      child: cachedValues.isEmpty
-                          ? Center(child: Text(message))
-                          : _showTable
+                      child: _showTable
                           ? FieldTable(
                               values: cachedValues,
                               settings: widget.settings,
@@ -271,17 +298,26 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                         ),
                       ),
                     ),
-                    _FilterButton(
-                      onPressed: () => _showFilterSheet(context),
-                      l10n: l10n,
-                    ),
                   ],
                 );
               },
             ),
-          FieldChartLoaded(:final values, :final invalidAt, :final truncated) =>
+          FieldChartLoaded(
+            :final values,
+            :final invalidAt,
+            :final truncated,
+            :final range,
+          ) =>
             Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _RangeChip(
+                    range: range,
+                    settings: widget.settings,
+                    onPressed: () => _showFilterSheet(context),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: _StatsBar(
@@ -320,10 +356,6 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                           title: chartTitle,
                         ),
                 ),
-                _FilterButton(
-                  onPressed: () => _showFilterSheet(context),
-                  l10n: l10n,
-                ),
               ],
             ),
         },
@@ -353,26 +385,41 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
   }
 }
 
-class _FilterButton extends StatelessWidget {
+/// Header chip showing the currently active date range, above [_StatsBar].
+/// Replaces the old bottom-pinned Filter button — it now doubles as the
+/// filter entry point and as a permanent readout of what window is on
+/// screen, which previously required opening the filter sheet to see.
+///
+/// The visible label uses a dash separator ("12/01/2024 - 12/08/2024"),
+/// which reads badly aloud, so the spoken label is overridden separately —
+/// the same visible-vs-spoken split [_StatsBar] and [_Chart] already use.
+class _RangeChip extends StatelessWidget {
+  final DateTimeRange range;
+  final SettingsNotifier settings;
   final VoidCallback onPressed;
-  final AppLocalizations l10n;
 
-  const _FilterButton({required this.onPressed, required this.l10n});
+  const _RangeChip({
+    required this.range,
+    required this.settings,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // With edge-to-edge drawing (Flutter 3.47+ targeting API 35+), this
-    // button sits at the bottom of the Scaffold body, which the system nav
-    // bar would otherwise cover. top: false because the AppBar already
-    // handles the top inset.
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: FilledButton.icon(
+    final l10n = AppLocalizations.of(context)!;
+    final start = settings.formatDate(range.start);
+    final end = settings.formatDate(range.end);
+    return Center(
+      child: Semantics(
+        label: l10n.fieldChartRangeSemantics(start, end),
+        button: true,
+        onTap: onPressed,
+        excludeSemantics: true,
+        child: ActionChip(
+          avatar: const Icon(Icons.date_range, size: 18),
+          label: Text(l10n.fieldChartRangeLabel(start, end)),
+          tooltip: l10n.filterTitle,
           onPressed: onPressed,
-          icon: const Icon(Icons.filter_list),
-          label: Text(l10n.filterTitle),
         ),
       ),
     );

@@ -521,6 +521,18 @@ abstract class AppLocalizations {
     String latestTime,
   );
 
+  /// No description provided for @fieldChartRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} - {end}'**
+  String fieldChartRangeLabel(String start, String end);
+
+  /// No description provided for @fieldChartRangeSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range {start} to {end}'**
+  String fieldChartRangeSemantics(String start, String end);
+
   /// No description provided for @filterTitle.
   ///
   /// In en, this message translates to:

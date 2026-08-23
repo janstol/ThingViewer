@@ -621,41 +621,6 @@ void main() {
   );
 
   group('edge-to-edge nav bar clearance', () {
-    testWidgets('the Filter button clears the simulated nav bar inset', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(400, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      const bottomInset = 48.0;
-
-      await tester.pumpWidget(
-        _wrapWithBottomInset(
-          FieldChartScreen(
-            channel: _channel,
-            field: _field,
-            api: mockApi,
-            settings: await _settings(),
-            fieldSettingsStorage: await _fieldSettingsStorage(),
-            pinnedFieldsStorage: await _pinnedFieldsStorage(),
-          ),
-          bottomInset,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final buttonRect = tester.getRect(
-        find.widgetWithText(FilledButton, 'Filter'),
-      );
-      expect(
-        buttonRect.bottom,
-        lessThanOrEqualTo(800 - bottomInset),
-        reason: 'Filter button must not sit under the simulated nav bar',
-      );
-    });
-
     testWidgets(
       'the filter sheet Apply button clears the simulated nav bar inset',
       (tester) async {
@@ -681,7 +646,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Filter'));
+        await tester.tap(find.byTooltip('Filter'));
         await tester.pumpAndSettle();
 
         final applyRect = tester.getRect(
@@ -719,7 +684,7 @@ void main() {
           .data
           .minX;
 
-      await tester.tap(find.text('Filter'));
+      await tester.tap(find.byTooltip('Filter'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -751,7 +716,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Filter'));
+      await tester.tap(find.byTooltip('Filter'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('From'));
       await tester.pumpAndSettle();
@@ -801,7 +766,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Filter'));
+      await tester.tap(find.byTooltip('Filter'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('To'));
       await tester.pumpAndSettle();
@@ -828,6 +793,121 @@ void main() {
         59,
       );
       expect(find.text(settings.formatDateTime(unclamped)), findsNothing);
+    });
+  });
+
+  group('range chip', () {
+    testWidgets(
+      'loaded state renders the chip with the default 7-day window and no '
+      'Filter FilledButton',
+      (tester) async {
+        final settings = await _settings();
+
+        await tester.pumpWidget(
+          _wrap(
+            FieldChartScreen(
+              channel: _channel,
+              field: _field,
+              api: mockApi,
+              settings: settings,
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final rangeEnd = _field.values.last.createdAt;
+        final rangeStart = rangeEnd.subtract(const Duration(days: 7));
+        final label =
+            '${settings.formatDate(rangeStart)} - ${settings.formatDate(rangeEnd)}';
+
+        expect(find.text(label), findsOneWidget);
+        expect(find.byTooltip('Filter'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Filter'), findsNothing);
+      },
+    );
+
+    testWidgets('tapping the chip opens the filter sheet', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Filter'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('From'), findsOneWidget);
+      expect(find.text('To'), findsOneWidget);
+    });
+
+    testWidgets('applying a new range updates the chip label', (
+      tester,
+    ) async {
+      final settings = await _settings();
+      final rangeEnd = _field.values.last.createdAt;
+      final newStart = rangeEnd.subtract(const Duration(days: 10));
+
+      await tester.pumpWidget(
+        _wrap24(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: settings,
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Filter'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+
+      // Date picker: switch to text input, type the new From date.
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextFormField),
+        _compactDate(newStart),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      // Time picker: switch to text input, keep it at midnight.
+      await tester.tap(find.byIcon(Icons.keyboard_outlined));
+      await tester.pumpAndSettle();
+      final timeFields = find.byType(TextFormField);
+      await tester.enterText(timeFields.at(0), '00');
+      await tester.enterText(timeFields.at(1), '00');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      final expectedStart = DateTime(
+        newStart.year,
+        newStart.month,
+        newStart.day,
+      );
+      final expectedLabel =
+          '${settings.formatDate(expectedStart)} - ${settings.formatDate(rangeEnd)}';
+      expect(find.text(expectedLabel), findsOneWidget);
     });
   });
 
@@ -1059,7 +1139,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Page 2 of 3'), findsOneWidget);
 
-        await tester.tap(find.text('Filter'));
+        await tester.tap(find.byTooltip('Filter'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Apply'));
         await tester.pumpAndSettle();

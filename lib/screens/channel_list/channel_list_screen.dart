@@ -5,8 +5,10 @@ import 'package:flutter/semantics.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../backup/backup_service.dart';
+import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../models/channel_snapshot.dart';
 import '../../models/field.dart';
 import '../../storage/channel_snapshot_storage.dart';
 import '../../storage/channel_storage.dart';
@@ -111,19 +113,28 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
       _channels,
     );
     _pinnedNotifier.addListener(_syncAgeTicker);
+    widget.channelSnapshotStorage.addListener(_syncAgeTicker);
     _syncAgeTicker();
     final startChannel = widget.settings.startChannel(_channels);
     _selectedChannel = startChannel;
     _pendingStartChannel = startChannel;
   }
 
+  /// Whether anything on screen shows a relative age that needs ticking —
+  /// a pinned field, or a channel row with a cached snapshot.
+  bool get _hasAgingContent =>
+      _pinnedNotifier.entries.isNotEmpty ||
+      _channels.any(
+        (c) => widget.channelSnapshotStorage.snapshotFor(c) != null,
+      );
+
   void _syncAgeTicker() {
-    final hasPins = _pinnedNotifier.entries.isNotEmpty;
-    if (hasPins && _ageTicker == null) {
+    final hasAgingContent = _hasAgingContent;
+    if (hasAgingContent && _ageTicker == null) {
       _ageTicker = Timer.periodic(const Duration(seconds: 60), (_) {
         if (mounted) setState(() => _now = DateTime.now());
       });
-    } else if (!hasPins && _ageTicker != null) {
+    } else if (!hasAgingContent && _ageTicker != null) {
       _ageTicker!.cancel();
       _ageTicker = null;
     }
@@ -188,6 +199,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
   void dispose() {
     _ageTicker?.cancel();
     _pinnedNotifier.removeListener(_syncAgeTicker);
+    widget.channelSnapshotStorage.removeListener(_syncAgeTicker);
     _pinnedNotifier.dispose();
     _notifier.dispose();
     super.dispose();
@@ -402,6 +414,7 @@ class _NarrowLayout extends StatelessWidget {
         notifier: notifier,
         l10n: l10n,
         channelStorage: channelStorage,
+        channelSnapshotStorage: channelSnapshotStorage,
         backupService: backupService,
         settings: settings,
         onImported: onImported,
@@ -515,6 +528,7 @@ class _WideLayout extends StatelessWidget {
               notifier: notifier,
               l10n: l10n,
               channelStorage: channelStorage,
+              channelSnapshotStorage: channelSnapshotStorage,
               backupService: backupService,
               settings: settings,
               onImported: onImported,
@@ -651,6 +665,7 @@ class _ChannelListBody extends StatelessWidget {
   final ChannelListNotifier notifier;
   final AppLocalizations l10n;
   final ChannelStorage channelStorage;
+  final ChannelSnapshotStorage channelSnapshotStorage;
   final BackupService backupService;
   final SettingsNotifier settings;
   final VoidCallback onImported;
@@ -671,6 +686,7 @@ class _ChannelListBody extends StatelessWidget {
     required this.notifier,
     required this.l10n,
     required this.channelStorage,
+    required this.channelSnapshotStorage,
     required this.backupService,
     required this.settings,
     required this.onImported,
@@ -690,120 +706,132 @@ class _ChannelListBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The snapshot storage's own listenable wraps the notifier's — a
+    // snapshot save (channel detail screen, pinned refresh) rebuilds the
+    // rows without going through any navigation callback.
     return ListenableBuilder(
-      listenable: notifier,
-      builder: (context, _) {
-        final Widget body = switch (notifier.state) {
-          ChannelListLoading() => Center(
-            child: CircularProgressIndicator(
-              semanticsLabel: l10n.labelLoading,
+      listenable: channelSnapshotStorage,
+      builder: (context, _) => ListenableBuilder(
+        listenable: notifier,
+        builder: (context, _) {
+          final Widget body = switch (notifier.state) {
+            ChannelListLoading() => Center(
+              child: CircularProgressIndicator(
+                semanticsLabel: l10n.labelLoading,
+              ),
             ),
-          ),
-          ChannelListError(:final message) => Center(child: Text(message)),
-          ChannelListCorrupted() => _CorruptedBody(
-            channelStorage: channelStorage,
-            backupService: backupService,
-            settings: settings,
-            onChanged: onImported,
-          ),
-          ChannelListLoaded(:final channels) =>
-            channels.isEmpty
-                ? Center(child: Text(l10n.channelListEmpty))
-                : ReorderableListView.builder(
-                    padding: EdgeInsets.only(
-                      bottom:
-                          MediaQuery.paddingOf(context).bottom +
-                          (fabClearance ? _kFabClearance : 0),
-                    ),
-                    header: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (pinnedEntries.isNotEmpty)
-                          PinnedSection(
-                            entries: pinnedEntries,
-                            now: now,
-                            onEdit: onEditPinned,
-                            onTap: onTapPinned,
-                          ),
-                        SectionHeader(title: l10n.channelListSectionTitle),
-                      ],
-                    ),
-                    itemCount: channels.length,
-                    onReorderItem: notifier.reorderChannels,
-                    itemBuilder: (context, index) {
-                      final channel = channels[index];
-                      return Dismissible(
-                        key: ValueKey(channel),
-                        direction: DismissDirection.endToStart,
-                        confirmDismiss: (_) =>
-                            _confirmDelete(context, channel),
-                        onDismissed: (_) => onDelete(channel),
-                        background: Container(
-                          color: Theme.of(context).colorScheme.error,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: ExcludeSemantics(
-                            child: Icon(
-                              Icons.delete_outline,
-                              color: Theme.of(context).colorScheme.onError,
+            ChannelListError(:final message) => Center(child: Text(message)),
+            ChannelListCorrupted() => _CorruptedBody(
+              channelStorage: channelStorage,
+              backupService: backupService,
+              settings: settings,
+              onChanged: onImported,
+            ),
+            ChannelListLoaded(:final channels) =>
+              channels.isEmpty
+                  ? Center(child: Text(l10n.channelListEmpty))
+                  : ReorderableListView.builder(
+                      padding: EdgeInsets.only(
+                        bottom:
+                            MediaQuery.paddingOf(context).bottom +
+                            (fabClearance ? _kFabClearance : 0),
+                      ),
+                      header: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (pinnedEntries.isNotEmpty)
+                            PinnedSection(
+                              entries: pinnedEntries,
+                              now: now,
+                              onEdit: onEditPinned,
+                              onTap: onTapPinned,
+                            ),
+                          SectionHeader(title: l10n.channelListSectionTitle),
+                        ],
+                      ),
+                      itemCount: channels.length,
+                      onReorderItem: notifier.reorderChannels,
+                      itemBuilder: (context, index) {
+                        final channel = channels[index];
+                        return Dismissible(
+                          key: ValueKey(channel),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) =>
+                              _confirmDelete(context, channel),
+                          onDismissed: (_) => onDelete(channel),
+                          background: Container(
+                            color: Theme.of(context).colorScheme.error,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                            child: ExcludeSemantics(
+                              child: Icon(
+                                Icons.delete_outline,
+                                color: Theme.of(context).colorScheme.onError,
+                              ),
                             ),
                           ),
-                        ),
-                        child: Semantics(
-                          customSemanticsActions: {
-                            CustomSemanticsAction(
-                              label: l10n.channelListDeleteSemantics,
-                            ): () async {
-                              if (await _confirmDelete(context, channel) ==
-                                  true) {
-                                onDelete(channel);
-                              }
+                          child: Semantics(
+                            customSemanticsActions: {
+                              CustomSemanticsAction(
+                                label: l10n.channelListDeleteSemantics,
+                              ): () async {
+                                if (await _confirmDelete(context, channel) ==
+                                    true) {
+                                  onDelete(channel);
+                                }
+                              },
                             },
-                          },
-                          child: _ChannelTile(
-                            channel: channel,
-                            isSelected: channel == selectedChannel,
-                            onTap: () => onTap(channel),
+                            child: _ChannelTile(
+                              channel: channel,
+                              snapshot: channelSnapshotStorage.snapshotFor(
+                                channel,
+                              ),
+                              now: now,
+                              isSelected: channel == selectedChannel,
+                              onTap: () => onTap(channel),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
+          };
+          final content = pinnedEntries.isEmpty
+              ? body
+              : RefreshIndicator(
+                  onRefresh: onPinnedRefresh,
+                  semanticsLabel: l10n.pinnedSectionTitle,
+                  child: body,
+                );
+          if (!issueBannerVisible) return content;
+          return Column(
+            children: [
+              MaterialBanner(
+                leading: ExcludeSemantics(
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: Theme.of(context).colorScheme.error,
                   ),
-        };
-        final content = pinnedEntries.isEmpty
-            ? body
-            : RefreshIndicator(
-                onRefresh: onPinnedRefresh,
-                semanticsLabel: l10n.pinnedSectionTitle,
-                child: body,
-              );
-        if (!issueBannerVisible) return content;
-        return Column(
-          children: [
-            MaterialBanner(
-              leading: ExcludeSemantics(
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  color: Theme.of(context).colorScheme.error,
                 ),
+                content: Text(l10n.channelListIssueBannerText),
+                actions: [
+                  TextButton(
+                    onPressed: onDismissIssueBanner,
+                    child: Text(l10n.channelListIssueBannerDismiss),
+                  ),
+                  TextButton(
+                    onPressed: onOpenRecovery,
+                    child: Text(l10n.channelListIssueBannerAction),
+                  ),
+                ],
               ),
-              content: Text(l10n.channelListIssueBannerText),
-              actions: [
-                TextButton(
-                  onPressed: onDismissIssueBanner,
-                  child: Text(l10n.channelListIssueBannerDismiss),
-                ),
-                TextButton(
-                  onPressed: onOpenRecovery,
-                  child: Text(l10n.channelListIssueBannerAction),
-                ),
-              ],
-            ),
-            Expanded(child: content),
-          ],
-        );
-      },
+              Expanded(child: content),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -895,13 +923,30 @@ class _CorruptedBody extends StatelessWidget {
   }
 }
 
+/// The newest reading time across [snapshot]'s valued fields, or null if it
+/// has none — a snapshot can hold fields recovered without a value (see
+/// [ChannelSnapshot.mergedWith]), which don't count towards freshness.
+DateTime? _newestValueAt(ChannelSnapshot? snapshot) {
+  DateTime? newest;
+  for (final f in snapshot?.fields ?? const <FieldSnapshot>[]) {
+    final at = f.valueAt;
+    if (f.value == null || at == null) continue;
+    if (newest == null || at.isAfter(newest)) newest = at;
+  }
+  return newest;
+}
+
 class _ChannelTile extends StatelessWidget {
   final Channel channel;
+  final ChannelSnapshot? snapshot;
+  final DateTime now;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _ChannelTile({
     required this.channel,
+    required this.snapshot,
+    required this.now,
     required this.onTap,
     this.isSelected = false,
   });
@@ -910,6 +955,12 @@ class _ChannelTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final errorColor = Theme.of(context).colorScheme.error;
+    final newestValueAt = _newestValueAt(snapshot);
+    final hasDataLine = newestValueAt != null;
+    final identityStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+
     return MergeSemantics(
       child: ListTile(
         leading: Icon(
@@ -919,27 +970,32 @@ class _ChannelTile extends StatelessWidget {
               : l10n.channelListPrivateSemantics,
         ),
         title: Text(channel.displayName),
-        subtitle: channel.authError
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasDataLine)
+              Text(formatEntryAge(l10n, now.difference(newestValueAt))),
+            Text(
+              '${channel.serverUrl} · ${channel.id}',
+              style: identityStyle,
+            ),
+            if (channel.authError)
+              Row(
                 children: [
-                  Text('${channel.serverUrl} · ${channel.id}'),
-                  Row(
-                    children: [
-                      Icon(Icons.error_outline, size: 14, color: errorColor),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          l10n.channelListAuthError,
-                          style: TextStyle(color: errorColor),
-                        ),
-                      ),
-                    ],
+                  Icon(Icons.error_outline, size: 14, color: errorColor),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      l10n.channelListAuthError,
+                      style: TextStyle(color: errorColor),
+                    ),
                   ),
                 ],
-              )
-            : Text('${channel.serverUrl} · ${channel.id}'),
-        isThreeLine: channel.authError,
+              ),
+          ],
+        ),
+        isThreeLine: hasDataLine || channel.authError,
         selected: isSelected,
         // ListTile.selected defaults its text/icon colour to colorScheme.primary
         // (brandGreen), which is only 2.43:1 on white — fails WCAG AA. Selection
