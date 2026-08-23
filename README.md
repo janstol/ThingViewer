@@ -39,7 +39,7 @@ The GitHub APKs are signed with a different key than the Play Store version (Pla
 - Export/import a full backup (saved channels, app settings, and per-field chart overrides) as a single JSON file
 - Responsive layout — master-detail split on tablets
 
-Android is the actively supported and tested target. Web is built and deployed to the [demo](https://janstol.github.io/ThingViewer/) on every push, but isn't covered by automated tests. iOS/macOS/Windows/Linux build but aren't part of CI.
+Android is the actively supported and tested target. Web is built and deployed to the [demo](https://janstol.github.io/ThingViewer/) on every push, but isn't covered by automated tests. Android and web are built on every pull request; iOS/macOS/Windows/Linux are build-checked weekly in CI, but aren't otherwise supported or tested.
 
 ## Development
 

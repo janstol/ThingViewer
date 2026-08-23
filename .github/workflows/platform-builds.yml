@@ -1,14 +1,13 @@
-name: CI
+name: Platform builds
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
 
 jobs:
-  analyze-test:
-    runs-on: ubuntu-latest
+  apple:
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v7
@@ -20,35 +19,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze
-        run: flutter analyze
+      - name: Build macOS (smoke)
+        run: flutter build macos --release
 
-      - name: Test
-        run: flutter test
+      - name: Build iOS (smoke)
+        run: flutter build ios --release --no-codesign
 
-  build-android:
+  linux:
     runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5.7.0
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.0'
-          channel: 'stable'
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build app bundle (smoke)
-        run: flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
-
-  build-web:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v7
@@ -57,8 +35,29 @@ jobs:
           flutter-version: '3.47.0'
           channel: 'stable'
 
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build web (smoke)
-        run: flutter build web --release
+      - name: Build Linux (smoke)
+        run: flutter build linux --release
+
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows (smoke)
+        run: flutter build windows --release
