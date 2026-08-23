@@ -468,9 +468,13 @@ class _ExportTile extends StatelessWidget {
         final fileName =
             'thingviewer-backup$infix-'
             '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
-        final String? path;
+        final Uri? uri;
         try {
-          path = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+          uri = await FilePicker.saveFile(
+            fileName: fileName,
+            bytes: bytes,
+            mimeType: 'application/json',
+          );
         } on PlatformException {
           if (!context.mounted) return;
           ScaffoldMessenger.of(
@@ -478,7 +482,7 @@ class _ExportTile extends StatelessWidget {
           ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
           return;
         }
-        if (path == null || !context.mounted) return;
+        if (uri == null || !context.mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.backupExportSuccess)));

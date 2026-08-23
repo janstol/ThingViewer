@@ -152,9 +152,13 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
         'thingviewer-${widget.channel.id}-field${widget.field.id}-'
         '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.csv';
 
-    final String? path;
+    final Uri? uri;
     try {
-      path = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+      uri = await FilePicker.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+        mimeType: 'text/csv',
+      );
     } on PlatformException {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -162,7 +166,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
       return;
     }
-    if (path == null || !context.mounted) return;
+    if (uri == null || !context.mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.csvExportSuccess)));

@@ -28,9 +28,13 @@ Future<void> saveCorruptRaw(
       'thingviewer-corrupt-$storeKey-'
       '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
   final bytes = Uint8List.fromList(utf8.encode(raw));
-  final String? path;
+  final Uri? uri;
   try {
-    path = await FilePicker.saveFile(fileName: fileName, bytes: bytes);
+    uri = await FilePicker.saveFile(
+      fileName: fileName,
+      bytes: bytes,
+      mimeType: 'application/json',
+    );
   } on PlatformException {
     if (!context.mounted) return;
     ScaffoldMessenger.of(
@@ -38,7 +42,7 @@ Future<void> saveCorruptRaw(
     ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
     return;
   }
-  if (path == null || !context.mounted) return;
+  if (uri == null || !context.mounted) return;
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(l10n.recoverySaveSuccess)));

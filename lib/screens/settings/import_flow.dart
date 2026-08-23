@@ -20,9 +20,9 @@ Future<bool> runBackupImport(
   SettingsNotifier settings,
 ) async {
   final l10n = AppLocalizations.of(context)!;
-  final FilePickerResult? result;
+  final PlatformFile? file;
   try {
-    result = await FilePicker.pickFiles(type: FileType.any, withData: true);
+    file = await FilePicker.pickFile(type: FileType.any);
   } on PlatformException {
     if (!context.mounted) return false;
     ScaffoldMessenger.of(
@@ -30,10 +30,9 @@ Future<bool> runBackupImport(
     ).showSnackBar(SnackBar(content: Text(l10n.backupErrorFilePicker)));
     return false;
   }
-  final files = result?.files;
-  if (files == null || files.isEmpty || !context.mounted) return false;
-  final bytes = files.first.bytes;
-  if (bytes == null) return false;
+  if (file == null || !context.mounted) return false;
+  final fileName = file.name;
+  final bytes = await file.readAsBytes();
 
   final BackupContents contents;
   try {
@@ -52,7 +51,7 @@ Future<bool> runBackupImport(
     MaterialPageRoute(
       builder: (_) => ImportPreviewScreen(
         plan: plan,
-        fileName: files.first.name,
+        fileName: fileName,
         settings: settings,
       ),
     ),

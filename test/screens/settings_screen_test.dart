@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,45 +72,71 @@ Future<ChannelSnapshotStorage> _channelSnapshotStorage() async {
   return ChannelSnapshotStorage(prefs);
 }
 
+// PlatformFile is an abstract base class with no public constructor in
+// file_picker 12 — this holds the name and bytes the tests need.
+final class _FakePlatformFile extends PlatformFile {
+  _FakePlatformFile({required this.name, required Uint8List bytes})
+    : _bytes = bytes;
+
+  @override
+  final String name;
+  final Uint8List _bytes;
+
+  @override
+  Uri get uri => Uri.file(name);
+
+  @override
+  XFile get xFile => XFile.fromData(_bytes, name: name);
+
+  @override
+  Future<int> length() async => _bytes.length;
+
+  @override
+  Future<Uint8List> readAsBytes() async => _bytes;
+
+  @override
+  Stream<Uint8List> readAsByteStream() => Stream.value(_bytes);
+}
+
 // file_picker's static API delegates to FilePickerPlatform.instance, a
 // swappable federated-plugin singleton — this fake lets tests drive the
 // import/export flows without a real OS file dialog.
 class _FakeFilePickerPlatform extends FilePickerPlatform
     with MockPlatformInterfaceMixin {
-  FilePickerResult? pickResult;
-  String? savePath;
+  PlatformFile? pickResult;
+  Uri? savePath;
   Object? error;
   Uint8List? savedBytes;
   String? savedFileName;
 
   @override
-  Future<FilePickerResult?> pickFiles({
+  Future<PlatformFile?> pickFile({
     String? dialogTitle,
     String? initialDirectory,
     FileType type = FileType.any,
     List<String>? allowedExtensions,
     void Function(FilePickerStatus)? onFileLoading,
     int compressionQuality = 0,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-    bool cancelUploadOnWindowBlur = true,
+    AndroidOptions androidOptions = const AndroidOptions(),
+    WindowsOptions windowsOptions = const WindowsOptions(),
+    LinuxOptions linuxOptions = const LinuxOptions(),
+    WebOptions webOptions = const WebOptions(),
   }) async {
     if (error != null) throw error!;
     return pickResult;
   }
 
   @override
-  Future<String?> saveFile({
+  Future<Uri?> saveFile({
+    required String fileName,
+    required Uint8List bytes,
+    required String mimeType,
     String? dialogTitle,
-    String? fileName,
     String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Uint8List? bytes,
-    bool lockParentWindow = false,
+    void Function(FilePickerStatus)? onFileSaving,
+    WindowsOptions windowsOptions = const WindowsOptions(),
+    LinuxOptions linuxOptions = const LinuxOptions(),
+    WebOptions webOptions = const WebOptions(),
   }) async {
     if (error != null) throw error!;
     savedBytes = bytes;
@@ -451,13 +477,10 @@ void main() {
         final channelStorage = ChannelStorage(prefs);
         await channelStorage.saveChannels([_channel]);
         final settings = SettingsNotifier(SettingsStorage(prefs));
-        fakePicker.pickResult = FilePickerResult([
-          PlatformFile(
-            name: 'backup.json',
-            size: 0,
-            bytes: _backupBytes([_otherChannel]),
-          ),
-        ]);
+        fakePicker.pickResult = _FakePlatformFile(
+          name: 'backup.json',
+          bytes: _backupBytes([_otherChannel]),
+        );
 
         await tester.pumpWidget(
           _wrap(
@@ -511,13 +534,10 @@ void main() {
         final channelStorage = ChannelStorage(prefs);
         await channelStorage.saveChannels([_channel]);
         final settings = SettingsNotifier(SettingsStorage(prefs));
-        fakePicker.pickResult = FilePickerResult([
-          PlatformFile(
-            name: 'backup.json',
-            size: 0,
-            bytes: _backupBytes([_otherChannel]),
-          ),
-        ]);
+        fakePicker.pickResult = _FakePlatformFile(
+          name: 'backup.json',
+          bytes: _backupBytes([_otherChannel]),
+        );
 
         await tester.pumpWidget(
           _wrap(
@@ -578,13 +598,10 @@ void main() {
         isPublic: false,
         name: 'Keyless Channel',
       );
-      fakePicker.pickResult = FilePickerResult([
-        PlatformFile(
-          name: 'backup.json',
-          size: 0,
-          bytes: _backupBytes([keylessPrivateChannel]),
-        ),
-      ]);
+      fakePicker.pickResult = _FakePlatformFile(
+        name: 'backup.json',
+        bytes: _backupBytes([keylessPrivateChannel]),
+      );
 
       await tester.pumpWidget(
         _wrap(
@@ -640,13 +657,10 @@ void main() {
           isPublic: false,
           name: 'Keyless Channel',
         );
-        fakePicker.pickResult = FilePickerResult([
-          PlatformFile(
-            name: 'backup.json',
-            size: 0,
-            bytes: _backupBytes([keylessIncoming]),
-          ),
-        ]);
+        fakePicker.pickResult = _FakePlatformFile(
+          name: 'backup.json',
+          bytes: _backupBytes([keylessIncoming]),
+        );
 
         await tester.pumpWidget(
           _wrap(
@@ -691,13 +705,10 @@ void main() {
       final settings = SettingsNotifier(
         SettingsStorage(await SharedPreferences.getInstance()),
       );
-      fakePicker.pickResult = FilePickerResult([
-        PlatformFile(
-          name: 'backup.json',
-          size: 0,
-          bytes: Uint8List.fromList(utf8.encode('not json')),
-        ),
-      ]);
+      fakePicker.pickResult = _FakePlatformFile(
+        name: 'backup.json',
+        bytes: Uint8List.fromList(utf8.encode('not json')),
+      );
 
       await tester.pumpWidget(
         _wrap(
@@ -740,7 +751,7 @@ void main() {
       final settings = SettingsNotifier(
         SettingsStorage(await SharedPreferences.getInstance()),
       );
-      fakePicker.savePath = '/tmp/backup.json';
+      fakePicker.savePath = Uri.file('/tmp/backup.json');
 
       await tester.pumpWidget(
         _wrap(
@@ -823,7 +834,7 @@ void main() {
       final settings = SettingsNotifier(
         SettingsStorage(await SharedPreferences.getInstance()),
       );
-      fakePicker.savePath = '/tmp/backup.json';
+      fakePicker.savePath = Uri.file('/tmp/backup.json');
 
       await tester.pumpWidget(
         _wrap(
@@ -874,7 +885,7 @@ void main() {
           ),
         ]);
         final settings = SettingsNotifier(SettingsStorage(prefs));
-        fakePicker.savePath = '/tmp/backup.json';
+        fakePicker.savePath = Uri.file('/tmp/backup.json');
 
         await tester.pumpWidget(
           _wrap(
