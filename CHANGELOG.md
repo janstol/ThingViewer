@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-23
+
 ### Added
 
 - The field chart screen now shows a stats row (count, sum, average, minimum, maximum) for the currently filtered date range, above the chart/table. Follows the "show change between readings" setting, so a counter field's sum reads as the total change over the window rather than the raw counter total. Each stat can be individually shown or hidden from a new "Stats bar" section in the field's chart settings.
