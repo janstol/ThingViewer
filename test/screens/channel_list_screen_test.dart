@@ -204,6 +204,47 @@ void main() {
     expect(find.text('My Channel'), findsOneWidget);
   });
 
+  testWidgets(
+    'confirming swipe-to-dismiss removes the channel and throws nothing, '
+    'even with a cached snapshot also being removed',
+    (tester) async {
+      // A cached snapshot for the deleted channel means
+      // ChannelSnapshotStorage.remove also has something to write and
+      // notify about, racing the notifier's own removal — the scenario
+      // that used to flash Dismissible's "still part of the tree" error.
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel]),
+        'channelSnapshots': '{"https://api.thingspeak.com|1":'
+            '{"fields":[],"statuses":[],'
+            '"fetchedAt":"2024-01-01T00:00:00.000"}}',
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+
+      await tester.pumpWidget(
+        _wrap(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+            backupService: await _backupService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('My Channel'), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DELETE'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('My Channel'), findsNothing);
+    },
+  );
+
   group('start channel', () {
     setUp(() {
       when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);

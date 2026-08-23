@@ -142,12 +142,20 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
 
   void _refreshPinned() => _pinnedNotifier.setChannels(_channels);
 
-  void _removeChannel(Channel channel) {
+  // Awaits the notifier's own removal (and its notifyListeners) before
+  // touching the snapshot store. Both do their in-memory removal
+  // synchronously but defer notifyListeners until after an awaited prefs
+  // write, so firing them concurrently races those writes: if the
+  // snapshot store's write won, its listener rebuilt the list while
+  // notifier.state still held the deleted channel, recreating a
+  // Dismissible with the same key as the one that had already fired
+  // onDismissed — which Flutter's Dismissible asserts on.
+  Future<void> _removeChannel(Channel channel) async {
     if (_selectedChannel == channel) {
       setState(() => _selectedChannel = null);
     }
-    _notifier.removeChannel(channel);
-    widget.channelSnapshotStorage.remove(channel);
+    await _notifier.removeChannel(channel);
+    await widget.channelSnapshotStorage.remove(channel);
     _refreshPinned();
   }
 
