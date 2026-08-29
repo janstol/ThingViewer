@@ -31,6 +31,19 @@ final _fields = [
   ),
 ];
 
+final _twoFields = [
+  Field(
+    id: 1,
+    label: 'Temp',
+    values: [FieldValue(createdAt: DateTime(2024), value: 23.5)],
+  ),
+  Field(
+    id: 2,
+    label: 'Humidity',
+    values: [FieldValue(createdAt: DateTime(2024), value: 61.2)],
+  ),
+];
+
 const _emptyFields = [Field(id: 1, label: 'Temp')];
 
 final _manyFields = List.generate(
@@ -46,6 +59,17 @@ Widget _wrap(Widget child) => MaterialApp(
   theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
+  home: child,
+);
+
+Widget _wrapScaled(Widget child, double scale) => MaterialApp(
+  theme: AppTheme.light,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+    child: child!,
+  ),
   home: child,
 );
 
@@ -634,4 +658,219 @@ void main() {
       );
     },
   );
+
+  group('pinned-first ordering', () {
+    testWidgets(
+      'a pinned field renders under Pinned fields, not Other fields',
+      (tester) async {
+        final enrichedChannel = _channel.copyWith(
+          name: 'My Channel',
+          fieldCount: 2,
+        );
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: _twoFields, statuses: []));
+        final prefs = await SharedPreferences.getInstance();
+        final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+        await pinnedFieldsStorage.toggle(_channel, 1);
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: pinnedFieldsStorage,
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pinned fields'), findsOneWidget);
+        expect(find.text('Other fields'), findsOneWidget);
+        expect(find.text('Temp'), findsOneWidget);
+        expect(find.text('Humidity'), findsOneWidget);
+
+        final pinnedHeaderY = tester.getTopLeft(find.text('Pinned fields')).dy;
+        final otherHeaderY = tester.getTopLeft(find.text('Other fields')).dy;
+        final tempY = tester.getTopLeft(find.text('Temp')).dy;
+        final humidityY = tester.getTopLeft(find.text('Humidity')).dy;
+
+        expect(pinnedHeaderY, lessThan(tempY));
+        expect(tempY, lessThan(otherHeaderY));
+        expect(otherHeaderY, lessThan(humidityY));
+      },
+    );
+
+    testWidgets('no pins renders a single Fields header', (tester) async {
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        description: 'A description of the channel',
+        fieldCount: 1,
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fields'), findsOneWidget);
+      expect(find.text('Pinned fields'), findsNothing);
+      expect(find.text('Other fields'), findsNothing);
+    });
+
+    testWidgets('every field pinned omits the Other fields header', (
+      tester,
+    ) async {
+      final enrichedChannel = _channel.copyWith(
+        name: 'My Channel',
+        fieldCount: 2,
+      );
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: _twoFields, statuses: []));
+      final prefs = await SharedPreferences.getInstance();
+      final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+      await pinnedFieldsStorage.toggle(_channel, 1);
+      await pinnedFieldsStorage.toggle(_channel, 2);
+
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: pinnedFieldsStorage,
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pinned fields'), findsOneWidget);
+      expect(find.text('Other fields'), findsNothing);
+      expect(find.text('Temp'), findsOneWidget);
+      expect(find.text('Humidity'), findsOneWidget);
+    });
+
+    testWidgets(
+      'pinning a field from the chart screen moves it into the pinned '
+      'section on return',
+      (tester) async {
+        final enrichedChannel = _channel.copyWith(
+          name: 'My Channel',
+          description: 'A description of the channel',
+          fieldCount: 2,
+        );
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: _twoFields, statuses: []));
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async => FieldRange(field: _twoFields.first, truncated: false),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Fields'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(ListTile, 'Temp'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.push_pin_outlined));
+        await tester.pumpAndSettle();
+
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pinned fields'), findsOneWidget);
+        expect(find.text('Other fields'), findsOneWidget);
+
+        final pinnedHeaderY = tester.getTopLeft(find.text('Pinned fields')).dy;
+        final tempY = tester.getTopLeft(find.text('Temp')).dy;
+        final otherHeaderY = tester.getTopLeft(find.text('Other fields')).dy;
+        final humidityY = tester.getTopLeft(find.text('Humidity')).dy;
+
+        expect(pinnedHeaderY, lessThan(tempY));
+        expect(tempY, lessThan(otherHeaderY));
+        expect(otherHeaderY, lessThan(humidityY));
+      },
+    );
+
+    testWidgets(
+      'no overflow at 2x text scale with a long label and 7-digit value',
+      (tester) async {
+        final enrichedChannel = _channel.copyWith(
+          name: 'My Channel',
+          fieldCount: 1,
+        );
+        final longLabelField = [
+          Field(
+            id: 1,
+            label:
+                'A very long field label that could wrap onto several '
+                'lines at large text scales',
+            values: [FieldValue(createdAt: DateTime(2024), value: 1234.567)],
+          ),
+        ];
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(mockApi.readFeed(any, any)).thenAnswer(
+          (_) async => FeedData(fields: longLabelField, statuses: []),
+        );
+
+        await tester.pumpWidget(
+          _wrapScaled(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+            2,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('1234.567'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
 }

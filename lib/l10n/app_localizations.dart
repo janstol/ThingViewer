@@ -280,6 +280,12 @@ abstract class AppLocalizations {
   /// **'Fields'**
   String get channelDetailFieldsSection;
 
+  /// No description provided for @channelDetailOtherFieldsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Other fields'**
+  String get channelDetailOtherFieldsSection;
+
   /// No description provided for @channelDetailCachedData.
   ///
   /// In en, this message translates to:

@@ -105,6 +105,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelDetailFieldsSection => 'Fields';
 
   @override
+  String get channelDetailOtherFieldsSection => 'Other fields';
+
+  @override
   String channelDetailCachedData(String age) {
     return 'Showing data from $age';
   }

@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The field chart screen's bottom-pinned Filter button is replaced by a date-range chip in the header, above the stats row. The chip shows the currently active range and opens the same filter sheet, so the window is now visible without opening it, and the chart gets back the vertical space the button used to take. The empty and no-cached-data states keep their own centred Filter button. (The nav-bar-clearance test for the removed button is dropped along with it; the sibling test for the filter sheet's own Apply button stays.)
 - The channel list's row subtitle now leads with a freshness line (when a cached snapshot has a value), with the server URL and channel id demoted to a smaller, muted line below. The channel list also updates live when a snapshot is written by the channel detail screen or a pinned-fields refresh, not just when a channel screen is popped.
 - Bumped the Android Gradle Plugin to 9.1.0, Gradle to 9.3.1, and the Kotlin Gradle Plugin to 2.4.0. Required bumping `file_picker` to 12.0.0 and `package_info_plus` to 10.2.1 along with it. On Android, saving a backup or CSV export now goes through the Storage Access Framework and returns a content URI instead of a file path; this doesn't change what's visible to the user.
+- The channel detail screen's field rows now give the value more visual weight than the label, and pinned fields get their own "Pinned fields" section above the rest.
 
 ## [0.12.0] - 2026-08-23
 

@@ -368,6 +368,44 @@ void main() {
         await _checkA11y(tester);
       });
 
+      testWidgets('channel detail - pinned section', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final twoFields = [
+          ..._fields,
+          Field(
+            id: 2,
+            label: 'Humidity',
+            values: [FieldValue(createdAt: _now, value: 61.2)],
+          ),
+        ];
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: twoFields, statuses: []));
+        final prefs = await SharedPreferences.getInstance();
+        final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+        await pinnedFieldsStorage.toggle(_channel, 1);
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: pinnedFieldsStorage,
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pinned fields'), findsOneWidget);
+        expect(find.text('Other fields'), findsOneWidget);
+
+        await _checkA11y(tester);
+      });
+
       testWidgets('channel detail - stale banner (refreshing)', (tester) async {
         SharedPreferences.setMockInitialValues({});
         final pending = Completer<FeedData>();
