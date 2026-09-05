@@ -12,10 +12,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Bumped the Android Gradle Plugin to 9.1.0, Gradle to 9.3.1, and the Kotlin Gradle Plugin to 2.4.0. Required bumping `file_picker` to 12.0.0 and `package_info_plus` to 10.2.1 along with it. On Android, saving a backup or CSV export now goes through the Storage Access Framework and returns a content URI instead of a file path; this doesn't change what's visible to the user.
 - The channel detail screen's field rows now give the value more visual weight than the label, and pinned fields get their own "Pinned fields" section above the rest.
 - Loading, empty, error, and loaded states now fade into each other on the channel list, channel detail, and field chart screens, instead of cutting hard from one to the next. The chart/table toggle on the field chart screen now crossfades too. A field's displayed value now briefly pulses its "changed" colour when a refresh actually changes it, so a value that changed reads differently from one that didn't.
+- Tapping a field row on the channel detail screen now flies its label into the chart's AppBar title instead of cutting to the platform's default page transition, so the eye doesn't have to re-find what it just tapped. Skipped when the field has a custom chart title (morphing into a different string would read as a glitch) and for pinned fields opened from the channel list, since the wide/tablet layout can show the same field in two places at once.
 
 ### Accessibility
 
-- All of the above motion honours the platform's reduce-motion setting: transitions and pulses complete instantly instead of just running faster.
+- All of the above motion honours the platform's reduce-motion setting: transitions and pulses complete instantly instead of just running faster. The field-label flight above is no exception — reduce-motion cuts straight to the destination screen with no flight.
 
 ## [0.12.0] - 2026-08-23
 

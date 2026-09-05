@@ -14,6 +14,7 @@ import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
 import 'package:thingviewer/theme.dart';
+import 'package:thingviewer/widgets/motion.dart';
 
 import 'channel_detail_notifier_test.mocks.dart';
 
@@ -900,6 +901,185 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('1234.567'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('field label Hero', () {
+    testWidgets('the field row label sits inside a tagged Hero', (
+      tester,
+    ) async {
+      when(mockApi.readChannel(any)).thenAnswer(
+        (_) async => _channel.copyWith(name: 'My Channel', fieldCount: 1),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          ChannelDetailScreen(
+            channel: _channel,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final hero = tester.widget<Hero>(
+        find.ancestor(of: find.text('Temp'), matching: find.byType(Hero)),
+      );
+      expect(hero.tag, fieldLabelHeroTag(_channel.serverUrl, _channel.id, 1));
+    });
+
+    // Mid-flight colour is what pins the late-weighted Interval, and its
+    // direction correction for pop, used by FieldLabelHero's flight
+    // shuttle. A push starts at the row (dark-on-white) and ends at the
+    // AppBar (white-on-blue), so a straight lerp would already have moved
+    // noticeably toward white at 30% of the flight; holding the source
+    // colour until 40% keeps the label legible over the white body for
+    // the first part of the push.
+    //
+    // A pop retraces the same flight backwards: Flutter's own Hero
+    // mechanics start it at the AppBar's position (not the row's), so
+    // early in a pop the shuttle should still read white, only turning
+    // dark as it approaches landing on the row. Getting the direction
+    // correction wrong flips this — early-dark, late-white — which is
+    // exactly what these two assertions would catch.
+    testWidgets(
+      'mid-flight, the shuttle label colour matches the flight direction',
+      (tester) async {
+        when(mockApi.readChannel(any)).thenAnswer(
+          (_) async => _channel.copyWith(name: 'My Channel', fieldCount: 1),
+        );
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async => FieldRange(field: _fields.first, truncated: false),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final sourceColor = AppTheme.light.colorScheme.onSurface;
+
+        // Push.
+        await tester.tap(find.widgetWithText(ListTile, 'Temp'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 90));
+
+        final pushShuttle = tester.widget<Text>(find.text('Temp'));
+        expect(pushShuttle.style?.color, sourceColor);
+
+        await tester.pumpAndSettle();
+
+        // Pop, sampled early: still at the AppBar's position, still white.
+        await tester.pageBack();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 30));
+
+        final earlyPopShuttle = tester.widget<Text>(find.text('Temp'));
+        expect(earlyPopShuttle.style?.color, Colors.white);
+
+        // Sampled again well into the flight: on its way back to the
+        // source colour rather than still white, so it doesn't linger
+        // near-white as it approaches the row's white background. Checked
+        // as "darker than the early sample" rather than pinned to an exact
+        // colour at an exact millisecond, since the platform's page
+        // transition curve (not this widget) decides the exact pacing.
+        await tester.pump(const Duration(milliseconds: 250));
+
+        final latePopShuttle = tester.widget<Text>(find.text('Temp'));
+        expect(
+          latePopShuttle.style!.color!.r,
+          lessThan(earlyPopShuttle.style!.color!.r),
+        );
+
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'a long label at 2x text scale flies without overflow or exception',
+      (tester) async {
+        final enrichedChannel = _channel.copyWith(
+          name: 'My Channel',
+          fieldCount: 1,
+        );
+        final longLabelField = [
+          Field(
+            id: 1,
+            label:
+                'A very long field label that could wrap onto several '
+                'lines at large text scales',
+            values: [FieldValue(createdAt: DateTime(2024), value: 1234.567)],
+          ),
+        ];
+        when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+        when(mockApi.readFeed(any, any)).thenAnswer(
+          (_) async => FeedData(fields: longLabelField, statuses: []),
+        );
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              FieldRange(field: longLabelField.first, truncated: false),
+        );
+
+        await tester.pumpWidget(
+          _wrapScaled(
+            ChannelDetailScreen(
+              channel: _channel,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+            ),
+            2,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(ListTile, longLabelField.first.label!));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 90));
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        await tester.pageBack();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 90));
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       },
     );

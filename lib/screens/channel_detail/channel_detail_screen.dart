@@ -576,12 +576,19 @@ class _FieldRow extends StatelessWidget {
         ? formatTimestamp(l10n, settings, lastUpdated, now)
         : null;
 
+    final heroTag = fieldLabelHeroTag(channel.serverUrl, channel.id, field.id);
+
     return MergeSemantics(
       child: ListTile(
-        title: Text(
-          field.displayLabel,
+        title: FieldLabelHero(
+          tag: heroTag,
+          label: field.displayLabel,
+          // Explicit rather than relying on ListTile's implicit default, so
+          // the flight shuttle has a deterministic style to lerp from.
+          style: theme.textTheme.bodyLarge!.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
           maxLines: 2,
-          overflow: TextOverflow.ellipsis,
         ),
         subtitle: timestamp != null
             ? Text(
@@ -612,6 +619,7 @@ class _FieldRow extends StatelessWidget {
               fieldSettingsStorage: fieldSettingsStorage,
               pinnedFieldsStorage: pinnedFieldsStorage,
               onPinnedChanged: onPinnedChanged,
+              heroTag: heroTag,
             ),
           ),
         ),

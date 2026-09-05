@@ -31,6 +31,13 @@ class FieldChartScreen extends StatefulWidget {
   final FieldSettingsStorage fieldSettingsStorage;
   final PinnedFieldsStorage pinnedFieldsStorage;
   final VoidCallback? onPinnedChanged;
+  // Field-label Hero flight tag from the row that opened this screen. Only
+  // the channel detail screen's field rows pass one (see
+  // FieldLabelHero) — left null for entries opened from the channel list's
+  // pinned section, since that section and an embedded ChannelDetailScreen
+  // can be co-mounted in the wide/tablet layout, and two Heroes sharing a
+  // tag in one subtree is a hard assertion.
+  final String? heroTag;
 
   const FieldChartScreen({
     super.key,
@@ -41,6 +48,7 @@ class FieldChartScreen extends StatefulWidget {
     required this.fieldSettingsStorage,
     required this.pinnedFieldsStorage,
     this.onPinnedChanged,
+    this.heroTag,
   });
 
   @override
@@ -169,10 +177,26 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final chartTitle = _chartSettings.title ?? widget.field.displayLabel;
+    // Skip the flight for a custom chart title: morphing one string into a
+    // different one reads as a glitch, not a transition. The condition
+    // lives only on this end deliberately — an orphaned source Hero with
+    // no partner is harmless, so the two ends can never drift out of
+    // agreement with each other.
+    final heroTag = widget.heroTag;
+    final title = heroTag != null && chartTitle == widget.field.displayLabel
+        ? FieldLabelHero(
+            tag: heroTag,
+            label: chartTitle,
+            style: theme.textTheme.titleLarge!.copyWith(
+              color: theme.appBarTheme.foregroundColor,
+            ),
+          )
+        : Text(chartTitle);
     return Scaffold(
       appBar: AppBar(
-        title: Text(chartTitle),
+        title: title,
         actions: [
           IconButton(
             icon: Icon(_pinned ? Icons.push_pin : Icons.push_pin_outlined),

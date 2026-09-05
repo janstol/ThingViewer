@@ -10,6 +10,8 @@ import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
+import 'package:thingviewer/screens/channel_list/pinned_section.dart';
+import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
 import 'package:thingviewer/storage/channel_snapshot_storage.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
@@ -631,6 +633,75 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('2 days ago'), findsOneWidget);
+      },
+    );
+  });
+
+  group('wide layout field label Hero', () {
+    // A pinned field can render twice at once in the wide/tablet layout:
+    // once in the left panel's pinned section, once in the right panel's
+    // embedded ChannelDetailScreen field list, both under one Navigator.
+    // The pinned tile deliberately never gets a Hero tag (see
+    // FieldChartScreen.heroTag) — two Heroes sharing a tag in one subtree
+    // is a hard Flutter assertion, and this pins that decision.
+    testWidgets(
+      'tapping a pinned tile whose field is also shown in the selected '
+      'channel opens the chart with no duplicate-tag assertion',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'channels': Channel.listToJson([_channel]),
+          'startChannelId': _channel.id,
+          'startChannelServerUrl': _channel.serverUrl,
+        });
+        final storage = ChannelStorage(await SharedPreferences.getInstance());
+        final pinnedFieldsStorage = await _pinnedFieldsStorage();
+        await pinnedFieldsStorage.toggle(_channel, 1);
+
+        when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: _fields, statuses: []));
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async => FieldRange(field: _fields.first, truncated: false),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelListScreen(
+              api: mockApi,
+              channelStorage: storage,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: pinnedFieldsStorage,
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+              backupService: await _backupService(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Present twice: once pinned (left panel), once in the selected
+        // channel's own field list (right panel).
+        expect(find.text('Temp'), findsNWidgets(2));
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(PinnedSection),
+            matching: find.text('Temp'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(FieldChartScreen), findsOneWidget);
       },
     );
   });

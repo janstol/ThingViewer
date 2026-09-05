@@ -128,4 +128,51 @@ void main() {
       expect(tester.widget<Text>(find.text('1')).style?.color, restingColor);
     });
   });
+
+  group('FieldLabelHero', () {
+    const style = TextStyle(color: Colors.black, fontSize: 16);
+
+    testWidgets('renders a bare Text with no Hero under reduce motion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FieldLabelHero(tag: 'x', label: 'Temp', style: style),
+          disableAnimations: true,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Temp'), findsOneWidget);
+      expect(find.byType(Hero), findsNothing);
+    });
+
+    testWidgets('renders a Hero carrying the given tag otherwise', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const FieldLabelHero(
+            tag: 'field-label:x',
+            label: 'Temp',
+            style: style,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Temp'), findsOneWidget);
+      final hero = tester.widget<Hero>(find.byType(Hero));
+      expect(hero.tag, 'field-label:x');
+    });
+  });
+
+  group('fieldLabelHeroTag', () {
+    test('joins server url, channel id, and field id with |', () {
+      expect(
+        fieldLabelHeroTag('https://api.thingspeak.com', 1, 2),
+        'field-label:https://api.thingspeak.com|1|2',
+      );
+    });
+  });
 }

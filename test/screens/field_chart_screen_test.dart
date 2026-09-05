@@ -1790,4 +1790,102 @@ void main() {
     expect(find.byType(LineChart), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  group('field label Hero', () {
+    testWidgets('AppBar title is a Hero when heroTag is passed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            heroTag: 'field-label:x',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final hero = tester.widget<Hero>(
+        find.descendant(of: find.byType(AppBar), matching: find.byType(Hero)),
+      );
+      expect(hero.tag, 'field-label:x');
+    });
+
+    testWidgets('AppBar title is a plain Text when heroTag is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.byType(Hero)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text(_field.displayLabel),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'AppBar title is a plain Text when a custom chart title is set',
+      (tester) async {
+        final fieldSettingsStorage = await _fieldSettingsStorage();
+        await fieldSettingsStorage.save(
+          _channel,
+          _field.id,
+          FieldChartSettings.defaults.copyWith(title: 'Custom title'),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            FieldChartScreen(
+              channel: _channel,
+              field: _field,
+              api: mockApi,
+              settings: await _settings(),
+              fieldSettingsStorage: fieldSettingsStorage,
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+              heroTag: 'field-label:x',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.byType(Hero),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.text('Custom title'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  });
 }
