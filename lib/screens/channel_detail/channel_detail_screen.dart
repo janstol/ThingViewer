@@ -13,6 +13,7 @@ import '../../storage/channel_snapshot_storage.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
 import '../../theme.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/section_header.dart';
 import '../channel_add/channel_add_screen.dart';
 import '../channel_status/channel_status_screen.dart';
@@ -307,65 +308,74 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
         semanticsLabel: l10n.channelDetailRefresh,
         child: ListenableBuilder(
           listenable: _notifier,
-          builder: (context, _) => switch (_notifier.state) {
-            ChannelDetailLoading() => Center(
-              child: CircularProgressIndicator(
-                semanticsLabel: l10n.labelLoading,
-              ),
-            ),
-            ChannelDetailEmpty(:final channel, :final statuses) => _EmptyState(
-              channel: channel,
-              statuses: statuses,
-              settings: widget.settings,
-              now: _now,
-              message: l10n.channelDetailNoFields,
-            ),
-            ChannelDetailError(:final errorCode, :final serverMessage) =>
-              _ScrollableCenter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(switch (errorCode) {
-                    ApiErrorCode.network => l10n.errorNetwork,
-                    ApiErrorCode.credentials => l10n.errorApiCredentialsDetail,
-                    ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
-                  }, textAlign: TextAlign.center),
+          builder: (context, _) => MotionSwitcher(
+            child: switch (_notifier.state) {
+              ChannelDetailLoading() => Center(
+                key: const ValueKey('loading'),
+                child: CircularProgressIndicator(
+                  semanticsLabel: l10n.labelLoading,
                 ),
               ),
-            ChannelDetailLoaded(
-              :final channel,
-              :final fields,
-              :final statuses,
-              :final cachedAt,
-              :final refreshing,
-              :final refreshError,
-            ) =>
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (cachedAt != null || refreshError != null)
-                    _StaleBanner(
-                      cachedAt: cachedAt!,
-                      refreshing: refreshing,
-                      refreshError: refreshError,
-                      now: _now,
-                    ),
-                  Expanded(
-                    child: _FieldList(
-                      channel: channel,
-                      fields: fields,
-                      statuses: statuses,
-                      api: widget.api,
-                      settings: widget.settings,
-                      fieldSettingsStorage: widget.fieldSettingsStorage,
-                      pinnedFieldsStorage: widget.pinnedFieldsStorage,
-                      onPinnedChanged: _handlePinnedChanged,
-                      now: _now,
-                      fabClearance: widget.fabClearance,
-                    ),
+              ChannelDetailEmpty(:final channel, :final statuses) =>
+                _EmptyState(
+                  key: const ValueKey('empty'),
+                  channel: channel,
+                  statuses: statuses,
+                  settings: widget.settings,
+                  now: _now,
+                  message: l10n.channelDetailNoFields,
+                ),
+              ChannelDetailError(:final errorCode, :final serverMessage) =>
+                _ScrollableCenter(
+                  key: const ValueKey('error'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(switch (errorCode) {
+                      ApiErrorCode.network => l10n.errorNetwork,
+                      ApiErrorCode.credentials =>
+                        l10n.errorApiCredentialsDetail,
+                      ApiErrorCode.general =>
+                        serverMessage ?? l10n.errorGeneral,
+                    }, textAlign: TextAlign.center),
                   ),
-                ],
-              ),
-          },
+                ),
+              ChannelDetailLoaded(
+                :final channel,
+                :final fields,
+                :final statuses,
+                :final cachedAt,
+                :final refreshing,
+                :final refreshError,
+              ) =>
+                Column(
+                  key: const ValueKey('loaded'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (cachedAt != null || refreshError != null)
+                      _StaleBanner(
+                        cachedAt: cachedAt!,
+                        refreshing: refreshing,
+                        refreshError: refreshError,
+                        now: _now,
+                      ),
+                    Expanded(
+                      child: _FieldList(
+                        channel: channel,
+                        fields: fields,
+                        statuses: statuses,
+                        api: widget.api,
+                        settings: widget.settings,
+                        fieldSettingsStorage: widget.fieldSettingsStorage,
+                        pinnedFieldsStorage: widget.pinnedFieldsStorage,
+                        onPinnedChanged: _handlePinnedChanged,
+                        now: _now,
+                        fabClearance: widget.fabClearance,
+                      ),
+                    ),
+                  ],
+                ),
+            },
+          ),
         ),
       ),
     );
@@ -469,6 +479,7 @@ class _FieldList extends StatelessWidget {
     for (var i = 0; i < sectionFields.length; i++) ...[
       if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
       _FieldRow(
+        key: ValueKey(sectionFields[i].id),
         channel: channel,
         field: sectionFields[i],
         api: api,
@@ -541,6 +552,7 @@ class _FieldRow extends StatelessWidget {
   final DateTime now;
 
   const _FieldRow({
+    super.key,
     required this.channel,
     required this.field,
     required this.api,
@@ -581,8 +593,8 @@ class _FieldRow extends StatelessWidget {
               )
             : null,
         trailing: field.lastValue != null
-            ? Text(
-                formatFieldValue(field.lastValue!, decimals: decimals),
+            ? ValuePulse(
+                value: formatFieldValue(field.lastValue!, decimals: decimals),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: dataAccent,
                   fontWeight: FontWeight.bold,
@@ -616,6 +628,7 @@ class _EmptyState extends StatelessWidget {
   final String message;
 
   const _EmptyState({
+    super.key,
     required this.channel,
     required this.statuses,
     required this.settings,
@@ -651,7 +664,7 @@ class _EmptyState extends StatelessWidget {
 /// reaches the enclosing RefreshIndicator on states that have no list.
 class _ScrollableCenter extends StatelessWidget {
   final Widget child;
-  const _ScrollableCenter({required this.child});
+  const _ScrollableCenter({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(

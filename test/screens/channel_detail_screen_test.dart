@@ -608,6 +608,37 @@ void main() {
     expect(find.byType(Divider), findsNothing);
   });
 
+  testWidgets('the age ticker does not pulse an unchanged value', (
+    tester,
+  ) async {
+    final enrichedChannel = _channel.copyWith(
+      name: 'My Channel',
+      fieldCount: 1,
+    );
+    when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final restingColor = tester.widget<Text>(find.text('23.50')).style?.color;
+
+    // The 60s age ticker rebuilds the field row (its "last entry" timestamp
+    // changes), but the value itself hasn't — ValuePulse must not fire.
+    await tester.pump(const Duration(seconds: 60));
+    expect(tester.widget<Text>(find.text('23.50')).style?.color, restingColor);
+  });
+
   testWidgets(
     'the last field clears the FAB when embedded in the wide split layout',
     (tester) async {

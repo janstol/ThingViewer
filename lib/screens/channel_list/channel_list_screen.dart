@@ -14,6 +14,7 @@ import '../../storage/channel_snapshot_storage.dart';
 import '../../storage/channel_storage.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/section_header.dart';
 import '../channel_add/channel_add_screen.dart';
 import '../channel_detail/channel_detail_screen.dart';
@@ -722,90 +723,101 @@ class _ChannelListBody extends StatelessWidget {
       builder: (context, _) => ListenableBuilder(
         listenable: notifier,
         builder: (context, _) {
-          final Widget body = switch (notifier.state) {
-            ChannelListLoading() => Center(
-              child: CircularProgressIndicator(
-                semanticsLabel: l10n.labelLoading,
+          final Widget body = MotionSwitcher(
+            child: switch (notifier.state) {
+              ChannelListLoading() => Center(
+                key: const ValueKey('loading'),
+                child: CircularProgressIndicator(
+                  semanticsLabel: l10n.labelLoading,
+                ),
               ),
-            ),
-            ChannelListError(:final message) => Center(child: Text(message)),
-            ChannelListCorrupted() => _CorruptedBody(
-              channelStorage: channelStorage,
-              backupService: backupService,
-              settings: settings,
-              onChanged: onImported,
-            ),
-            ChannelListLoaded(:final channels) =>
-              channels.isEmpty
-                  ? Center(child: Text(l10n.channelListEmpty))
-                  : ReorderableListView.builder(
-                      padding: EdgeInsets.only(
-                        bottom:
-                            MediaQuery.paddingOf(context).bottom +
-                            (fabClearance ? _kFabClearance : 0),
-                      ),
-                      header: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (pinnedEntries.isNotEmpty)
-                            PinnedSection(
-                              entries: pinnedEntries,
-                              now: now,
-                              onEdit: onEditPinned,
-                              onTap: onTapPinned,
-                            ),
-                          SectionHeader(title: l10n.channelListSectionTitle),
-                        ],
-                      ),
-                      itemCount: channels.length,
-                      onReorderItem: notifier.reorderChannels,
-                      itemBuilder: (context, index) {
-                        final channel = channels[index];
-                        return Dismissible(
-                          key: ValueKey(channel),
-                          direction: DismissDirection.endToStart,
-                          confirmDismiss: (_) =>
-                              _confirmDelete(context, channel),
-                          onDismissed: (_) => onDelete(channel),
-                          background: Container(
-                            color: Theme.of(context).colorScheme.error,
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                            ),
-                            child: ExcludeSemantics(
-                              child: Icon(
-                                Icons.delete_outline,
-                                color: Theme.of(context).colorScheme.onError,
+              ChannelListError(:final message) => Center(
+                key: const ValueKey('error'),
+                child: Text(message),
+              ),
+              ChannelListCorrupted() => _CorruptedBody(
+                key: const ValueKey('corrupted'),
+                channelStorage: channelStorage,
+                backupService: backupService,
+                settings: settings,
+                onChanged: onImported,
+              ),
+              ChannelListLoaded(:final channels) =>
+                channels.isEmpty
+                    ? Center(
+                        key: const ValueKey('empty'),
+                        child: Text(l10n.channelListEmpty),
+                      )
+                    : ReorderableListView.builder(
+                        key: const ValueKey('loaded'),
+                        padding: EdgeInsets.only(
+                          bottom:
+                              MediaQuery.paddingOf(context).bottom +
+                              (fabClearance ? _kFabClearance : 0),
+                        ),
+                        header: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (pinnedEntries.isNotEmpty)
+                              PinnedSection(
+                                entries: pinnedEntries,
+                                now: now,
+                                onEdit: onEditPinned,
+                                onTap: onTapPinned,
+                              ),
+                            SectionHeader(title: l10n.channelListSectionTitle),
+                          ],
+                        ),
+                        itemCount: channels.length,
+                        onReorderItem: notifier.reorderChannels,
+                        itemBuilder: (context, index) {
+                          final channel = channels[index];
+                          return Dismissible(
+                            key: ValueKey(channel),
+                            direction: DismissDirection.endToStart,
+                            confirmDismiss: (_) =>
+                                _confirmDelete(context, channel),
+                            onDismissed: (_) => onDelete(channel),
+                            background: Container(
+                              color: Theme.of(context).colorScheme.error,
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: ExcludeSemantics(
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  color: Theme.of(context).colorScheme.onError,
+                                ),
                               ),
                             ),
-                          ),
-                          child: Semantics(
-                            customSemanticsActions: {
-                              CustomSemanticsAction(
-                                label: l10n.channelListDeleteSemantics,
-                              ): () async {
-                                if (await _confirmDelete(context, channel) ==
-                                    true) {
-                                  onDelete(channel);
-                                }
+                            child: Semantics(
+                              customSemanticsActions: {
+                                CustomSemanticsAction(
+                                  label: l10n.channelListDeleteSemantics,
+                                ): () async {
+                                  if (await _confirmDelete(context, channel) ==
+                                      true) {
+                                    onDelete(channel);
+                                  }
+                                },
                               },
-                            },
-                            child: _ChannelTile(
-                              channel: channel,
-                              snapshot: channelSnapshotStorage.snapshotFor(
-                                channel,
+                              child: _ChannelTile(
+                                channel: channel,
+                                snapshot: channelSnapshotStorage.snapshotFor(
+                                  channel,
+                                ),
+                                now: now,
+                                isSelected: channel == selectedChannel,
+                                onTap: () => onTap(channel),
                               ),
-                              now: now,
-                              isSelected: channel == selectedChannel,
-                              onTap: () => onTap(channel),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-          };
+                          );
+                        },
+                      ),
+            },
+          );
           final content = pinnedEntries.isEmpty
               ? body
               : RefreshIndicator(
@@ -855,6 +867,7 @@ class _CorruptedBody extends StatelessWidget {
   final VoidCallback onChanged;
 
   const _CorruptedBody({
+    super.key,
     required this.channelStorage,
     required this.backupService,
     required this.settings,
@@ -984,10 +997,7 @@ class _ChannelTile extends StatelessWidget {
           children: [
             if (hasDataLine)
               Text(formatEntryAge(l10n, now.difference(newestValueAt))),
-            Text(
-              '${channel.serverUrl} · ${channel.id}',
-              style: identityStyle,
-            ),
+            Text('${channel.serverUrl} · ${channel.id}', style: identityStyle),
             if (channel.authError)
               Row(
                 children: [

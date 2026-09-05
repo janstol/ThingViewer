@@ -4,6 +4,7 @@ import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/field.dart';
 import '../../theme.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/section_header.dart';
 import 'pinned_notifier.dart';
 
@@ -41,7 +42,12 @@ class PinnedSection extends StatelessWidget {
           ),
         ),
         for (final entry in entries)
-          _PinnedRow(entry: entry, now: now, onTap: () => onTap(entry)),
+          _PinnedRow(
+            key: ValueKey(entry.pin),
+            entry: entry,
+            now: now,
+            onTap: () => onTap(entry),
+          ),
         const Divider(height: 1),
       ],
     );
@@ -54,6 +60,7 @@ class _PinnedRow extends StatelessWidget {
   final VoidCallback onTap;
 
   const _PinnedRow({
+    super.key,
     required this.entry,
     required this.now,
     required this.onTap,
@@ -94,8 +101,8 @@ class _PinnedRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              value != null ? formatFieldValue(value) : l10n.labelNa,
+            ValuePulse(
+              value: value != null ? formatFieldValue(value) : l10n.labelNa,
               style: valueStyle,
             ),
             Text(
@@ -113,8 +120,8 @@ class _PinnedRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              value != null ? formatFieldValue(value) : l10n.labelNa,
+            ValuePulse(
+              value: value != null ? formatFieldValue(value) : l10n.labelNa,
               style: valueStyle,
             ),
             if (valueAt != null)

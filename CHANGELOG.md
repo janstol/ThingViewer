@@ -11,6 +11,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The channel list's row subtitle now leads with a freshness line (when a cached snapshot has a value), with the server URL and channel id demoted to a smaller, muted line below. The channel list also updates live when a snapshot is written by the channel detail screen or a pinned-fields refresh, not just when a channel screen is popped.
 - Bumped the Android Gradle Plugin to 9.1.0, Gradle to 9.3.1, and the Kotlin Gradle Plugin to 2.4.0. Required bumping `file_picker` to 12.0.0 and `package_info_plus` to 10.2.1 along with it. On Android, saving a backup or CSV export now goes through the Storage Access Framework and returns a content URI instead of a file path; this doesn't change what's visible to the user.
 - The channel detail screen's field rows now give the value more visual weight than the label, and pinned fields get their own "Pinned fields" section above the rest.
+- Loading, empty, error, and loaded states now fade into each other on the channel list, channel detail, and field chart screens, instead of cutting hard from one to the next. The chart/table toggle on the field chart screen now crossfades too. A field's displayed value now briefly pulses its "changed" colour when a refresh actually changes it, so a value that changed reads differently from one that didn't.
+
+### Accessibility
+
+- All of the above motion honours the platform's reduce-motion setting: transitions and pulses complete instantly instead of just running faster.
 
 ## [0.12.0] - 2026-08-23
 
