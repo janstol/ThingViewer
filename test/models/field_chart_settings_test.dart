@@ -243,5 +243,41 @@ void main() {
       expect(settings.yMin, 0.0);
       expect(settings.yMax, 100.0);
     });
+
+    test('a non-string title round-trips to null rather than throwing', () {
+      final settings = FieldChartSettings.fromJson({'title': 123});
+
+      expect(settings.title, isNull);
+    });
+
+    test(
+      'non-string axis labels round-trip to null rather than throwing',
+      () {
+        final settings = FieldChartSettings.fromJson({
+          'xAxisLabel': 42,
+          'yAxisLabel': <String, dynamic>{},
+        });
+
+        expect(settings.xAxisLabel, isNull);
+        expect(settings.yAxisLabel, isNull);
+      },
+    );
+
+    test('decimals above the picker range (0-6) fall back to null', () {
+      final settings = FieldChartSettings.fromJson({'decimals': 100});
+
+      expect(settings.decimals, isNull);
+    });
+
+    test('negative decimals fall back to null', () {
+      final settings = FieldChartSettings.fromJson({'decimals': -1});
+
+      expect(settings.decimals, isNull);
+    });
+
+    test('decimals at the edges of the picker range (0 and 6) parse', () {
+      expect(FieldChartSettings.fromJson({'decimals': 0}).decimals, 0);
+      expect(FieldChartSettings.fromJson({'decimals': 6}).decimals, 6);
+    });
   });
 }

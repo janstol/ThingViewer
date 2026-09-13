@@ -28,6 +28,21 @@ class ChannelStorage {
 
   String? get corruptRaw => quarantinedRaw(_prefs, _kChannelsKey);
 
+  /// The raw JSON string currently saved, or null if nothing is — for
+  /// [BackupService] to snapshot before a risky write and restore with
+  /// [restoreRawJson] if that write fails partway through.
+  String? get rawJson => _prefs.getString(_kChannelsKey);
+
+  /// Restores a snapshot captured by [rawJson] verbatim, or clears the key
+  /// if it was null at snapshot time.
+  Future<void> restoreRawJson(String? rawJson) async {
+    if (rawJson == null) {
+      await _prefs.remove(_kChannelsKey);
+    } else {
+      await _prefs.setString(_kChannelsKey, rawJson);
+    }
+  }
+
   Future<void> discardCorrupt() async {
     await clearQuarantine(_prefs, _kChannelsKey);
     await _prefs.remove(_kChannelsKey);

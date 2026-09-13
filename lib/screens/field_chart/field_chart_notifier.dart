@@ -132,9 +132,19 @@ class FieldChartNotifier extends ChangeNotifier {
           );
       }
       _invalidCache.addAll(result.field.invalidAt);
-      // The requested range is now covered even if it returned no data —
-      // an empty window is a legitimate result, not a hole to re-fetch.
-      _addCovered(range);
+      if (!truncated) {
+        // The requested range is now covered even if it returned no data —
+        // an empty window is a legitimate result, not a hole to re-fetch.
+        _addCovered(range);
+      } else {
+        // A truncated fetch only proves coverage from `coveredFrom` onward —
+        // recording the full range as covered would hide the truncation on
+        // a rebuild and could report an unfetched older subrange as empty.
+        final coveredFrom = result.coveredFrom;
+        if (coveredFrom != null && coveredFrom.isBefore(range.end)) {
+          _addCovered(DateTimeRange(start: coveredFrom, end: range.end));
+        }
+      }
     } on ApiException catch (e) {
       return FieldChartError(
         range,

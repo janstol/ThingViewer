@@ -197,6 +197,7 @@
   "backupErrorFilePicker": "Couldn't open the file picker.",
   "backupExportSuccess": "Backup saved",
   "backupImportSuccess": "Backup imported",
+  "backupImportFailed": "Import failed. Nothing was changed.",
   "recoveryTitle": "Recover data",
   "recoveryImportBackup": "Import a backup",
   "recoveryNothingToRecover": "Nothing to recover.",
@@ -311,6 +312,12 @@
     }
   },
   "importPreviewNoApiKeys": "API keys were excluded from this backup.",
+  "importPreviewSkippedEntries": "{count, plural, =1{1 entry in this backup couldn't be read and was skipped.} other{{count} entries in this backup couldn't be read and were skipped.}}",
+  "@importPreviewSkippedEntries": {
+    "placeholders": {
+      "count": { "type": "num" }
+    }
+  },
   "importPreviewStatusNew": "NEW",
   "importPreviewStatusUpdate": "UPDATE",
   "importPreviewStatusUnchanged": "UNCHANGED",

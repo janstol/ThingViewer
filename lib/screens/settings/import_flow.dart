@@ -58,7 +58,15 @@ Future<bool> runBackupImport(
   );
   if (selection == null || !context.mounted) return false;
 
-  await backupService.applyImport(contents, selection);
+  try {
+    await backupService.applyImport(contents, selection);
+  } on BackupException {
+    if (!context.mounted) return false;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.backupImportFailed)));
+    return false;
+  }
   if (!context.mounted) return true;
   ScaffoldMessenger.of(
     context,

@@ -40,8 +40,11 @@ const _pin = PinnedField(
 
 const _chartKey = 'https://api.thingspeak.com|1|1';
 
-ImportPlan _plan() => ImportPlan(
-  contents: const BackupContents(channels: [_updatedChannel, _newChannel]),
+ImportPlan _plan({int skippedEntries = 0}) => ImportPlan(
+  contents: BackupContents(
+    channels: const [_updatedChannel, _newChannel],
+    skippedEntries: skippedEntries,
+  ),
   channels: [
     ChannelDiff(
       incoming: _updatedChannel,
@@ -230,6 +233,31 @@ void main() {
     expect(result!.pinnedFields, {_pin});
     expect(result!.removeChannelsNotInBackup, isFalse);
   });
+
+  testWidgets(
+    'renders the skipped-entries notice when the backup had unreadable '
+    'entries',
+    (tester) async {
+      await _pump(tester, plan: _plan(skippedEntries: 2));
+
+      expect(
+        find.textContaining("couldn't be read and were skipped"),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'does not render the skipped-entries notice when nothing was skipped',
+    (tester) async {
+      await _pump(tester, plan: _plan());
+
+      expect(
+        find.textContaining("couldn't be read and"),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('Cancel pops null', (tester) async {
     ImportSelection? result;

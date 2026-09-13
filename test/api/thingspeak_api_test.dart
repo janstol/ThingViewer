@@ -303,6 +303,26 @@ void main() {
     String formatDate(DateTime dt) =>
         dt.toUtc().toIso8601String().replaceAll('T', ' ').replaceAll('Z', '');
 
+    // Like feedForTimes, but lets each entry independently carry a value (or
+    // not) and an independently valid (or garbled) created_at, so the raw
+    // entry timestamp and the oldest *value* timestamp can be made to diverge.
+    String feedForEntries(
+      List<({DateTime? createdAt, String? value})> entries,
+    ) {
+      final feeds = entries
+          .map(
+            (e) => {
+              'created_at': e.createdAt?.toIso8601String() ?? 'not-a-date',
+              if (e.value != null) 'field1': e.value,
+            },
+          )
+          .toList();
+      return jsonEncode({
+        'channel': {'id': 123456, 'field1': 'Field1'},
+        'feeds': feeds,
+      });
+    }
+
     test(
       'paginates backward past the 8000-entry cap and merges sorted results',
       () async {
@@ -430,6 +450,194 @@ void main() {
         expect(callCount, 2);
         expect(result.truncated, isFalse);
         expect(result.field.values.length, 400 + 50);
+      },
+    );
+
+    test(
+      'returns older valid readings past a full page whose values are all '
+      'null (regression: must not stop pagination on empty values)',
+      () async {
+        final end = DateTime.utc(2024, 1, 10);
+        final start = DateTime.utc(2023, 12, 1);
+
+        // Full page, every entry has a timestamp but no field1 value at all.
+        final page1Times = List.generate(
+          8000,
+          (i) => end.subtract(Duration(seconds: 7999 - i)),
+        );
+        final page1 = feedForEntries([
+          for (final t in page1Times) (createdAt: t, value: null),
+        ]);
+
+        final page1Oldest = page1Times.first;
+        final expectedSecondEnd = page1Oldest.subtract(
+          const Duration(seconds: 1),
+        );
+        final page2Times = List.generate(
+          50,
+          (i) => expectedSecondEnd.subtract(Duration(seconds: 49 - i)),
+        );
+
+        var callCount = 0;
+        when(mockClient.get(any)).thenAnswer((_) async {
+          callCount++;
+          return ok(callCount == 1 ? page1 : feedForTimes(page2Times));
+        });
+
+        final result = await api.readFieldRange(
+          publicChannel,
+          1,
+          start: start,
+          end: end,
+        );
+
+        expect(callCount, 2);
+        expect(result.truncated, isFalse);
+        // Only page 2 carried usable values; page 1's readings were lost to
+        // never having a parseable value, not to pagination stopping early.
+        expect(result.field.values.length, 50);
+        expect(
+          result.field.values.first.createdAt,
+          page2Times.first.toLocal(),
+        );
+      },
+    );
+
+    test(
+      'derives the next page cursor from the oldest raw entry, not the '
+      'oldest value, when the oldest entries on a page carry no value',
+      () async {
+        final end = DateTime.utc(2024, 1, 10);
+        final start = DateTime.utc(2023, 12, 1);
+
+        final page1Times = List.generate(
+          8000,
+          (i) => end.subtract(Duration(seconds: 7999 - i)),
+        );
+        // The oldest 100 raw entries have no field1 value; the rest do.
+        final page1 = feedForEntries([
+          for (var i = 0; i < page1Times.length; i++)
+            (
+              createdAt: page1Times[i],
+              value: i < 100 ? null : '${page1Times[i].millisecondsSinceEpoch}',
+            ),
+        ]);
+        final oldestValueAt = page1Times[100];
+        final oldestRawAt = page1Times.first;
+        // These must actually diverge, or the test proves nothing.
+        expect(oldestRawAt, isNot(oldestValueAt));
+
+        final expectedSecondEnd = oldestRawAt.subtract(
+          const Duration(seconds: 1),
+        );
+        final page2Times = List.generate(
+          50,
+          (i) => expectedSecondEnd.subtract(Duration(seconds: 49 - i)),
+        );
+
+        var callCount = 0;
+        when(mockClient.get(any)).thenAnswer((_) async {
+          callCount++;
+          return ok(callCount == 1 ? page1 : feedForTimes(page2Times));
+        });
+
+        await api.readFieldRange(publicChannel, 1, start: start, end: end);
+
+        final captured = verify(
+          mockClient.get(captureAny),
+        ).captured.cast<Uri>();
+        expect(
+          captured[1].queryParameters['end'],
+          formatDate(expectedSecondEnd),
+        );
+      },
+    );
+
+    test(
+      'collects invalidAt markers from an all-invalid page and continues '
+      'pagination past it',
+      () async {
+        final end = DateTime.utc(2024, 1, 10);
+        final start = DateTime.utc(2023, 11, 1);
+
+        // Newest page: a full page of valid readings.
+        final page1Times = List.generate(
+          8000,
+          (i) => end.subtract(Duration(seconds: 7999 - i)),
+        );
+        final page1 = feedForTimes(page1Times);
+
+        // Middle page: a full page whose every value is non-finite.
+        final page1Oldest = page1Times.first;
+        final page2End = page1Oldest.subtract(const Duration(seconds: 1));
+        final page2Times = List.generate(
+          8000,
+          (i) => page2End.subtract(Duration(seconds: 7999 - i)),
+        );
+        final page2 = feedForEntries([
+          for (final t in page2Times) (createdAt: t, value: 'NaN'),
+        ]);
+
+        // Oldest page: a short page of valid readings, terminating pagination.
+        final page2Oldest = page2Times.first;
+        final page3End = page2Oldest.subtract(const Duration(seconds: 1));
+        final page3Times = List.generate(
+          50,
+          (i) => page3End.subtract(Duration(seconds: 49 - i)),
+        );
+        final page3 = feedForTimes(page3Times);
+
+        var callCount = 0;
+        when(mockClient.get(any)).thenAnswer((_) async {
+          callCount++;
+          return ok(switch (callCount) {
+            1 => page1,
+            2 => page2,
+            _ => page3,
+          });
+        });
+
+        final result = await api.readFieldRange(
+          publicChannel,
+          1,
+          start: start,
+          end: end,
+        );
+
+        expect(callCount, 3);
+        expect(result.truncated, isFalse);
+        expect(result.field.values.length, 8000 + 50);
+        expect(result.field.invalidAt.length, 8000);
+        expect(
+          result.field.invalidAt.toSet(),
+          page2Times.map((t) => t.toLocal()).toSet(),
+        );
+      },
+    );
+
+    test(
+      'stops and reports truncated when a full page has no parseable '
+      'created_at anywhere on it',
+      () async {
+        final end = DateTime.utc(2024, 1, 10);
+        final start = DateTime.utc(2023, 12, 1);
+
+        final page = feedForEntries([
+          for (var i = 0; i < 8000; i++) (createdAt: null, value: '1.0'),
+        ]);
+
+        when(mockClient.get(any)).thenAnswer((_) async => ok(page));
+
+        final result = await api.readFieldRange(
+          publicChannel,
+          1,
+          start: start,
+          end: end,
+        );
+
+        expect(result.truncated, isTrue);
+        expect(result.field.values, isEmpty);
+        verify(mockClient.get(any)).called(1);
       },
     );
   });

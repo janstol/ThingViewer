@@ -66,7 +66,18 @@ class FieldRange {
   final Field field;
   final bool truncated;
 
-  const FieldRange({required this.field, required this.truncated});
+  /// The oldest raw feed timestamp pagination actually reached, regardless
+  /// of whether that entry carried a usable value for this field. Null when
+  /// the range returned no entries at all. Only meaningful when [truncated]
+  /// is true — a non-truncated result already covers the full requested
+  /// range end to end.
+  final DateTime? coveredFrom;
+
+  const FieldRange({
+    required this.field,
+    required this.truncated,
+    this.coveredFrom,
+  });
 }
 
 /// The result of [ThingSpeakApi.readFeed]: field values and channel statuses
@@ -161,8 +172,11 @@ class ThingSpeakApi {
 
   /// Like [readField], but also returns the raw feed entry count for the
   /// page — the count *before* filtering to this field's values, needed by
-  /// [readFieldRange] to detect a short (final) page for sparse fields.
-  Future<({Field field, int rawEntryCount})> _readFieldPage(
+  /// [readFieldRange] to detect a short (final) page for sparse fields — and
+  /// the oldest raw entry timestamp on the page, needed to paginate on
+  /// entries rather than on values that happened to parse.
+  Future<({Field field, int rawEntryCount, DateTime? oldestRawAt})>
+  _readFieldPage(
     Channel channel,
     int fieldId,
     ApiParameters params,
@@ -220,6 +234,7 @@ class ThingSpeakApi {
     String? label;
     var cursorEnd = end;
     var truncated = false;
+    DateTime? coveredFrom;
 
     for (var page = 0; page < _maxPages; page++) {
       final result = await _readFieldPage(
@@ -234,11 +249,15 @@ class ThingSpeakApi {
       );
       label ??= result.field.label;
 
-      if (result.field.values.isEmpty) break;
-
       collected.addAll(result.field.values);
       invalidAt.addAll(result.field.invalidAt);
       onProgress?.call(collected.length);
+
+      final oldestRawAt = result.oldestRawAt;
+      if (oldestRawAt != null &&
+          (coveredFrom == null || oldestRawAt.isBefore(coveredFrom))) {
+        coveredFrom = oldestRawAt;
+      }
 
       if (result.rawEntryCount < _maxResultsPerRequest) {
         // Short page: the full range down to `start` is covered. Compared
@@ -247,8 +266,15 @@ class ThingSpeakApi {
         break;
       }
 
-      final oldest = result.field.values.first.createdAt;
-      final nextCursorEnd = oldest.subtract(const Duration(seconds: 1));
+      if (oldestRawAt == null) {
+        // A full page but no entry on it had a parseable timestamp: there is
+        // no reliable cursor to advance by, so stop rather than re-request
+        // the same window forever.
+        truncated = true;
+        break;
+      }
+
+      final nextCursorEnd = oldestRawAt.subtract(const Duration(seconds: 1));
       if (!nextCursorEnd.isAfter(start)) break;
 
       if (!nextCursorEnd.isBefore(cursorEnd)) {
@@ -272,6 +298,7 @@ class ThingSpeakApi {
         invalidAt: invalidAt,
       ),
       truncated: truncated,
+      coveredFrom: coveredFrom,
     );
   }
 
@@ -437,9 +464,8 @@ class ThingSpeakApi {
     return FeedData(fields: parsedFields, statuses: statuses);
   }
 
-  static ({Field field, int rawEntryCount}) _parseSingleField(
-    _ParseFieldArgs args,
-  ) {
+  static ({Field field, int rawEntryCount, DateTime? oldestRawAt})
+  _parseSingleField(_ParseFieldArgs args) {
     final json = jsonDecode(args.raw) as Map<String, dynamic>;
     final channelJson = json['channel'] as Map<String, dynamic>? ?? {};
     final feeds = json['feeds'] as List<dynamic>? ?? [];
@@ -447,12 +473,17 @@ class ThingSpeakApi {
     final label = channelJson['field${args.fieldId}'] as String?;
     final values = <FieldValue>[];
     final invalidAt = <DateTime>[];
+    DateTime? oldestRawAt;
 
     for (final entry in feeds) {
       final feed = entry as Map<String, dynamic>;
       final createdAt = DateTime.tryParse(
         feed['created_at'] as String? ?? '',
       )?.toLocal();
+      if (createdAt != null &&
+          (oldestRawAt == null || createdAt.isBefore(oldestRawAt))) {
+        oldestRawAt = createdAt;
+      }
       final rawValue = feed['field${args.fieldId}'];
       if (createdAt == null || rawValue == null) continue;
       final value = double.tryParse('$rawValue');
@@ -474,6 +505,7 @@ class ThingSpeakApi {
         invalidAt: invalidAt,
       ),
       rawEntryCount: feeds.length,
+      oldestRawAt: oldestRawAt,
     );
   }
 

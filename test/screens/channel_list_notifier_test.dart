@@ -40,6 +40,12 @@ class _FakeChannelStorage implements ChannelStorage {
     issue = null;
     corruptRaw = null;
   }
+
+  @override
+  String? get rawJson => null;
+
+  @override
+  Future<void> restoreRawJson(String? rawJson) async {}
 }
 
 const _a = Channel(

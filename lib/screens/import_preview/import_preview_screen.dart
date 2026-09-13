@@ -174,6 +174,8 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
             if (contents.appVersion != null)
               Text(l10n.importPreviewAppVersion(contents.appVersion!)),
             if (contents.apiKeysExcluded) Text(l10n.importPreviewNoApiKeys),
+            if (contents.skippedEntries > 0)
+              Text(l10n.importPreviewSkippedEntries(contents.skippedEntries)),
           ],
         ),
       ),

@@ -22,6 +22,20 @@ enum EntryTimeDisplay { absolute, age, both }
 
 const defaultEntryTimeDisplay = EntryTimeDisplay.both;
 
+/// Every key [SettingsStorage.importJson] can write, for
+/// [SettingsStorage.snapshotForImport] to capture and
+/// [SettingsStorage.restoreSnapshot] to roll back — kept here rather than
+/// duplicated by a caller since these key constants are private to this file.
+const _kImportableKeys = [
+  _kThemeModeKey,
+  _kDateFormatKey,
+  _kTimeFormatKey,
+  _kTimezoneDisplayKey,
+  _kEntryTimeDisplayKey,
+  _kStartChannelIdKey,
+  _kStartChannelServerUrlKey,
+];
+
 /// Persists user preferences using SharedPreferences.
 class SettingsStorage {
   final SharedPreferences _prefs;
@@ -137,6 +151,27 @@ class SettingsStorage {
         _kStartChannelServerUrlKey,
         startChannelServerUrlValue,
       );
+    }
+  }
+
+  /// Captures the current raw value of every key [importJson] can write, so
+  /// a failed import can be rolled back with [restoreSnapshot].
+  Map<String, Object?> snapshotForImport() => {
+    for (final key in _kImportableKeys) key: _prefs.get(key),
+  };
+
+  /// Restores a snapshot taken by [snapshotForImport], removing any key that
+  /// was absent at snapshot time.
+  Future<void> restoreSnapshot(Map<String, Object?> snapshot) async {
+    for (final entry in snapshot.entries) {
+      final value = entry.value;
+      if (value == null) {
+        await _prefs.remove(entry.key);
+      } else if (value is int) {
+        await _prefs.setInt(entry.key, value);
+      } else if (value is String) {
+        await _prefs.setString(entry.key, value);
+      }
     }
   }
 }

@@ -149,6 +149,14 @@ class _FakeSettingsStorage implements SettingsStorage {
       _startChannelServerUrl = startChannelServerUrlValue;
     }
   }
+
+  @override
+  Map<String, Object?> snapshotForImport() => exportJson();
+
+  @override
+  Future<void> restoreSnapshot(Map<String, Object?> snapshot) async {
+    await importJson(snapshot);
+  }
 }
 
 void main() {

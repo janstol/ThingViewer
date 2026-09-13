@@ -26,6 +26,22 @@ class FieldSettingsStorage {
 
   String? get corruptRaw => quarantinedRaw(_prefs, _kFieldChartSettingsKey);
 
+  /// The raw JSON string currently saved, or null if nothing is — for
+  /// [BackupService] to snapshot before a risky write and restore with
+  /// [restoreRawJson] if that write fails partway through.
+  String? get rawJson => _prefs.getString(_kFieldChartSettingsKey);
+
+  /// Restores a snapshot captured by [rawJson] verbatim, or clears the key
+  /// if it was null at snapshot time. Does not refresh the in-memory cache —
+  /// call [reload] afterward.
+  Future<void> restoreRawJson(String? rawJson) async {
+    if (rawJson == null) {
+      await _prefs.remove(_kFieldChartSettingsKey);
+    } else {
+      await _prefs.setString(_kFieldChartSettingsKey, rawJson);
+    }
+  }
+
   Future<void> discardCorrupt() async {
     await clearQuarantine(_prefs, _kFieldChartSettingsKey);
     await _prefs.remove(_kFieldChartSettingsKey);

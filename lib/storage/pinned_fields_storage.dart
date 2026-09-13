@@ -28,6 +28,22 @@ class PinnedFieldsStorage {
 
   String? get corruptRaw => quarantinedRaw(_prefs, _kPinnedFieldsKey);
 
+  /// The raw JSON string currently saved, or null if nothing is — for
+  /// [BackupService] to snapshot before a risky write and restore with
+  /// [restoreRawJson] if that write fails partway through.
+  String? get rawJson => _prefs.getString(_kPinnedFieldsKey);
+
+  /// Restores a snapshot captured by [rawJson] verbatim, or clears the key
+  /// if it was null at snapshot time. Does not refresh the in-memory cache —
+  /// call [reload] afterward.
+  Future<void> restoreRawJson(String? rawJson) async {
+    if (rawJson == null) {
+      await _prefs.remove(_kPinnedFieldsKey);
+    } else {
+      await _prefs.setString(_kPinnedFieldsKey, rawJson);
+    }
+  }
+
   Future<void> discardCorrupt() async {
     await clearQuarantine(_prefs, _kPinnedFieldsKey);
     await _prefs.remove(_kPinnedFieldsKey);

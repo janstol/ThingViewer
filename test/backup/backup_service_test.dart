@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/backup/import_plan.dart';
 import 'package:thingviewer/models/channel.dart';
@@ -12,6 +13,25 @@ import 'package:thingviewer/storage/channel_storage.dart';
 import 'package:thingviewer/storage/field_settings_storage.dart';
 import 'package:thingviewer/storage/pinned_fields_storage.dart';
 import 'package:thingviewer/storage/settings_storage.dart';
+
+/// An in-memory prefs store that fails the first write to [failOnKey] once,
+/// then behaves normally — for testing that [BackupService.applyImport]
+/// rolls back cleanly when a write partway through fails.
+class _FailingOnceStore extends InMemorySharedPreferencesStore {
+  _FailingOnceStore(super.data, this.failOnKey) : super.withData();
+
+  final String failOnKey;
+  bool _hasFailed = false;
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) {
+    if (!_hasFailed && key == failOnKey) {
+      _hasFailed = true;
+      return Future<bool>.error(Exception('simulated write failure'));
+    }
+    return super.setValue(valueType, key, value);
+  }
+}
 
 const _channel = Channel(
   id: 1,
@@ -220,6 +240,66 @@ void main() {
 
       expect(contents.pinnedFields, hasLength(1));
     });
+
+    test(
+      'skips a malformed pin, counting it in skippedEntries, and keeps '
+      'the rest of the file usable',
+      () async {
+        final service = await _service();
+        final raw = jsonEncode({
+          'app': 'thingviewer',
+          'version': 2,
+          'channels': [_channel.toJson()],
+          'pinnedFields': [
+            const PinnedField(
+              serverUrl: 'https://api.thingspeak.com',
+              channelId: 1,
+              fieldId: 1,
+            ).toJson(),
+            {'serverUrl': 123, 'channelId': 1, 'fieldId': 1}, // malformed
+          ],
+        });
+
+        final contents = service.parse(raw);
+
+        expect(contents.channels, [_channel]);
+        expect(contents.pinnedFields, hasLength(1));
+        expect(contents.skippedEntries, 1);
+
+        // planImport must not throw on the now-clean, already-validated data.
+        expect(() => service.planImport(contents), returnsNormally);
+      },
+    );
+
+    test(
+      'skips a chart override that throws while parsing, counting it in '
+      'skippedEntries, while tolerating decimals: 100 (parses to null '
+      'instead of throwing)',
+      () async {
+        final service = await _service();
+        final raw = jsonEncode({
+          'app': 'thingviewer',
+          'version': 2,
+          'fieldChartSettings': {
+            'https://api.thingspeak.com|1|1': {'decimals': 100},
+            // A wrong-typed showDelta throws inside FieldChartSettings.fromJson.
+            'https://api.thingspeak.com|1|2': {'showDelta': 'not a bool'},
+          },
+        });
+
+        final contents = service.parse(raw);
+
+        final good = contents.fieldChartSettings!['https://api.thingspeak.com|1|1']!;
+        expect(good.decimals, isNull); // tolerant, not thrown
+        expect(
+          contents.fieldChartSettings!.containsKey(
+            'https://api.thingspeak.com|1|2',
+          ),
+          isFalse,
+        );
+        expect(contents.skippedEntries, 1);
+      },
+    );
   });
 
   group('BackupExportMode.withoutApiKeys', () {
@@ -390,20 +470,24 @@ void main() {
       final contents = BackupContents(
         channels: [_channel, _otherChannel],
         fieldChartSettings: {
-          '${_channel.serverUrl}|${_channel.id}|1': {'type': 'line'},
-          'https://elsewhere.example|999|1': {'type': 'line'},
+          '${_channel.serverUrl}|${_channel.id}|1': const FieldChartSettings(
+            type: ChartType.line,
+          ),
+          'https://elsewhere.example|999|1': const FieldChartSettings(
+            type: ChartType.line,
+          ),
         },
         pinnedFields: [
           PinnedField(
             serverUrl: _channel.serverUrl,
             channelId: _channel.id,
             fieldId: 2,
-          ).toJson(),
+          ),
           const PinnedField(
             serverUrl: 'https://elsewhere.example',
             channelId: 999,
             fieldId: 1,
-          ).toJson(),
+          ),
         ],
       );
 
@@ -669,9 +753,9 @@ void main() {
       );
       final contents = BackupContents(
         fieldChartSettings: {
-          key: const FieldChartSettings(type: ChartType.column).toJson(),
+          key: const FieldChartSettings(type: ChartType.column),
         },
-        pinnedFields: [newPin.toJson()],
+        pinnedFields: [newPin],
       );
 
       await service.applyImport(
@@ -699,7 +783,7 @@ void main() {
       final key = '${_channel.serverUrl}|${_channel.id}|1';
       final contents = BackupContents(
         fieldChartSettings: {
-          key: const FieldChartSettings(type: ChartType.column).toJson(),
+          key: const FieldChartSettings(type: ChartType.column),
         },
       );
 
@@ -710,5 +794,129 @@ void main() {
         FieldChartSettings.defaults,
       );
     });
+
+    test(
+      'a chart override with a non-string title and out-of-range decimals '
+      'does not abort applyImport, and removeChannelsNotInBackup still '
+      'completes cleanly alongside it',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final channelStorage = ChannelStorage(prefs);
+        await channelStorage.saveChannels([_channel, _otherChannel]);
+        final service = await _service();
+
+        final key = '${_otherChannel.serverUrl}|${_otherChannel.id}|1';
+        final raw = jsonEncode({
+          'app': 'thingviewer',
+          'version': 2,
+          'channels': [_otherChannel.toJson()],
+          'fieldChartSettings': {
+            key: {'title': 123, 'decimals': 100},
+          },
+        });
+        final contents = service.parse(raw);
+
+        await service.applyImport(
+          contents,
+          ImportSelection(
+            channels: const {},
+            fieldChartSettingsKeys: {key},
+            pinnedFields: const {},
+            settingKeys: const {},
+            removeChannelsNotInBackup: true,
+          ),
+        );
+
+        // The channel absent from the backup was removed, not lost to a
+        // mid-write throw further down applyImport.
+        expect(channelStorage.loadChannels(), [_otherChannel]);
+        // The tolerant override was still merged in, with its bad fields
+        // nulled out rather than the whole entry rejected.
+        final merged = FieldSettingsStorage(
+          prefs,
+        ).settingsFor(_otherChannel, 1);
+        expect(merged.title, isNull);
+        expect(merged.decimals, isNull);
+      },
+    );
+  });
+
+  group('BackupService.applyImport rollback on write failure', () {
+    test(
+      'restores every touched key to its pre-import value and throws '
+      'BackupException when a write fails partway through',
+      () async {
+        final originalChannelsRaw = Channel.listToJson([_channel]);
+        final originalFieldChartSettingsRaw = jsonEncode({
+          '${_channel.serverUrl}|${_channel.id}|1':
+              const FieldChartSettings(type: ChartType.step).toJson(),
+        });
+        final originalPinnedFieldsRaw = jsonEncode([
+          const PinnedField(
+            serverUrl: 'https://api.thingspeak.com',
+            channelId: 1,
+            fieldId: 1,
+          ).toJson(),
+        ]);
+
+        SharedPreferencesStorePlatform.instance = _FailingOnceStore({
+          'flutter.channels': originalChannelsRaw,
+          'flutter.fieldChartSettings': originalFieldChartSettingsRaw,
+          'flutter.pinnedFields': originalPinnedFieldsRaw,
+          'flutter.themeMode': ThemeMode.light.index,
+        }, 'flutter.fieldChartSettings');
+        SharedPreferences.resetStatic();
+        final prefs = await SharedPreferences.getInstance();
+
+        final channelStorage = ChannelStorage(prefs);
+        final settingsStorage = SettingsStorage(prefs);
+        final fieldSettingsStorage = FieldSettingsStorage(prefs);
+        final pinnedFieldsStorage = PinnedFieldsStorage(prefs);
+        final service = BackupService(
+          channelStorage,
+          settingsStorage,
+          fieldSettingsStorage,
+          pinnedFieldsStorage,
+        );
+
+        final newKey = '${_otherChannel.serverUrl}|${_otherChannel.id}|2';
+        final newPin = PinnedField(
+          serverUrl: _otherChannel.serverUrl,
+          channelId: _otherChannel.id,
+          fieldId: 2,
+        );
+        final contents = BackupContents(
+          channels: [_otherChannel],
+          settings: {'themeMode': ThemeMode.dark.index},
+          fieldChartSettings: {
+            newKey: const FieldChartSettings(type: ChartType.column),
+          },
+          pinnedFields: [newPin],
+        );
+
+        await expectLater(
+          () => service.applyImport(
+            contents,
+            ImportSelection(
+              channels: {_otherChannel},
+              fieldChartSettingsKeys: {newKey},
+              pinnedFields: {newPin},
+              settingKeys: const {BackupSettingKey.themeMode},
+            ),
+          ),
+          throwsA(isA<BackupException>()),
+        );
+
+        expect(channelStorage.loadChannels(), [_channel]);
+        expect(settingsStorage.themeMode, ThemeMode.light);
+        expect(
+          fieldSettingsStorage.settingsFor(_channel, 1),
+          const FieldChartSettings(type: ChartType.step),
+        );
+        expect(pinnedFieldsStorage.isPinned(_channel, 1), isTrue);
+        expect(pinnedFieldsStorage.isPinned(_otherChannel, 2), isFalse);
+      },
+    );
   });
 }

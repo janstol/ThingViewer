@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Quarantined (unreadable) prefs data could be silently deleted by an ordinary save: after a partial salvage, saving the salvaged subset back made the primary key parse cleanly again, and the next load then discarded the quarantine holding the entries that were never recovered. The quarantine is now the source of truth for "there is unresolved data" until an explicit Discard in the recovery screen resolves it.
+- A field chart's date-range cache could mark a truncated (page-budget-exhausted) fetch as fully covered, so re-applying the same range silently dropped the truncation warning, and an older subrange within the cache's overall span could read as an empty result instead of being fetched. Only the range actually proven complete is now recorded as covered.
+- Fetching a wide date range for a dense field could stop pagination early, or loop without making progress, when a full page's entries were all null/non-numeric/non-finite for that field — losing every older reading in the range. Pagination now walks the raw feed's timestamps rather than the timestamps of values that happened to parse.
+- A malformed pinned field or a malformed/out-of-range chart override (e.g. `decimals: 100`) in an imported backup file could throw partway through applying the import, after channels and settings were already saved — leaving storage half-imported with no error shown. Malformed entries are now skipped and counted instead of aborting the file, and a write failure during apply now rolls back every prefs key the import touched.
+
 ### Changed
 
 - Bumped Flutter to 3.47.2 (Dart 3.13.2). The CI pin was 3.47.0 while `mise.toml` was 3.47.1; both now read 3.47.2. Also bumped `file_picker` to 12.2.0, which re-adds `PlatformFile.lengthSync()` and adds a `darwinOptions` parameter to `pickFile()`, and refreshed the lockfile against the new Flutter version.

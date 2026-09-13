@@ -349,4 +349,123 @@ void main() {
       },
     );
   });
+
+  group('truncated coverage', () {
+    test(
+      'refetches and still reports truncated when the same truncated range '
+      'is requested again',
+      () async {
+        final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+        final range = DateTimeRange(start: twoDaysAgo, end: now);
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([twoDaysAgo, now]),
+            truncated: true,
+            coveredFrom: yesterday,
+          ),
+        );
+        await notifier.applyFilter(range);
+        clearInteractions(mockApi);
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([twoDaysAgo, now]),
+            truncated: true,
+            coveredFrom: yesterday,
+          ),
+        );
+        await notifier.applyFilter(range);
+
+        verify(anyReadFieldRange()).called(1);
+        expect(notifier.state, isA<FieldChartLoaded>());
+        expect((notifier.state as FieldChartLoaded).truncated, isTrue);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'fetches rather than reading from cache for a subrange older than '
+      'coveredFrom',
+      () async {
+        final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([twoDaysAgo, now]),
+            truncated: true,
+            coveredFrom: yesterday,
+          ),
+        );
+        await notifier.applyFilter(DateTimeRange(start: twoDaysAgo, end: now));
+        clearInteractions(mockApi);
+
+        // Entirely below `coveredFrom` (yesterday) — never proven covered.
+        final olderRange = DateTimeRange(
+          start: twoDaysAgo,
+          end: twoDaysAgo.add(const Duration(hours: 1)),
+        );
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([olderRange.start]),
+            truncated: false,
+          ),
+        );
+
+        await notifier.applyFilter(olderRange);
+
+        verify(anyReadFieldRange()).called(1);
+        expect(notifier.state, isA<FieldChartLoaded>());
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'serves a subrange within [coveredFrom, range.end] from cache after a '
+      'truncated fetch',
+      () async {
+        final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => FieldRange(
+            field: fieldWithValues([yesterday, now]),
+            truncated: true,
+            coveredFrom: yesterday,
+          ),
+        );
+        await notifier.applyFilter(DateTimeRange(start: twoDaysAgo, end: now));
+        clearInteractions(mockApi);
+
+        await notifier.applyFilter(DateTimeRange(start: yesterday, end: now));
+
+        verifyNever(anyReadFieldRange());
+        expect(notifier.state, isA<FieldChartLoaded>());
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'a non-truncated empty window still records coverage and is not '
+      'refetched (regression guard)',
+      () async {
+        final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+        final range = DateTimeRange(start: twoDaysAgo, end: now);
+
+        when(anyReadFieldRange()).thenAnswer(
+          (_) async => const FieldRange(
+            field: Field(id: 1, label: 'Temp'),
+            truncated: false,
+          ),
+        );
+        await notifier.applyFilter(range);
+        clearInteractions(mockApi);
+
+        await notifier.applyFilter(range);
+
+        verifyNever(anyReadFieldRange());
+        expect(notifier.state, isA<FieldChartEmpty>());
+        notifier.dispose();
+      },
+    );
+  });
 }

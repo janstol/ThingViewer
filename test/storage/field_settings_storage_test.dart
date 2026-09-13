@@ -273,11 +273,11 @@ void main() {
       expect(storage.settingsFor(_channel, 1), FieldChartSettings.defaults);
 
       final other = FieldSettingsStorage(prefs);
-      await other.save(_channel, 1, const FieldChartSettings(decimals: 7));
+      await other.save(_channel, 1, const FieldChartSettings(decimals: 3));
 
       storage.reload();
 
-      expect(storage.settingsFor(_channel, 1).decimals, 7);
+      expect(storage.settingsFor(_channel, 1).decimals, 3);
     });
   });
 }

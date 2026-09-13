@@ -475,6 +475,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupImportSuccess => 'Backup imported';
 
   @override
+  String get backupImportFailed => 'Import failed. Nothing was changed.';
+
+  @override
   String get recoveryTitle => 'Recover data';
 
   @override
@@ -764,6 +767,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importPreviewNoApiKeys =>
       'API keys were excluded from this backup.';
+
+  @override
+  String importPreviewSkippedEntries(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count entries in this backup couldn\'t be read and were skipped.',
+      one: '1 entry in this backup couldn\'t be read and was skipped.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get importPreviewStatusNew => 'NEW';

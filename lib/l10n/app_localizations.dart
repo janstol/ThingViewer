@@ -845,6 +845,12 @@ abstract class AppLocalizations {
   /// **'Backup imported'**
   String get backupImportSuccess;
 
+  /// No description provided for @backupImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed. Nothing was changed.'**
+  String get backupImportFailed;
+
   /// No description provided for @recoveryTitle.
   ///
   /// In en, this message translates to:
@@ -1378,6 +1384,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'API keys were excluded from this backup.'**
   String get importPreviewNoApiKeys;
+
+  /// No description provided for @importPreviewSkippedEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry in this backup couldn\'t be read and was skipped.} other{{count} entries in this backup couldn\'t be read and were skipped.}}'**
+  String importPreviewSkippedEntries(num count);
 
   /// No description provided for @importPreviewStatusNew.
   ///

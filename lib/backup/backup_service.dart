@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/channel.dart';
+import '../models/field_chart_settings.dart';
 import '../models/pinned_field.dart';
 import '../storage/channel_storage.dart';
 import '../storage/field_settings_storage.dart';
@@ -29,14 +30,26 @@ class BackupException implements Exception {
 /// `null` means the section was absent from the file, as opposed to an empty
 /// (but present) section, so [BackupService.planImport] knows there is
 /// nothing to show or import for that section.
+///
+/// [channels], [fieldChartSettings] and [pinnedFields] are validated and
+/// salvaged entry-by-entry at parse time (mirroring how `storage_recovery.dart`
+/// salvages corrupt prefs entries): an individually malformed entry is
+/// dropped and counted in [skippedEntries] rather than failing the whole
+/// file. Downstream code (`planImport`, `applyImport`) can then trust every
+/// entry it sees.
 class BackupContents {
   final List<Channel>? channels;
   final Map<String, dynamic>? settings;
-  final Map<String, dynamic>? fieldChartSettings;
-  final List<dynamic>? pinnedFields;
+  final Map<String, FieldChartSettings>? fieldChartSettings;
+  final List<PinnedField>? pinnedFields;
   final DateTime? exportedAt;
   final String? appVersion;
   final bool apiKeysExcluded;
+
+  /// Entries that failed to parse and were skipped — a malformed channel, a
+  /// pin missing a required field, or a chart override with a value of the
+  /// wrong type. Zero means every entry in the file parsed cleanly.
+  final int skippedEntries;
 
   const BackupContents({
     this.channels,
@@ -46,6 +59,7 @@ class BackupContents {
     this.exportedAt,
     this.appVersion,
     this.apiKeysExcluded = false,
+    this.skippedEntries = 0,
   });
 }
 
@@ -125,25 +139,69 @@ class BackupService {
     }
 
     try {
+      var skippedEntries = 0;
+
       final channelsJson = decoded['channels'];
-      final channels = channelsJson is List
-          ? channelsJson
-                .whereType<Map<String, dynamic>>()
-                .map(Channel.fromJson)
-                .toList()
-          : null;
+      List<Channel>? channels;
+      if (channelsJson is List) {
+        channels = [];
+        for (final entry in channelsJson) {
+          if (entry is! Map<String, dynamic>) {
+            skippedEntries++;
+            continue;
+          }
+          try {
+            channels.add(Channel.fromJson(entry));
+          } catch (_) {
+            skippedEntries++;
+          }
+        }
+      }
+
+      final pinnedFieldsJson = decoded['pinnedFields'];
+      List<PinnedField>? pinnedFields;
+      if (pinnedFieldsJson is List) {
+        pinnedFields = [];
+        for (final entry in pinnedFieldsJson) {
+          if (entry is! Map<String, dynamic>) {
+            skippedEntries++;
+            continue;
+          }
+          try {
+            pinnedFields.add(PinnedField.fromJson(entry));
+          } catch (_) {
+            skippedEntries++;
+          }
+        }
+      }
+
+      final fieldChartSettingsJson = decoded['fieldChartSettings'];
+      Map<String, FieldChartSettings>? fieldChartSettings;
+      if (fieldChartSettingsJson is Map<String, dynamic>) {
+        fieldChartSettings = {};
+        for (final entry in fieldChartSettingsJson.entries) {
+          if (entry.value is! Map<String, dynamic>) {
+            skippedEntries++;
+            continue;
+          }
+          try {
+            fieldChartSettings[entry.key] = FieldChartSettings.fromJson(
+              entry.value as Map<String, dynamic>,
+            );
+          } catch (_) {
+            skippedEntries++;
+          }
+        }
+      }
+
       final settings = decoded['settings'];
-      final fieldChartSettings = decoded['fieldChartSettings'];
-      final pinnedFields = decoded['pinnedFields'];
       final exportedAtValue = decoded['exportedAt'];
       final appVersionValue = decoded['appVersion'];
       return BackupContents(
         channels: channels,
         settings: settings is Map<String, dynamic> ? settings : null,
-        fieldChartSettings: fieldChartSettings is Map<String, dynamic>
-            ? fieldChartSettings
-            : null,
-        pinnedFields: pinnedFields is List ? pinnedFields : null,
+        fieldChartSettings: fieldChartSettings,
+        pinnedFields: pinnedFields,
         exportedAt: exportedAtValue is String
             ? DateTime.tryParse(exportedAtValue)
             : null,
@@ -151,6 +209,7 @@ class BackupService {
             ? appVersionValue
             : null,
         apiKeysExcluded: decoded['apiKeysExcluded'] == true,
+        skippedEntries: skippedEntries,
       );
     } catch (e) {
       throw BackupException(BackupErrorType.malformed, e.toString());
@@ -178,11 +237,8 @@ class BackupService {
     final incomingIdentities = incoming.toSet();
 
     final fileChartSettings =
-        contents.fieldChartSettings ?? const <String, dynamic>{};
-    final filePins = (contents.pinnedFields ?? const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map(PinnedField.fromJson)
-        .toList();
+        contents.fieldChartSettings ?? const <String, FieldChartSettings>{};
+    final filePins = contents.pinnedFields ?? const <PinnedField>[];
 
     String prefixFor(Channel c) => '${c.serverUrl}|${c.id}|';
 
@@ -260,54 +316,76 @@ class BackupService {
   /// locally saved API key survives a keyless backup), unselected saved data
   /// is left alone, and [ImportSelection.removeChannelsNotInBackup] controls
   /// whether saved channels absent from [contents] are dropped.
+  ///
+  /// Every prefs key this can touch is snapshotted first. If anything throws
+  /// partway through — most likely a storage write failing — every touched
+  /// key is restored to its pre-import value rather than left half-imported,
+  /// and the failure surfaces as a [BackupException].
   Future<void> applyImport(
     BackupContents contents,
     ImportSelection selection,
   ) async {
-    final saved = _channelStorage.loadChannels();
-    final existingByIdentity = {for (final c in saved) c: c};
-    final reconciledByIdentity = {
-      for (final c in selection.channels)
-        c: _withKey(c, existingByIdentity[c]),
-    };
-    final incomingIdentities = (contents.channels ?? const <Channel>[])
-        .toSet();
+    final channelsSnapshot = _channelStorage.rawJson;
+    final fieldChartSettingsSnapshot = _fieldSettingsStorage.rawJson;
+    final pinnedFieldsSnapshot = _pinnedFieldsStorage.rawJson;
+    final settingsSnapshot = _settingsStorage.snapshotForImport();
 
-    final result = <Channel>[];
-    for (final c in saved) {
-      if (selection.removeChannelsNotInBackup &&
-          !incomingIdentities.contains(c)) {
-        continue;
-      }
-      result.add(reconciledByIdentity[c] ?? c);
-    }
-    for (final entry in reconciledByIdentity.entries) {
-      if (!existingByIdentity.containsKey(entry.key)) result.add(entry.value);
-    }
-    await _channelStorage.saveChannels(result);
-
-    final settings = contents.settings;
-    if (settings != null) {
-      final allowedKeys = {
-        for (final key in selection.settingKeys) ...key.prefsKeys,
+    try {
+      final saved = _channelStorage.loadChannels();
+      final existingByIdentity = {for (final c in saved) c: c};
+      final reconciledByIdentity = {
+        for (final c in selection.channels)
+          c: _withKey(c, existingByIdentity[c]),
       };
-      await _settingsStorage.importJson({
-        for (final entry in settings.entries)
-          if (allowedKeys.contains(entry.key)) entry.key: entry.value,
-      });
-    }
+      final incomingIdentities = (contents.channels ?? const <Channel>[])
+          .toSet();
 
-    final fieldChartSettings = contents.fieldChartSettings;
-    if (fieldChartSettings != null) {
-      await _fieldSettingsStorage.mergeJson({
-        for (final entry in fieldChartSettings.entries)
-          if (selection.fieldChartSettingsKeys.contains(entry.key))
-            entry.key: entry.value,
-      });
-    }
+      final result = <Channel>[];
+      for (final c in saved) {
+        if (selection.removeChannelsNotInBackup &&
+            !incomingIdentities.contains(c)) {
+          continue;
+        }
+        result.add(reconciledByIdentity[c] ?? c);
+      }
+      for (final entry in reconciledByIdentity.entries) {
+        if (!existingByIdentity.containsKey(entry.key)) {
+          result.add(entry.value);
+        }
+      }
+      await _channelStorage.saveChannels(result);
 
-    await _pinnedFieldsStorage.mergeJson(
-      selection.pinnedFields.map((p) => p.toJson()).toList(),
-    );
+      final settings = contents.settings;
+      if (settings != null) {
+        final allowedKeys = {
+          for (final key in selection.settingKeys) ...key.prefsKeys,
+        };
+        await _settingsStorage.importJson({
+          for (final entry in settings.entries)
+            if (allowedKeys.contains(entry.key)) entry.key: entry.value,
+        });
+      }
+
+      final fieldChartSettings = contents.fieldChartSettings;
+      if (fieldChartSettings != null) {
+        await _fieldSettingsStorage.mergeJson({
+          for (final entry in fieldChartSettings.entries)
+            if (selection.fieldChartSettingsKeys.contains(entry.key))
+              entry.key: entry.value.toJson(),
+        });
+      }
+
+      await _pinnedFieldsStorage.mergeJson(
+        selection.pinnedFields.map((p) => p.toJson()).toList(),
+      );
+    } catch (e) {
+      await _channelStorage.restoreRawJson(channelsSnapshot);
+      await _fieldSettingsStorage.restoreRawJson(fieldChartSettingsSnapshot);
+      _fieldSettingsStorage.reload();
+      await _pinnedFieldsStorage.restoreRawJson(pinnedFieldsSnapshot);
+      _pinnedFieldsStorage.reload();
+      await _settingsStorage.restoreSnapshot(settingsSnapshot);
+      throw BackupException(BackupErrorType.malformed, e.toString());
+    }
   }
 }

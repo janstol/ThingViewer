@@ -12,6 +12,18 @@ double? _parseDouble(dynamic value) => value is num ? value.toDouble() : null;
 int? _parseInt(dynamic value) =>
     value is int ? value : (value is num ? value.toInt() : null);
 
+String? _parseString(dynamic value) => value is String ? value : null;
+
+/// The rounding picker only ever offers 0 to 6 decimals, so anything outside
+/// that range came from a hand-edited or corrupted file rather than the app
+/// itself — fall back to null (auto) instead of carrying it through to a
+/// `toStringAsFixed` call that would throw at render time.
+int? _parseDecimals(dynamic value) {
+  final decimals = _parseInt(value);
+  if (decimals == null || decimals < 0 || decimals > 6) return null;
+  return decimals;
+}
+
 /// Presentation-only overrides for a single field's chart. ThingSpeak has no
 /// concept of a per-field chart type or axis labels — everything here is a
 /// local override layered on top of API data.
@@ -128,12 +140,12 @@ class FieldChartSettings {
   factory FieldChartSettings.fromJson(Map<String, dynamic> json) =>
       FieldChartSettings(
         type: _parseType(json['type']),
-        title: json['title'] as String?,
-        xAxisLabel: json['xAxisLabel'] as String?,
-        yAxisLabel: json['yAxisLabel'] as String?,
+        title: _parseString(json['title']),
+        xAxisLabel: _parseString(json['xAxisLabel']),
+        yAxisLabel: _parseString(json['yAxisLabel']),
         yMin: _parseDouble(json['yMin']),
         yMax: _parseDouble(json['yMax']),
-        decimals: _parseInt(json['decimals']),
+        decimals: _parseDecimals(json['decimals']),
         showDelta: json['showDelta'] as bool? ?? false,
         gapOnInvalid: json['gapOnInvalid'] as bool? ?? false,
         showSum: json['showSum'] as bool? ?? true,
