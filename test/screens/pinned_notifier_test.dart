@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -376,5 +378,139 @@ void main() {
     verifyNever(mockApi.readFeed(any, any));
     expect(notifier.entries, isEmpty);
     notifier.dispose();
+  });
+
+  group('superseded requests', () {
+    FeedData feedWithValue(double value) => FeedData(
+      fields: [
+        Field(
+          id: 1,
+          label: 'Temp',
+          values: [FieldValue(createdAt: DateTime(2024), value: value)],
+        ),
+      ],
+      statuses: [],
+    );
+
+    test(
+      'setChannels([]) during an in-flight refresh drops the old response',
+      () async {
+        storage = await seededStorage([(_channelA, 1)]);
+        snapshotStorage = await sharedSnapshotStorage();
+        final pending = Completer<FeedData>();
+        when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
+
+        final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+          _channelA,
+        ]);
+
+        notifier.setChannels([]);
+        pending.complete(feedWithValue(23.5));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.entries, isEmpty);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'unpinning during an in-flight refresh does not restore the entry',
+      () async {
+        storage = await seededStorage([(_channelA, 1)]);
+        snapshotStorage = await sharedSnapshotStorage();
+        final pending = Completer<FeedData>();
+        when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
+
+        final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+          _channelA,
+        ]);
+
+        await storage.toggle(_channelA, 1);
+        await notifier.refresh();
+        pending.complete(feedWithValue(23.5));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.entries, hasLength(1));
+        expect(notifier.entries.single.state, isA<PinnedEntryLoading>());
+        expect(notifier.entries.single.snapshot, isNull);
+        expect(snapshotStorage.snapshotFor(_channelA), isNull);
+        notifier.dispose();
+      },
+    );
+
+    test('two refreshes completing in reverse order keep the newer', () async {
+      storage = await seededStorage([(_channelA, 1)]);
+      snapshotStorage = await sharedSnapshotStorage();
+      var calls = 0;
+      final first = Completer<FeedData>();
+      final second = Completer<FeedData>();
+      when(mockApi.readFeed(any, any)).thenAnswer((_) {
+        calls++;
+        return switch (calls) {
+          1 => Future.value(FeedData(fields: const [], statuses: [])),
+          2 => first.future,
+          _ => second.future,
+        };
+      });
+
+      final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+        _channelA,
+      ]);
+      await Future<void>.delayed(Duration.zero);
+
+      final firstRefresh = notifier.refresh();
+      final secondRefresh = notifier.refresh();
+      second.complete(feedWithValue(2.0));
+      await secondRefresh;
+      expect(notifier.entries.single.snapshot?.value, 2.0);
+
+      first.complete(feedWithValue(1.0));
+      await firstRefresh;
+
+      expect(notifier.entries.single.snapshot?.value, 2.0);
+      expect(snapshotStorage.snapshotFor(_channelA)?.fields.single.value, 2.0);
+      notifier.dispose();
+    });
+
+    test(
+      'a channel removed mid-flight does not get its snapshot re-saved',
+      () async {
+        storage = await seededStorage([(_channelA, 1)]);
+        snapshotStorage = await sharedSnapshotStorage();
+        final pending = Completer<FeedData>();
+        when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
+
+        final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+          _channelA,
+        ]);
+
+        await snapshotStorage.remove(_channelA);
+        notifier.setChannels([]);
+        pending.complete(feedWithValue(23.5));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(snapshotStorage.snapshotFor(_channelA), isNull);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'dispose during an in-flight refresh suppresses the write',
+      () async {
+        storage = await seededStorage([(_channelA, 1)]);
+        snapshotStorage = await sharedSnapshotStorage();
+        final pending = Completer<FeedData>();
+        when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
+
+        final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+          _channelA,
+        ]);
+        notifier.dispose();
+        pending.complete(feedWithValue(23.5));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(snapshotStorage.snapshotFor(_channelA), isNull);
+      },
+    );
   });
 }

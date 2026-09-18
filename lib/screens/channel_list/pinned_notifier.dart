@@ -60,6 +60,7 @@ class PinnedNotifier extends ChangeNotifier {
   final ChannelSnapshotStorage _snapshotStorage;
   List<Channel> _channels;
   bool _disposed = false;
+  int _requestGeneration = 0;
 
   List<PinnedEntry> _entries = [];
   List<PinnedEntry> get entries => _entries;
@@ -78,6 +79,21 @@ class PinnedNotifier extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     super.dispose();
+  }
+
+  /// Whether a request started at [generation] has been superseded by a
+  /// newer one (setChannels, refresh) or by disposal, so its result must be
+  /// dropped before any side effect: the snapshot store or the visible
+  /// entries.
+  bool _stale(int generation) =>
+      _disposed || generation != _requestGeneration;
+
+  /// Drops any in-flight refresh without starting a new one — a
+  /// `setChannels`/`refresh` will follow. Used by callers about to mutate
+  /// storage (remove/migrate a channel) so a resolving fetch can't re-save
+  /// what they're about to delete or re-key.
+  void invalidate() {
+    _requestGeneration++;
   }
 
   /// Points this notifier at a new channel list (e.g. after add/remove/edit/
@@ -106,15 +122,16 @@ class PinnedNotifier extends ChangeNotifier {
               : PinnedEntryValue(),
         );
       }).toList(),
+      _channels,
     );
     if (!_disposed) notifyListeners();
   }
 
-  List<PinnedEntry> _sort(List<PinnedEntry> entries) {
+  List<PinnedEntry> _sort(List<PinnedEntry> entries, List<Channel> channels) {
     entries.sort((a, b) {
-      final channelCompare = _channels
+      final channelCompare = channels
           .indexOf(a.channel)
-          .compareTo(_channels.indexOf(b.channel));
+          .compareTo(channels.indexOf(b.channel));
       if (channelCompare != 0) return channelCompare;
       return a.pin.fieldId.compareTo(b.pin.fieldId);
     });
@@ -122,25 +139,29 @@ class PinnedNotifier extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    final pins = _pinsStorage.pins(_channels);
+    final generation = ++_requestGeneration;
+    final channels = _channels;
+    final pins = _pinsStorage.pins(channels);
     if (pins.isEmpty) return;
 
     final byChannel = <Channel, List<PinnedField>>{};
     for (final pin in pins) {
-      final channel = _channels.firstWhere((c) => pin.matches(c));
+      final channel = channels.firstWhere((c) => pin.matches(c));
       byChannel.putIfAbsent(channel, () => []).add(pin);
     }
 
     final results = await Future.wait(
-      byChannel.entries.map((e) => _fetchChannel(e.key, e.value)),
+      byChannel.entries.map((e) => _fetchChannel(generation, e.key, e.value)),
     );
+    if (_stale(generation)) return;
 
     final updated = [for (final r in results) ...r];
-    _entries = _sort(updated);
+    _entries = _sort(updated, channels);
     if (!_disposed) notifyListeners();
   }
 
   Future<List<PinnedEntry>> _fetchChannel(
+    int generation,
     Channel channel,
     List<PinnedField> pins,
   ) async {
@@ -149,6 +170,7 @@ class PinnedNotifier extends ChangeNotifier {
         channel,
         ApiParameters(apiKey: channel.apiKey, results: 100),
       );
+      if (_stale(generation)) return const [];
       var fields = feedData.fields;
 
       final pinnedIds = pins.map((p) => p.fieldId).toSet();
@@ -159,6 +181,7 @@ class PinnedNotifier extends ChangeNotifier {
         final recovered = await Future.wait(
           gaps.map((f) => _api.readLastFieldEntry(channel, f.id)),
         );
+        if (_stale(generation)) return const [];
         final recoveredById = {
           for (var i = 0; i < gaps.length; i++)
             if (recovered[i] != null) gaps[i].id: recovered[i]!,

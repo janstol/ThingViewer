@@ -155,6 +155,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     if (_selectedChannel == channel) {
       setState(() => _selectedChannel = null);
     }
+    _pinnedNotifier.invalidate();
     await _notifier.removeChannel(channel);
     await widget.channelSnapshotStorage.remove(channel);
     _refreshPinned();
@@ -315,6 +316,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
 
   Future<void> _onChannelEdited(Channel original, Channel updated) async {
     if (original != updated) {
+      _pinnedNotifier.invalidate();
       await widget.fieldSettingsStorage.migrateChannel(original, updated);
       await widget.pinnedFieldsStorage.migrateChannel(original, updated);
       await widget.channelSnapshotStorage.migrateChannel(original, updated);
