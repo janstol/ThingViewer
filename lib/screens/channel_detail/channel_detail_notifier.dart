@@ -56,6 +56,7 @@ class ChannelDetailNotifier extends ChangeNotifier {
   final void Function(Channel)? onChannelUpdated;
   Channel _channel;
   bool _disposed = false;
+  int _requestGeneration = 0;
 
   ChannelDetailState _state = ChannelDetailLoading();
   ChannelDetailState get state => _state;
@@ -76,6 +77,13 @@ class ChannelDetailNotifier extends ChangeNotifier {
     _disposed = true;
     super.dispose();
   }
+
+  /// Whether a request started at [generation] has been superseded by a
+  /// newer one (reload, edit) or by disposal, so its result must be dropped
+  /// before any side effect: `_channel`, `onChannelUpdated`, the snapshot
+  /// store, or the visible state.
+  bool _stale(int generation) =>
+      _disposed || generation != _requestGeneration;
 
   /// Builds a [ChannelDetailLoaded] from the channel's cached snapshot, or
   /// null if there is no snapshot or it has no field with a value.
@@ -136,16 +144,21 @@ class ChannelDetailNotifier extends ChangeNotifier {
   }
 
   Future<void> _fetch() async {
+    final generation = ++_requestGeneration;
+    // The request's own channel: an edit via setChannel mid-request must not
+    // leak the new key into this request's follow-up calls.
+    final channel = _channel;
     try {
       final params = ApiParameters(
-        apiKey: _channel.apiKey,
+        apiKey: channel.apiKey,
         results: 100,
         status: true,
       );
       final results = await Future.wait([
-        _api.readChannel(_channel),
-        _api.readFeed(_channel, params),
+        _api.readChannel(channel),
+        _api.readFeed(channel, params),
       ]);
+      if (_stale(generation)) return;
       final updated = results[0] as Channel;
       final feedData = results[1] as FeedData;
       _channel = updated.copyWith(authError: false);
@@ -155,8 +168,9 @@ class ChannelDetailNotifier extends ChangeNotifier {
       final gaps = fields.where((f) => f.values.isEmpty).toList();
       if (gaps.isNotEmpty) {
         final recovered = await Future.wait(
-          gaps.map((f) => _api.readLastFieldEntry(_channel, f.id)),
+          gaps.map((f) => _api.readLastFieldEntry(channel, f.id)),
         );
+        if (_stale(generation)) return;
         final recoveredById = {
           for (var i = 0; i < gaps.length; i++)
             if (recovered[i] != null) gaps[i].id: recovered[i]!,
@@ -199,10 +213,12 @@ class ChannelDetailNotifier extends ChangeNotifier {
           fetchedAt: fetchedAt,
         ),
       );
+      if (_stale(generation)) return;
       _state = nonEmpty.isEmpty
           ? ChannelDetailEmpty(_channel, feedData.statuses)
           : ChannelDetailLoaded(_channel, nonEmpty, feedData.statuses);
     } on ApiException catch (e) {
+      if (_stale(generation)) return;
       if (e.code == ApiErrorCode.credentials && !_channel.authError) {
         _channel = _channel.copyWith(authError: true);
         onChannelUpdated?.call(_channel);

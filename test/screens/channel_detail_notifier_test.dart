@@ -479,4 +479,212 @@ void main() {
       },
     );
   });
+  group('superseded requests', () {
+    List<Field> fieldsWithValue(double value) => [
+      Field(
+        id: 1,
+        label: 'Temp',
+        values: [FieldValue(createdAt: DateTime(2024), value: value)],
+      ),
+    ];
+
+    test(
+      'setChannel during an in-flight fetch drops the old response',
+      () async {
+        final edited = channel.copyWith(apiKey: 'edited-key');
+        final oldChannel = Completer<Channel>();
+        when(mockApi.readChannel(any)).thenAnswer((inv) {
+          final c = inv.positionalArguments.first as Channel;
+          return c.apiKey == null
+              ? oldChannel.future
+              : Future.value(enrichedChannel.copyWith(name: 'Edited'));
+        });
+        when(mockApi.readFeed(any, any)).thenAnswer((inv) async {
+          final c = inv.positionalArguments.first as Channel;
+          return FeedData(
+            fields: fieldsWithValue(c.apiKey == null ? 1.0 : 2.0),
+            statuses: [],
+          );
+        });
+        final reported = <Channel>[];
+
+        final notifier = ChannelDetailNotifier(
+          mockApi,
+          storage,
+          channel,
+          onChannelUpdated: reported.add,
+        );
+        await notifier.setChannel(edited);
+        expect((notifier.state as ChannelDetailLoaded).channel.name, 'Edited');
+
+        oldChannel.complete(enrichedChannel);
+        await Future<void>.delayed(Duration.zero);
+
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.channel.name, 'Edited');
+        expect(loaded.fields.single.lastValue, 2.0);
+        expect(reported.map((c) => c.name).toList(), ['Edited']);
+        expect(storage.snapshotFor(channel)!.fields.single.value, 2.0);
+        notifier.dispose();
+      },
+    );
+
+    test('two refreshes completing in reverse order keep the newer', () async {
+      var calls = 0;
+      final first = Completer<Channel>();
+      final second = Completer<Channel>();
+      when(mockApi.readChannel(any)).thenAnswer((_) {
+        calls++;
+        return switch (calls) {
+          1 => Future.value(enrichedChannel),
+          2 => first.future,
+          _ => second.future,
+        };
+      });
+      var feedCalls = 0;
+      when(mockApi.readFeed(any, any)).thenAnswer((_) async {
+        feedCalls++;
+        return FeedData(
+          fields: fieldsWithValue(feedCalls.toDouble()),
+          statuses: [],
+        );
+      });
+      final reported = <Channel>[];
+
+      final notifier = ChannelDetailNotifier(
+        mockApi,
+        storage,
+        channel,
+        onChannelUpdated: reported.add,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final firstRefresh = notifier.refresh();
+      final secondRefresh = notifier.refresh();
+      second.complete(enrichedChannel.copyWith(name: 'Second'));
+      await secondRefresh;
+      expect((notifier.state as ChannelDetailLoaded).channel.name, 'Second');
+
+      first.complete(enrichedChannel.copyWith(name: 'First'));
+      await firstRefresh;
+
+      final loaded = notifier.state as ChannelDetailLoaded;
+      expect(loaded.channel.name, 'Second');
+      expect(loaded.fields.single.lastValue, 3.0);
+      expect(reported.last.name, 'Second');
+      expect(reported.length, 2);
+      expect(storage.snapshotFor(channel)!.fields.single.value, 3.0);
+      notifier.dispose();
+    });
+
+    test(
+      'setChannel during sparse-field recovery drops the old recovery',
+      () async {
+        final edited = channel.copyWith(apiKey: 'edited-key');
+        when(mockApi.readChannel(any)).thenAnswer((inv) async {
+          final c = inv.positionalArguments.first as Channel;
+          return enrichedChannel.copyWith(
+            name: c.apiKey == null ? 'Old' : 'Edited',
+          );
+        });
+        when(mockApi.readFeed(any, any)).thenAnswer((inv) async {
+          final c = inv.positionalArguments.first as Channel;
+          return FeedData(
+            fields: c.apiKey == null
+                ? [...fieldsWithValue(1.0), const Field(id: 2, label: 'Hum')]
+                : fields,
+            statuses: [],
+          );
+        });
+        final recovery = Completer<FieldValue?>();
+        when(
+          mockApi.readLastFieldEntry(any, any),
+        ).thenAnswer((_) => recovery.future);
+        final reported = <Channel>[];
+
+        final notifier = ChannelDetailNotifier(
+          mockApi,
+          storage,
+          channel,
+          onChannelUpdated: reported.add,
+        );
+        // Let the old request reach its readLastFieldEntry await.
+        await Future<void>.delayed(Duration.zero);
+        verify(mockApi.readLastFieldEntry(any, 2)).called(1);
+
+        await notifier.setChannel(edited);
+        recovery.complete(FieldValue(createdAt: DateTime(2023), value: 99.0));
+        await Future<void>.delayed(Duration.zero);
+
+        final loaded = notifier.state as ChannelDetailLoaded;
+        expect(loaded.channel.name, 'Edited');
+        expect(loaded.fields.map((f) => f.lastValue).toList(), [23.5, 60.0]);
+        expect(reported.map((c) => c.name).toList(), ['Old', 'Edited']);
+        final saved = storage.snapshotFor(channel)!;
+        expect(saved.fields.map((f) => f.value).toList(), [23.5, 60.0]);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'dispose during an in-flight fetch suppresses callbacks and writes',
+      () async {
+        final pending = Completer<Channel>();
+        when(mockApi.readChannel(any)).thenAnswer((_) => pending.future);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+        final reported = <Channel>[];
+
+        final notifier = ChannelDetailNotifier(
+          mockApi,
+          storage,
+          channel,
+          onChannelUpdated: reported.add,
+        );
+        notifier.dispose();
+        pending.complete(enrichedChannel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(reported, isEmpty);
+        expect(storage.snapshotFor(channel), isNull);
+        expect(notifier.state, isA<ChannelDetailLoading>());
+      },
+    );
+
+    test('a stale failure does not flip authError or the state', () async {
+      var calls = 0;
+      final stale = Completer<Channel>();
+      when(mockApi.readChannel(any)).thenAnswer((_) {
+        calls++;
+        return calls == 2 ? stale.future : Future.value(enrichedChannel);
+      });
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+      final reported = <Channel>[];
+
+      final notifier = ChannelDetailNotifier(
+        mockApi,
+        storage,
+        channel,
+        onChannelUpdated: reported.add,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final staleRefresh = notifier.refresh();
+      await notifier.refresh();
+      expect(reported.length, 2);
+
+      stale.completeError(const ApiException(ApiErrorCode.credentials));
+      await staleRefresh;
+
+      final loaded = notifier.state as ChannelDetailLoaded;
+      expect(loaded.channel.authError, isFalse);
+      expect(loaded.refreshError, isNull);
+      expect(reported.length, 2);
+      expect(reported.every((c) => !c.authError), isTrue);
+      notifier.dispose();
+    });
+  });
 }
