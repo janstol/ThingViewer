@@ -251,6 +251,27 @@ void main() {
     },
   );
 
+  test('a pin errors with invalidResponse when the response is junk', () async {
+    storage = await seededStorage([(_channelA, 1)]);
+    snapshotStorage = await sharedSnapshotStorage();
+    when(
+      mockApi.readFeed(any, any),
+    ).thenThrow(const ApiException(ApiErrorCode.invalidResponse));
+
+    final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+      _channelA,
+    ]);
+    await Future<void>.delayed(Duration.zero);
+
+    final entry = notifier.entries.single;
+    expect(entry.state, isA<PinnedEntryError>());
+    expect(
+      (entry.state as PinnedEntryError).errorCode,
+      ApiErrorCode.invalidResponse,
+    );
+    notifier.dispose();
+  });
+
   test('filters out pins whose channel is not in the given list', () async {
     storage = await seededStorage([(_channelA, 1), (_channelB, 1)]);
     snapshotStorage = await sharedSnapshotStorage();

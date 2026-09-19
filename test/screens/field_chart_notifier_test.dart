@@ -284,6 +284,24 @@ void main() {
       notifier.dispose();
     });
 
+    test('is FieldChartError when the response cannot be parsed', () async {
+      when(
+        anyReadFieldRange(),
+      ).thenThrow(const ApiException(ApiErrorCode.invalidResponse));
+
+      final notifier = FieldChartNotifier(
+        mockApi,
+        channel,
+        const Field(id: 1, label: 'Temp'),
+      );
+      await pumpEventQueue();
+
+      expect(notifier.state, isA<FieldChartError>());
+      final error = notifier.state as FieldChartError;
+      expect(error.errorCode, ApiErrorCode.invalidResponse);
+      notifier.dispose();
+    });
+
     test('returns FieldChartEmpty when no data in range', () async {
       final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
 

@@ -261,6 +261,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                   final message = switch (errorCode) {
                     ApiErrorCode.network => l10n.errorNetwork,
                     ApiErrorCode.credentials => l10n.errorApiCredentials,
+                    ApiErrorCode.invalidResponse => l10n.errorInvalidResponse,
                     ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
                   };
                   if (cachedValues.isEmpty) {

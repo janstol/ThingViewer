@@ -284,6 +284,185 @@ void main() {
     });
   });
 
+  group('malformed 200 responses', () {
+    const htmlBody =
+        '<!DOCTYPE html><html><body>Sign in to the network</body>'
+        '</html>';
+
+    final badBodies = <String, String>{
+      'an HTML page': htmlBody,
+      'truncated JSON':
+          '{"channel":{"id":123456,"field1":"F1"},"feeds":[{"crea',
+      'a top-level -1': '-1',
+      'a top-level array': '[]',
+      'an empty object': '{}',
+    };
+
+    final readers = <String, Future<Object?> Function()>{
+      'readChannel': () => api.readChannel(publicChannel),
+      'readFeed': () => api.readFeed(publicChannel, const ApiParameters()),
+      'readField': () => api.readField(publicChannel, 1, const ApiParameters()),
+      'readFieldRange': () => api.readFieldRange(
+        publicChannel,
+        1,
+        start: DateTime.utc(2024, 1, 1),
+        end: DateTime.utc(2024, 1, 2),
+      ),
+    };
+
+    for (final reader in readers.entries) {
+      for (final body in badBodies.entries) {
+        test('${reader.key} reports invalidResponse on ${body.key}', () async {
+          when(mockClient.get(any)).thenAnswer((_) async => ok(body.value));
+
+          await expectLater(
+            reader.value(),
+            throwsA(
+              isA<ApiException>().having(
+                (e) => e.code,
+                'code',
+                ApiErrorCode.invalidResponse,
+              ),
+            ),
+          );
+        });
+      }
+    }
+
+    test('tolerates a wrong-typed feeds container', () async {
+      when(mockClient.get(any)).thenAnswer(
+        (_) async => ok(
+          jsonEncode({
+            'channel': {'id': 123456, 'field1': 'F1'},
+            'feeds': {'oops': 1},
+          }),
+        ),
+      );
+
+      final feedData = await api.readFeed(publicChannel, const ApiParameters());
+
+      expect(feedData.fields.single.label, 'F1');
+      expect(feedData.fields.single.values, isEmpty);
+    });
+
+    test('skips junk feed entries and keeps the good ones', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'field1': 'F1'},
+        'feeds': [
+          1,
+          'x',
+          {'created_at': '2024-01-01T00:00:00Z', 'field1': '1'},
+          {'created_at': 12345, 'field1': '2'},
+          {'created_at': '2024-01-03T00:00:00Z', 'field1': '3'},
+        ],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final feedData = await api.readFeed(publicChannel, const ApiParameters());
+
+      expect(feedData.fields.single.values.map((v) => v.value).toList(), [
+        1.0,
+        3.0,
+      ]);
+    });
+
+    test('readField skips junk entries and keeps the good ones', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'field1': 'F1'},
+        'feeds': [
+          1,
+          {'created_at': '2024-01-01T00:00:00Z', 'field1': '1'},
+          {'created_at': 12345, 'field1': '2'},
+        ],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final field = await api.readField(
+        publicChannel,
+        1,
+        const ApiParameters(),
+      );
+
+      expect(field.values.map((v) => v.value).toList(), [1.0]);
+    });
+
+    test('reads a numeric field label as absent', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'field1': 7},
+        'feeds': [
+          {'created_at': '2024-01-01T00:00:00Z', 'field1': '1'},
+        ],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final feedData = await api.readFeed(publicChannel, const ApiParameters());
+
+      expect(feedData.fields.single.label, isNull);
+      expect(feedData.fields.single.values.single.value, 1.0);
+    });
+
+    test('reads a numeric status as absent', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'field1': 'F1'},
+        'feeds': [
+          {'created_at': '2024-01-01T00:00:00Z', 'field1': '1', 'status': 5},
+        ],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final feedData = await api.readFeed(
+        publicChannel,
+        const ApiParameters(status: true),
+      );
+
+      expect(feedData.statuses, isEmpty);
+      expect(feedData.fields.single.values.single.value, 1.0);
+    });
+
+    test('reads wrong-typed channel metadata as absent', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'name': 7, 'updated_at': 9, 'field1': 'F1'},
+        'feeds': [],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final result = await api.readChannel(publicChannel);
+
+      expect(result.name, isNull);
+      expect(result.updatedAt, isNull);
+      expect(result.fieldCount, 1);
+    });
+
+    test('readLastFieldEntry stays best-effort on an HTML body', () async {
+      when(mockClient.get(any)).thenAnswer((_) async => ok(htmlBody));
+
+      expect(await api.readLastFieldEntry(publicChannel, 1), isNull);
+    });
+
+    test('a feed body that merely mentions an error still parses', () async {
+      final raw = jsonEncode({
+        'channel': {'id': 123456, 'field1': 'error'},
+        'feeds': [
+          {
+            'created_at': '2024-01-01T00:00:00Z',
+            'field1': '1',
+            'status': 'error rate high',
+          },
+        ],
+      });
+      when(mockClient.get(any)).thenAnswer((_) async => ok(raw));
+
+      final feedData = await api.readFeed(
+        publicChannel,
+        const ApiParameters(status: true),
+      );
+
+      expect(feedData.fields.single.label, 'error');
+      expect(feedData.fields.single.values.single.value, 1.0);
+      expect(feedData.statuses.single.message, 'error rate high');
+    });
+  });
+
   group('readFieldRange', () {
     String feedForTimes(List<DateTime> times) {
       final feeds = times
@@ -807,16 +986,25 @@ void main() {
       },
     );
 
-    test('parses normally on 200 JSON error body', () async {
+    test('throws credentials on a 200 JSON auth error body', () async {
       when(
         mockClient.get(any),
       ).thenAnswer((_) async => ok(fixture('error_auth_response.json')));
 
-      // ThingSpeak sometimes returns 200 with an error JSON body.
-      // The client should not throw — it returns the channel with no enrichment.
-      final result = await api.readChannel(publicChannel);
-      expect(result.id, publicChannel.id);
-      expect(result.name, isNull);
+      // ThingSpeak returns its auth error object under a 200 status, so the
+      // status alone cannot be trusted.
+      await expectLater(
+        api.readChannel(publicChannel),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'code', ApiErrorCode.credentials)
+              .having(
+                (e) => e.serverMessage,
+                'serverMessage',
+                'Please make sure that your API key is correct.',
+              ),
+        ),
+      );
     });
 
     test('throws ApiException with network code on SocketException', () {

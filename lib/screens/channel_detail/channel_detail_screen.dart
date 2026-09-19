@@ -334,6 +334,7 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
                       ApiErrorCode.network => l10n.errorNetwork,
                       ApiErrorCode.credentials =>
                         l10n.errorApiCredentialsDetail,
+                      ApiErrorCode.invalidResponse => l10n.errorInvalidResponse,
                       ApiErrorCode.general =>
                         serverMessage ?? l10n.errorGeneral,
                     }, textAlign: TextAlign.center),

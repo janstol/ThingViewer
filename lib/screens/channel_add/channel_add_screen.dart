@@ -198,6 +198,7 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
         _errorMessage = switch (e.code) {
           ApiErrorCode.network => l10n.errorNetwork,
           ApiErrorCode.credentials => l10n.errorApiCredentials,
+          ApiErrorCode.invalidResponse => l10n.errorInvalidResponse,
           ApiErrorCode.general => e.serverMessage ?? l10n.errorGeneral,
         };
       });

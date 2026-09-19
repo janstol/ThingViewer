@@ -530,6 +530,31 @@ void main() {
     expect(find.text('Temp'), findsOneWidget);
   });
 
+  testWidgets('renders the message for an unreadable response', (tester) async {
+    when(
+      mockApi.readChannel(any),
+    ).thenThrow(const ApiException(ApiErrorCode.invalidResponse));
+
+    await tester.pumpWidget(
+      _wrap(
+        ChannelDetailScreen(
+          channel: _channel,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          channelSnapshotStorage: await _channelSnapshotStorage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text("The server returned data the app couldn't read."),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('shows the newest status message and opens the log on tap', (
     tester,
   ) async {

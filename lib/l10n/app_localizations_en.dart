@@ -593,6 +593,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'ThingSpeak didn\'t accept this channel\'s API key. If you rotated the key on ThingSpeak, use Edit channel to update it.';
 
   @override
+  String get errorInvalidResponse =>
+      'The server returned data the app couldn\'t read.';
+
+  @override
   String get errorGeneral => 'An error occurred.';
 
   @override

@@ -242,6 +242,7 @@
   "errorNetwork": "Network error. Please check your connection.",
   "errorApiCredentials": "ThingSpeak didn't accept that channel ID and API key together. Each channel has its own key, so double check both.",
   "errorApiCredentialsDetail": "ThingSpeak didn't accept this channel's API key. If you rotated the key on ThingSpeak, use Edit channel to update it.",
+  "errorInvalidResponse": "The server returned data the app couldn't read.",
   "errorGeneral": "An error occurred.",
   "errorDuplicateChannel": "This channel is already in your list.",
   "removeChannelTitle": "Remove channel?",

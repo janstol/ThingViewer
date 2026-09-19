@@ -9,7 +9,7 @@ import '../models/channel_status.dart';
 import '../models/field.dart';
 
 /// Error categories for API failures.
-enum ApiErrorCode { network, credentials, general }
+enum ApiErrorCode { network, credentials, invalidResponse, general }
 
 /// Thrown when an API request fails.
 class ApiException implements Exception {
@@ -137,7 +137,7 @@ class ThingSpeakApi {
       _sendRequest(feedsUri),
       _trySendRequest(settingsUri),
     ]);
-    return await compute(
+    return await _parse(
       _parseChannel,
       _ParseChannelArgs(results[0]!, channel, results[1]),
     );
@@ -155,7 +155,7 @@ class ThingSpeakApi {
     );
 
     final raw = await _sendRequest(uri);
-    return await compute(_parseFields, raw);
+    return await _parse(_parseFields, raw);
   }
 
   /// Reads data for a single field.
@@ -188,7 +188,7 @@ class ThingSpeakApi {
     );
 
     final raw = await _sendRequest(uri);
-    return await compute(_parseSingleField, _ParseFieldArgs(raw, fieldId));
+    return await _parse(_parseSingleField, _ParseFieldArgs(raw, fieldId));
   }
 
   /// Reads the single most recent value for one field, for fields whose
@@ -207,6 +207,9 @@ class ThingSpeakApi {
 
     final raw = await _trySendRequest(uri);
     if (raw == null) return null;
+    // Deliberately not routed through `_parse`: `_parseLastFieldEntry` already
+    // returns null on junk, and turning that into an error would fail the whole
+    // detail screen refresh over an optional extra value.
     return await compute(
       _parseLastFieldEntry,
       _ParseFieldArgs(raw, fieldId),
@@ -335,24 +338,60 @@ class ThingSpeakApi {
     }
 
     final status = response.statusCode;
-    if (status == 200) return response.body;
+    if (status == 200) {
+      // ThingSpeak also delivers its error object under 200, so a successful
+      // status alone doesn't mean the body carries data.
+      final bodyError = _errorFromBody(response.body);
+      if (bodyError != null) {
+        throw ApiException(bodyError.code, bodyError.message);
+      }
+      return response.body;
+    }
 
     if (response.body == '-1' && status == 400) {
       throw const ApiException(ApiErrorCode.credentials);
     }
 
-    String? serverMessage;
-    try {
-      final parsed = jsonDecode(response.body) as Map<String, dynamic>;
-      final error = parsed['error'];
-      if (error is Map && error.containsKey('details')) {
-        serverMessage = error['details'] as String?;
-      } else if (error is String) {
-        serverMessage = error;
-      }
-    } catch (_) {}
+    final bodyError = _errorFromBody(response.body);
+    throw ApiException(
+      bodyError?.code ?? ApiErrorCode.general,
+      bodyError?.message ?? 'Error $status',
+    );
+  }
 
-    throw ApiException(ApiErrorCode.general, serverMessage ?? 'Error $status');
+  /// ThingSpeak's own error object, when the body carries one. Bodies are only
+  /// inspected when they are small and mention an error, so a full feed page is
+  /// never decoded twice.
+  static ({ApiErrorCode code, String? message})? _errorFromBody(String body) {
+    if (body.length > 4096 || !body.contains('"error"')) return null;
+
+    Object? decoded;
+    try {
+      decoded = jsonDecode(body);
+    } catch (_) {
+      return null;
+    }
+    if (decoded is! Map<String, dynamic>) return null;
+
+    final error = decoded['error'];
+    String? message;
+    String? errorCode;
+    if (error is Map) {
+      message = _asString(error['details']);
+      errorCode = _asString(error['error_code']);
+    } else if (error is String) {
+      message = error;
+    } else {
+      return null;
+    }
+
+    final isAuth =
+        (errorCode?.startsWith('error_auth') ?? false) ||
+        _asString(decoded['status']) == '401';
+    return (
+      code: isAuth ? ApiErrorCode.credentials : ApiErrorCode.general,
+      message: message,
+    );
   }
 
   /// Like [_sendRequest], but swallows [ApiException] and returns null.
@@ -364,11 +403,47 @@ class ThingSpeakApi {
     }
   }
 
+  /// Runs an isolate parser, normalizing any parse failure into an
+  /// [ApiException] the screens already handle.
+  Future<R> _parse<M, R>(ComputeCallback<M, R> callback, M message) async {
+    try {
+      return await compute(callback, message);
+    } catch (e) {
+      // Never log `e` directly: a FormatException embeds its source, i.e. the
+      // whole response body.
+      debugPrint('API parse error: ${e.runtimeType}');
+      throw const ApiException(ApiErrorCode.invalidResponse);
+    }
+  }
+
   // --- Isolate-safe parsers ---
+  //
+  // These run through compute(), so they throw FormatException rather than
+  // ApiException — a custom exception's enum identity is not guaranteed to
+  // survive the isolate boundary. `_parse` converts on the other side.
+
+  /// Reads a value only when it is a string, so a wrong-typed one reads as
+  /// absent instead of throwing.
+  static String? _asString(Object? value) => value is String ? value : null;
+
+  /// Decodes a feed-shaped ThingSpeak body, rejecting anything the parsers
+  /// cannot read at all.
+  static Map<String, dynamic> _decodeFeedBody(String raw) {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('response is not a JSON object');
+    }
+    if (decoded['channel'] is! Map<String, dynamic> &&
+        decoded['feeds'] is! List) {
+      throw const FormatException('response has no channel or feeds');
+    }
+    return decoded;
+  }
 
   static Channel _parseChannel(_ParseChannelArgs args) {
-    final json = jsonDecode(args.raw) as Map<String, dynamic>;
-    final channelJson = json['channel'] as Map<String, dynamic>? ?? json;
+    final json = _decodeFeedBody(args.raw);
+    final channel = json['channel'];
+    final channelJson = channel is Map<String, dynamic> ? channel : json;
 
     int fieldCount = 0;
     for (int i = 1; i <= 8; i++) {
@@ -381,29 +456,30 @@ class ThingSpeakApi {
       try {
         final settingsJson =
             jsonDecode(args.settingsRaw!) as Map<String, dynamic>;
-        url = settingsJson['url'] as String?;
-        githubUrl = settingsJson['github_url'] as String?;
+        url = _asString(settingsJson['url']);
+        githubUrl = _asString(settingsJson['github_url']);
       } catch (_) {
         // Best-effort: absent, malformed, or an error body — leave both null.
       }
     }
 
     return args.channel.copyWith(
-      name: channelJson['name'] as String?,
-      description: channelJson['description'] as String?,
+      name: _asString(channelJson['name']),
+      description: _asString(channelJson['description']),
       url: url,
       githubUrl: githubUrl,
-      updatedAt: channelJson['updated_at'] != null
-          ? DateTime.tryParse(channelJson['updated_at'] as String)
-          : null,
+      updatedAt: DateTime.tryParse(_asString(channelJson['updated_at']) ?? ''),
       fieldCount: fieldCount,
     );
   }
 
   static FeedData _parseFields(String raw) {
-    final json = jsonDecode(raw) as Map<String, dynamic>;
-    final channelJson = json['channel'] as Map<String, dynamic>? ?? {};
-    final feeds = json['feeds'] as List<dynamic>? ?? [];
+    final json = _decodeFeedBody(raw);
+    final channel = json['channel'];
+    final channelJson = channel is Map<String, dynamic>
+        ? channel
+        : <String, dynamic>{};
+    final feeds = json['feeds'] is List ? json['feeds'] as List<dynamic> : [];
 
     final fields =
         <
@@ -414,7 +490,7 @@ class ThingSpeakApi {
     for (int i = 1; i <= 8; i++) {
       if (!channelJson.containsKey('field$i')) continue;
       fields[i] = (
-        label: channelJson['field$i'] as String?,
+        label: _asString(channelJson['field$i']),
         values: [],
         invalidAt: [],
       );
@@ -423,9 +499,10 @@ class ThingSpeakApi {
     final statuses = <ChannelStatus>[];
 
     for (final entry in feeds) {
-      final feed = entry as Map<String, dynamic>;
+      if (entry is! Map<String, dynamic>) continue;
+      final feed = entry;
       final createdAt = DateTime.tryParse(
-        feed['created_at'] as String? ?? '',
+        _asString(feed['created_at']) ?? '',
       )?.toLocal();
       if (createdAt == null) continue;
 
@@ -441,7 +518,7 @@ class ThingSpeakApi {
         fields[id]!.values.add(FieldValue(createdAt: createdAt, value: value));
       }
 
-      final status = feed['status'] as String?;
+      final status = _asString(feed['status']);
       if (status != null && status.trim().isNotEmpty) {
         statuses.add(ChannelStatus(createdAt: createdAt, message: status));
       }
@@ -466,19 +543,23 @@ class ThingSpeakApi {
 
   static ({Field field, int rawEntryCount, DateTime? oldestRawAt})
   _parseSingleField(_ParseFieldArgs args) {
-    final json = jsonDecode(args.raw) as Map<String, dynamic>;
-    final channelJson = json['channel'] as Map<String, dynamic>? ?? {};
-    final feeds = json['feeds'] as List<dynamic>? ?? [];
+    final json = _decodeFeedBody(args.raw);
+    final channel = json['channel'];
+    final channelJson = channel is Map<String, dynamic>
+        ? channel
+        : <String, dynamic>{};
+    final feeds = json['feeds'] is List ? json['feeds'] as List<dynamic> : [];
 
-    final label = channelJson['field${args.fieldId}'] as String?;
+    final label = _asString(channelJson['field${args.fieldId}']);
     final values = <FieldValue>[];
     final invalidAt = <DateTime>[];
     DateTime? oldestRawAt;
 
     for (final entry in feeds) {
-      final feed = entry as Map<String, dynamic>;
+      if (entry is! Map<String, dynamic>) continue;
+      final feed = entry;
       final createdAt = DateTime.tryParse(
-        feed['created_at'] as String? ?? '',
+        _asString(feed['created_at']) ?? '',
       )?.toLocal();
       if (createdAt != null &&
           (oldestRawAt == null || createdAt.isBefore(oldestRawAt))) {
@@ -515,7 +596,7 @@ class ThingSpeakApi {
     try {
       final feed = jsonDecode(args.raw) as Map<String, dynamic>;
       final createdAt = DateTime.tryParse(
-        feed['created_at'] as String? ?? '',
+        _asString(feed['created_at']) ?? '',
       )?.toLocal();
       final rawValue = feed['field${args.fieldId}'];
       if (createdAt == null || rawValue == null) return null;

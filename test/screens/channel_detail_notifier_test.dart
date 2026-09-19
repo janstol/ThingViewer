@@ -96,6 +96,20 @@ void main() {
       notifier.dispose();
     });
 
+    test('is ChannelDetailError when the response cannot be parsed', () async {
+      when(
+        mockApi.readChannel(any),
+      ).thenThrow(const ApiException(ApiErrorCode.invalidResponse));
+
+      final notifier = ChannelDetailNotifier(mockApi, storage, channel);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(notifier.state, isA<ChannelDetailError>());
+      final error = notifier.state as ChannelDetailError;
+      expect(error.errorCode, ApiErrorCode.invalidResponse);
+      notifier.dispose();
+    });
+
     test(
       'is ChannelDetailError when readFeed fails after readChannel succeeds',
       () async {
