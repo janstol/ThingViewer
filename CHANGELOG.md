@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Bumped Flutter to 3.47.5 (Dart 3.13.4) in `mise.toml` and all CI workflows, and refreshed the lockfile against it: `file_picker` 12.3.0, `image` 4.10.1, `archive` 4.3.0, `platform` 3.2.0, and seven other transitive bumps within the existing constraints.
 - Bumped Flutter to 3.47.2 (Dart 3.13.2). The CI pin was 3.47.0 while `mise.toml` was 3.47.1; both now read 3.47.2. Also bumped `file_picker` to 12.2.0, which re-adds `PlatformFile.lengthSync()` and adds a `darwinOptions` parameter to `pickFile()`, and refreshed the lockfile against the new Flutter version.
 - The field chart screen's bottom-pinned Filter button is replaced by a date-range chip in the header, above the stats row. The chip shows the currently active range and opens the same filter sheet, so the window is now visible without opening it, and the chart gets back the vertical space the button used to take. The empty and no-cached-data states keep their own centred Filter button. (The nav-bar-clearance test for the removed button is dropped along with it; the sibling test for the filter sheet's own Apply button stays.)
 - The channel list's row subtitle now leads with a freshness line (when a cached snapshot has a value), with the server URL and channel id demoted to a smaller, muted line below. The channel list also updates live when a snapshot is written by the channel detail screen or a pinned-fields refresh, not just when a channel screen is popped.
