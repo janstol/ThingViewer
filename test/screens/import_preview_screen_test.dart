@@ -115,10 +115,7 @@ class _HostState extends State<_Host> {
   Widget build(BuildContext context) => const Scaffold();
 }
 
-Future<ImportSelection?> _pump(
-  WidgetTester tester, {
-  ImportPlan? plan,
-}) async {
+Future<ImportSelection?> _pump(WidgetTester tester, {ImportPlan? plan}) async {
   ImportSelection? result;
   await tester.pumpWidget(
     MaterialApp(
@@ -139,37 +136,34 @@ Future<ImportSelection?> _pump(
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('renders channel rows with their change reason', (
-    tester,
-  ) async {
+  testWidgets('renders channel rows with their change reason', (tester) async {
     await _pump(tester);
 
     expect(find.textContaining('My Channel Renamed'), findsWidgets);
     expect(find.textContaining('New Channel'), findsWidgets);
   });
 
-  testWidgets(
-    'unchecking a channel disables its nested override/pin rows',
-    (tester) async {
-      await _pump(tester);
+  testWidgets('unchecking a channel disables its nested override/pin rows', (
+    tester,
+  ) async {
+    await _pump(tester);
 
-      final checkboxes = find.byType(CheckboxListTile);
-      // First checkbox is the updated channel's own row; its nested chart
-      // override and pin rows follow immediately after.
-      await tester.tap(checkboxes.first);
-      await tester.pumpAndSettle();
+    final checkboxes = find.byType(CheckboxListTile);
+    // First checkbox is the updated channel's own row; its nested chart
+    // override and pin rows follow immediately after.
+    await tester.tap(checkboxes.first);
+    await tester.pumpAndSettle();
 
-      final nested = tester.widgetList<CheckboxListTile>(checkboxes).toList();
-      // The two nested tiles (chart overrides, pinned fields) belonging to
-      // the unchecked channel must now be unchecked and disabled.
-      final overrideTile = nested[1];
-      final pinTile = nested[2];
-      expect(overrideTile.value, isFalse);
-      expect(overrideTile.onChanged, isNull);
-      expect(pinTile.value, isFalse);
-      expect(pinTile.onChanged, isNull);
-    },
-  );
+    final nested = tester.widgetList<CheckboxListTile>(checkboxes).toList();
+    // The two nested tiles (chart overrides, pinned fields) belonging to
+    // the unchecked channel must now be unchecked and disabled.
+    final overrideTile = nested[1];
+    final pinTile = nested[2];
+    expect(overrideTile.value, isFalse);
+    expect(overrideTile.onChanged, isNull);
+    expect(pinTile.value, isFalse);
+    expect(pinTile.onChanged, isNull);
+  });
 
   testWidgets('select none then select all round-trips the full selection', (
     tester,
@@ -189,9 +183,10 @@ void main() {
     await tester.tap(find.byTooltip('Select all'));
     await tester.pumpAndSettle();
 
-    for (final tile in tester
-        .widgetList<CheckboxListTile>(find.byType(CheckboxListTile))
-        .take(1)) {
+    for (final tile
+        in tester
+            .widgetList<CheckboxListTile>(find.byType(CheckboxListTile))
+            .take(1)) {
       expect(tile.value, isTrue);
     }
   });
@@ -252,10 +247,7 @@ void main() {
     (tester) async {
       await _pump(tester, plan: _plan());
 
-      expect(
-        find.textContaining("couldn't be read and"),
-        findsNothing,
-      );
+      expect(find.textContaining("couldn't be read and"), findsNothing);
     },
   );
 

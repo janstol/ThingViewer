@@ -396,9 +396,11 @@ class _FieldChartState extends State<FieldChart> {
         ? range * 0.1
         : (stats.max != 0 ? stats.max.abs() * 0.1 : 1.0);
 
-    final minY = chartSettings.yMin ??
+    final minY =
+        chartSettings.yMin ??
         (chartSettings.markMin ? stats.min - margin : null);
-    final maxY = chartSettings.yMax ??
+    final maxY =
+        chartSettings.yMax ??
         (chartSettings.markMax ? stats.max + margin : null);
     return (minY, maxY);
   }
@@ -454,10 +456,8 @@ class _FieldChartState extends State<FieldChart> {
               show: isScatter || hasMarkers,
               checkToShowDot: (spot, _) =>
                   isScatter || _isMarkerSpot(spot, chartSettings),
-              getDotPainter: (spot, _, _, _) => _isMarkerSpot(
-                spot,
-                chartSettings,
-              )
+              getDotPainter: (spot, _, _, _) =>
+                  _isMarkerSpot(spot, chartSettings)
                   ? FlDotCirclePainter(
                       radius: 4,
                       color: brand.markerAccent,

@@ -100,23 +100,35 @@ void main() {
       expect(settings.toJson().containsKey('gapOnInvalid'), isFalse);
     });
 
-    test(
-      'showSum/showAverage/showMin/showMax are omitted when true, the '
-      'opposite default direction from showDelta/gapOnInvalid',
-      () {
-        expect(FieldChartSettings.defaults.toJson().containsKey('showSum'), isFalse);
-        expect(
-          FieldChartSettings.defaults.toJson().containsKey('showAverage'),
-          isFalse,
-        );
-        expect(FieldChartSettings.defaults.toJson().containsKey('showMin'), isFalse);
-        expect(FieldChartSettings.defaults.toJson().containsKey('showMax'), isFalse);
-      },
-    );
+    test('showSum/showAverage/showMin/showMax are omitted when true, the '
+        'opposite default direction from showDelta/gapOnInvalid', () {
+      expect(
+        FieldChartSettings.defaults.toJson().containsKey('showSum'),
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.toJson().containsKey('showAverage'),
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.toJson().containsKey('showMin'),
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.toJson().containsKey('showMax'),
+        isFalse,
+      );
+    });
 
     test('markMin/markMax are omitted when false, like showDelta', () {
-      expect(FieldChartSettings.defaults.toJson().containsKey('markMin'), isFalse);
-      expect(FieldChartSettings.defaults.toJson().containsKey('markMax'), isFalse);
+      expect(
+        FieldChartSettings.defaults.toJson().containsKey('markMin'),
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults.toJson().containsKey('markMax'),
+        isFalse,
+      );
     });
   });
 
@@ -156,38 +168,32 @@ void main() {
       expect(roundTripped.showDelta, isTrue);
     });
 
-    test(
-      'settings stored before the stats toggles existed still parse, '
-      'defaulting to shown',
-      () {
-        // Simulates a JSON blob persisted before showSum/showAverage/showMin/
-        // showMax were introduced — they must default to true (shown), not
-        // false, so a pre-existing user's stats bar doesn't go blank.
-        final roundTripped = FieldChartSettings.fromJson({
-          'type': 'spline',
-          'showDelta': true,
-        });
+    test('settings stored before the stats toggles existed still parse, '
+        'defaulting to shown', () {
+      // Simulates a JSON blob persisted before showSum/showAverage/showMin/
+      // showMax were introduced — they must default to true (shown), not
+      // false, so a pre-existing user's stats bar doesn't go blank.
+      final roundTripped = FieldChartSettings.fromJson({
+        'type': 'spline',
+        'showDelta': true,
+      });
 
-        expect(roundTripped.showSum, isTrue);
-        expect(roundTripped.showAverage, isTrue);
-        expect(roundTripped.showMin, isTrue);
-        expect(roundTripped.showMax, isTrue);
-      },
-    );
+      expect(roundTripped.showSum, isTrue);
+      expect(roundTripped.showAverage, isTrue);
+      expect(roundTripped.showMin, isTrue);
+      expect(roundTripped.showMax, isTrue);
+    });
 
-    test(
-      'settings stored before markMin/markMax existed still parse, '
-      'defaulting to off',
-      () {
-        final roundTripped = FieldChartSettings.fromJson({
-          'type': 'spline',
-          'showDelta': true,
-        });
+    test('settings stored before markMin/markMax existed still parse, '
+        'defaulting to off', () {
+      final roundTripped = FieldChartSettings.fromJson({
+        'type': 'spline',
+        'showDelta': true,
+      });
 
-        expect(roundTripped.markMin, isFalse);
-        expect(roundTripped.markMax, isFalse);
-      },
-    );
+      expect(roundTripped.markMin, isFalse);
+      expect(roundTripped.markMax, isFalse);
+    });
 
     test('round-trips defaults', () {
       final roundTripped = FieldChartSettings.fromJson(
@@ -250,18 +256,15 @@ void main() {
       expect(settings.title, isNull);
     });
 
-    test(
-      'non-string axis labels round-trip to null rather than throwing',
-      () {
-        final settings = FieldChartSettings.fromJson({
-          'xAxisLabel': 42,
-          'yAxisLabel': <String, dynamic>{},
-        });
+    test('non-string axis labels round-trip to null rather than throwing', () {
+      final settings = FieldChartSettings.fromJson({
+        'xAxisLabel': 42,
+        'yAxisLabel': <String, dynamic>{},
+      });
 
-        expect(settings.xAxisLabel, isNull);
-        expect(settings.yAxisLabel, isNull);
-      },
-    );
+      expect(settings.xAxisLabel, isNull);
+      expect(settings.yAxisLabel, isNull);
+    });
 
     test('decimals above the picker range (0-6) fall back to null', () {
       final settings = FieldChartSettings.fromJson({'decimals': 100});

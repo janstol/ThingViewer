@@ -41,9 +41,7 @@ void main() {
     });
 
     test('parses every entry on a clean list', () async {
-      final prefs = await _prefsWith({
-        _key: '[{"value": 1}, {"value": 2}]',
-      });
+      final prefs = await _prefsWith({_key: '[{"value": 1}, {"value": 2}]'});
 
       final outcome = decodeStoredList(prefs, _key, _Thing.fromJson);
 
@@ -62,15 +60,18 @@ void main() {
       expect(quarantinedRaw(prefs, _key), 'not json');
     });
 
-    test('quarantines and reports total when the top level is not a list', () async {
-      final prefs = await _prefsWith({_key: '{"value": 1}'});
+    test(
+      'quarantines and reports total when the top level is not a list',
+      () async {
+        final prefs = await _prefsWith({_key: '{"value": 1}'});
 
-      final outcome = decodeStoredList(prefs, _key, _Thing.fromJson);
+        final outcome = decodeStoredList(prefs, _key, _Thing.fromJson);
 
-      expect(outcome.value, isEmpty);
-      expect(outcome.issue?.total, isTrue);
-      expect(quarantinedRaw(prefs, _key), '{"value": 1}');
-    });
+        expect(outcome.value, isEmpty);
+        expect(outcome.issue?.total, isTrue);
+        expect(quarantinedRaw(prefs, _key), '{"value": 1}');
+      },
+    );
 
     test('salvages parsable entries and counts the rest as skipped', () async {
       final raw = '[{"value": 1}, {"bogus": true}, {"value": 3}]';
@@ -137,15 +138,18 @@ void main() {
       expect(quarantinedRaw(prefs, _key), 'not json');
     });
 
-    test('quarantines and reports total when the top level is not a map', () async {
-      final prefs = await _prefsWith({_key: '[1, 2, 3]'});
+    test(
+      'quarantines and reports total when the top level is not a map',
+      () async {
+        final prefs = await _prefsWith({_key: '[1, 2, 3]'});
 
-      final outcome = decodeStoredMap(prefs, _key, _Thing.fromJson);
+        final outcome = decodeStoredMap(prefs, _key, _Thing.fromJson);
 
-      expect(outcome.value, isEmpty);
-      expect(outcome.issue?.total, isTrue);
-      expect(quarantinedRaw(prefs, _key), '[1, 2, 3]');
-    });
+        expect(outcome.value, isEmpty);
+        expect(outcome.issue?.total, isTrue);
+        expect(quarantinedRaw(prefs, _key), '[1, 2, 3]');
+      },
+    );
 
     test('salvages parsable entries and counts the rest as skipped', () async {
       final raw = '{"a": {"value": 1}, "b": {"bogus": true}}';

@@ -176,11 +176,7 @@ class ThingSpeakApi {
   /// the oldest raw entry timestamp on the page, needed to paginate on
   /// entries rather than on values that happened to parse.
   Future<({Field field, int rawEntryCount, DateTime? oldestRawAt})>
-  _readFieldPage(
-    Channel channel,
-    int fieldId,
-    ApiParameters params,
-  ) async {
+  _readFieldPage(Channel channel, int fieldId, ApiParameters params) async {
     final uri = _buildUri(
       baseUrl: channel.serverUrl,
       path: '/channels/${channel.id}/fields/$fieldId.json',
@@ -210,10 +206,7 @@ class ThingSpeakApi {
     // Deliberately not routed through `_parse`: `_parseLastFieldEntry` already
     // returns null on junk, and turning that into an error would fail the whole
     // detail screen refresh over an optional extra value.
-    return await compute(
-      _parseLastFieldEntry,
-      _ParseFieldArgs(raw, fieldId),
-    );
+    return await compute(_parseLastFieldEntry, _ParseFieldArgs(raw, fieldId));
   }
 
   /// Reads all data for a single field over [start]..[end], paginating

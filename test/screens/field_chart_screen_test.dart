@@ -850,9 +850,7 @@ void main() {
       expect(find.text('To'), findsOneWidget);
     });
 
-    testWidgets('applying a new range updates the chip label', (
-      tester,
-    ) async {
+    testWidgets('applying a new range updates the chip label', (tester) async {
       final settings = await _settings();
       final rangeEnd = _field.values.last.createdAt;
       final newStart = rangeEnd.subtract(const Duration(days: 10));
@@ -1306,11 +1304,7 @@ void main() {
       await fieldSettingsStorage.save(
         _channel,
         _field.id,
-        const FieldChartSettings(
-          decimals: 0,
-          showSum: false,
-          showMin: false,
-        ),
+        const FieldChartSettings(decimals: 0, showSum: false, showMin: false),
       );
 
       await tester.pumpWidget(
@@ -1345,8 +1339,14 @@ void main() {
           id: 1,
           label: 'Temp',
           values: [
-            FieldValue(createdAt: _now.subtract(const Duration(days: 2)), value: 1),
-            FieldValue(createdAt: _now.subtract(const Duration(days: 1)), value: 1),
+            FieldValue(
+              createdAt: _now.subtract(const Duration(days: 2)),
+              value: 1,
+            ),
+            FieldValue(
+              createdAt: _now.subtract(const Duration(days: 1)),
+              value: 1,
+            ),
             FieldValue(createdAt: _now, value: 2),
           ],
         );
@@ -1387,45 +1387,42 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Avg/Min/Max carry a full-word spoken label distinct from the '
-      'visible abbreviation; Sum has none to translate',
-      (tester) async {
-        final handle = tester.ensureSemantics();
+    testWidgets('Avg/Min/Max carry a full-word spoken label distinct from the '
+        'visible abbreviation; Sum has none to translate', (tester) async {
+      final handle = tester.ensureSemantics();
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: await _fieldSettingsStorage(),
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // Visible text stays abbreviated.
-        expect(find.text('Avg 2.00'), findsOneWidget);
-        expect(find.text('Min 1.00'), findsOneWidget);
-        expect(find.text('Max 3.00'), findsOneWidget);
+      // Visible text stays abbreviated.
+      expect(find.text('Avg 2.00'), findsOneWidget);
+      expect(find.text('Min 1.00'), findsOneWidget);
+      expect(find.text('Max 3.00'), findsOneWidget);
 
-        // The abbreviation is excluded from what a screen reader hears.
-        expect(find.bySemanticsLabel('Avg 2.00'), findsNothing);
-        expect(find.bySemanticsLabel('Min 1.00'), findsNothing);
-        expect(find.bySemanticsLabel('Max 3.00'), findsNothing);
+      // The abbreviation is excluded from what a screen reader hears.
+      expect(find.bySemanticsLabel('Avg 2.00'), findsNothing);
+      expect(find.bySemanticsLabel('Min 1.00'), findsNothing);
+      expect(find.bySemanticsLabel('Max 3.00'), findsNothing);
 
-        // The spoken label uses the full word instead.
-        expect(find.bySemanticsLabel('Average 2.00'), findsOneWidget);
-        expect(find.bySemanticsLabel('Minimum 1.00'), findsOneWidget);
-        expect(find.bySemanticsLabel('Maximum 3.00'), findsOneWidget);
-        expect(find.bySemanticsLabel('Sum 6.00'), findsOneWidget);
+      // The spoken label uses the full word instead.
+      expect(find.bySemanticsLabel('Average 2.00'), findsOneWidget);
+      expect(find.bySemanticsLabel('Minimum 1.00'), findsOneWidget);
+      expect(find.bySemanticsLabel('Maximum 3.00'), findsOneWidget);
+      expect(find.bySemanticsLabel('Sum 6.00'), findsOneWidget);
 
-        handle.dispose();
-      },
-    );
+      handle.dispose();
+    });
   });
 
   group('chart markers', () {
@@ -1453,142 +1450,132 @@ void main() {
       expect(data.maxY.isNaN, isTrue);
     });
 
-    testWidgets(
-      'markMax pads the auto Y-axis max above the series max, so its '
-      'label does not land exactly on the axis boundary',
-      (tester) async {
-        final fieldSettingsStorage = await _fieldSettingsStorage();
-        await fieldSettingsStorage.save(
-          _channel,
-          _field.id,
-          const FieldChartSettings(markMax: true, decimals: 0),
-        );
+    testWidgets('markMax pads the auto Y-axis max above the series max, so its '
+        'label does not land exactly on the axis boundary', (tester) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(markMax: true, decimals: 0),
+      );
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: fieldSettingsStorage,
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // _field.values = 1, 2, 3 -> max is 3.
-        final data = tester.widget<LineChart>(find.byType(LineChart)).data;
-        expect(data.maxY.isNaN, isFalse);
-        expect(data.maxY, greaterThan(3));
-        // markMin is off: the bottom stays fl_chart's own auto minimum.
-        expect(data.minY.isNaN, isTrue);
-      },
-    );
+      // _field.values = 1, 2, 3 -> max is 3.
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      expect(data.maxY.isNaN, isFalse);
+      expect(data.maxY, greaterThan(3));
+      // markMin is off: the bottom stays fl_chart's own auto minimum.
+      expect(data.minY.isNaN, isTrue);
+    });
 
-    testWidgets(
-      'markMin pads the auto Y-axis min below the series min, so its '
-      'label does not land exactly on the axis boundary',
-      (tester) async {
-        final fieldSettingsStorage = await _fieldSettingsStorage();
-        await fieldSettingsStorage.save(
-          _channel,
-          _field.id,
-          const FieldChartSettings(markMin: true, decimals: 0),
-        );
+    testWidgets('markMin pads the auto Y-axis min below the series min, so its '
+        'label does not land exactly on the axis boundary', (tester) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(markMin: true, decimals: 0),
+      );
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: fieldSettingsStorage,
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // _field.values = 1, 2, 3 -> min is 1.
-        final data = tester.widget<LineChart>(find.byType(LineChart)).data;
-        expect(data.minY.isNaN, isFalse);
-        expect(data.minY, lessThan(1));
-        expect(data.maxY.isNaN, isTrue);
-      },
-    );
+      // _field.values = 1, 2, 3 -> min is 1.
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      expect(data.minY.isNaN, isFalse);
+      expect(data.minY, lessThan(1));
+      expect(data.maxY.isNaN, isTrue);
+    });
 
-    testWidgets(
-      'a manually set yMax is left unpadded even with markMax on',
-      (tester) async {
-        final fieldSettingsStorage = await _fieldSettingsStorage();
-        await fieldSettingsStorage.save(
-          _channel,
-          _field.id,
-          const FieldChartSettings(markMax: true, yMax: 3, decimals: 0),
-        );
+    testWidgets('a manually set yMax is left unpadded even with markMax on', (
+      tester,
+    ) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(markMax: true, yMax: 3, decimals: 0),
+      );
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: fieldSettingsStorage,
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        final data = tester.widget<LineChart>(find.byType(LineChart)).data;
-        expect(data.maxY, 3);
-      },
-    );
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      expect(data.maxY, 3);
+    });
 
-    testWidgets(
-      'markMax draws one horizontal line at the series max with a '
-      'formatted label, and marks only the max spot',
-      (tester) async {
-        final fieldSettingsStorage = await _fieldSettingsStorage();
-        await fieldSettingsStorage.save(
-          _channel,
-          _field.id,
-          const FieldChartSettings(markMax: true, decimals: 0),
-        );
+    testWidgets('markMax draws one horizontal line at the series max with a '
+        'formatted label, and marks only the max spot', (tester) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(markMax: true, decimals: 0),
+      );
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: fieldSettingsStorage,
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // _field.values = 1, 2, 3 -> max is 3.
-        final data = tester.widget<LineChart>(find.byType(LineChart)).data;
-        expect(data.extraLinesData.horizontalLines, hasLength(1));
-        final line = data.extraLinesData.horizontalLines.single;
-        expect(line.y, 3);
-        expect(line.label.labelResolver(line), 'Max 3');
+      // _field.values = 1, 2, 3 -> max is 3.
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      expect(data.extraLinesData.horizontalLines, hasLength(1));
+      final line = data.extraLinesData.horizontalLines.single;
+      expect(line.y, 3);
+      expect(line.label.labelResolver(line), 'Max 3');
 
-        final barData = data.lineBarsData.single;
-        expect(barData.dotData.show, isTrue);
-        final maxSpot = barData.spots.firstWhere((s) => s.y == 3);
-        final minSpot = barData.spots.firstWhere((s) => s.y == 1);
-        expect(barData.dotData.checkToShowDot(maxSpot, barData), isTrue);
-        expect(barData.dotData.checkToShowDot(minSpot, barData), isFalse);
-      },
-    );
+      final barData = data.lineBarsData.single;
+      expect(barData.dotData.show, isTrue);
+      final maxSpot = barData.spots.firstWhere((s) => s.y == 3);
+      final minSpot = barData.spots.firstWhere((s) => s.y == 1);
+      expect(barData.dotData.checkToShowDot(maxSpot, barData), isTrue);
+      expect(barData.dotData.checkToShowDot(minSpot, barData), isFalse);
+    });
 
     testWidgets('markMin and markMax both on draw two horizontal lines', (
       tester,
@@ -1647,11 +1634,7 @@ void main() {
         await fieldSettingsStorage.save(
           _channel,
           flatField.id,
-          const FieldChartSettings(
-            markMin: true,
-            markMax: true,
-            decimals: 0,
-          ),
+          const FieldChartSettings(markMin: true, markMax: true, decimals: 0),
         );
 
         await tester.pumpWidget(
@@ -1675,100 +1658,94 @@ void main() {
       },
     );
 
-    testWidgets(
-      'markers follow showDelta, using the delta series extremes',
-      (tester) async {
-        final deltaField = Field(
-          id: 1,
-          label: 'Temp',
-          values: [
-            FieldValue(
-              createdAt: _now.subtract(const Duration(days: 2)),
-              value: 10,
-            ),
-            FieldValue(
-              createdAt: _now.subtract(const Duration(days: 1)),
-              value: 13,
-            ),
-            FieldValue(createdAt: _now, value: 17),
-          ],
-        );
-        when(
-          mockApi.readFieldRange(
-            any,
-            any,
-            apiKey: anyNamed('apiKey'),
-            start: anyNamed('start'),
-            end: anyNamed('end'),
+    testWidgets('markers follow showDelta, using the delta series extremes', (
+      tester,
+    ) async {
+      final deltaField = Field(
+        id: 1,
+        label: 'Temp',
+        values: [
+          FieldValue(
+            createdAt: _now.subtract(const Duration(days: 2)),
+            value: 10,
           ),
-        ).thenAnswer(
-          (_) async => FieldRange(field: deltaField, truncated: false),
-        );
-        final fieldSettingsStorage = await _fieldSettingsStorage();
-        await fieldSettingsStorage.save(
-          _channel,
-          deltaField.id,
-          const FieldChartSettings(
-            showDelta: true,
-            markMax: true,
-            decimals: 0,
+          FieldValue(
+            createdAt: _now.subtract(const Duration(days: 1)),
+            value: 13,
           ),
-        );
+          FieldValue(createdAt: _now, value: 17),
+        ],
+      );
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenAnswer(
+        (_) async => FieldRange(field: deltaField, truncated: false),
+      );
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        deltaField.id,
+        const FieldChartSettings(showDelta: true, markMax: true, decimals: 0),
+      );
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: deltaField,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: fieldSettingsStorage,
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: deltaField,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // Deltas of 10, 13, 17 are 3 and 4 -> max delta is 4, not the raw
-        // series' max of 17.
-        final data = tester.widget<LineChart>(find.byType(LineChart)).data;
-        final line = data.extraLinesData.horizontalLines.single;
-        expect(line.y, 4);
-      },
-    );
+      // Deltas of 10, 13, 17 are 3 and 4 -> max delta is 4, not the raw
+      // series' max of 17.
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      final line = data.extraLinesData.horizontalLines.single;
+      expect(line.y, 4);
+    });
 
-    testWidgets(
-      'Column chart type carries the marker lines via BarChartData',
-      (tester) async {
-        final fieldSettingsStorage = await _fieldSettingsStorage();
-        await fieldSettingsStorage.save(
-          _channel,
-          _field.id,
-          const FieldChartSettings(
-            type: ChartType.column,
-            markMax: true,
-            decimals: 0,
+    testWidgets('Column chart type carries the marker lines via BarChartData', (
+      tester,
+    ) async {
+      final fieldSettingsStorage = await _fieldSettingsStorage();
+      await fieldSettingsStorage.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(
+          type: ChartType.column,
+          markMax: true,
+          decimals: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettingsStorage,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: await _settings(),
-              fieldSettingsStorage: fieldSettingsStorage,
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final data = tester.widget<BarChart>(find.byType(BarChart)).data;
-        expect(data.extraLinesData.horizontalLines, hasLength(1));
-      },
-    );
+      final data = tester.widget<BarChart>(find.byType(BarChart)).data;
+      expect(data.extraLinesData.horizontalLines, hasLength(1));
+    });
   });
 
   testWidgets('chart axes do not overflow at 2x text scale', (tester) async {
@@ -1872,10 +1849,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.descendant(
-            of: find.byType(AppBar),
-            matching: find.byType(Hero),
-          ),
+          find.descendant(of: find.byType(AppBar), matching: find.byType(Hero)),
           findsNothing,
         );
         expect(

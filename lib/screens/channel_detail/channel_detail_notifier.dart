@@ -82,8 +82,7 @@ class ChannelDetailNotifier extends ChangeNotifier {
   /// newer one (reload, edit) or by disposal, so its result must be dropped
   /// before any side effect: `_channel`, `onChannelUpdated`, the snapshot
   /// store, or the visible state.
-  bool _stale(int generation) =>
-      _disposed || generation != _requestGeneration;
+  bool _stale(int generation) => _disposed || generation != _requestGeneration;
 
   /// Builds a [ChannelDetailLoaded] from the channel's cached snapshot, or
   /// null if there is no snapshot or it has no field with a value.

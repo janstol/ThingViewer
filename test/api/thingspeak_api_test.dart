@@ -675,10 +675,7 @@ void main() {
         // Only page 2 carried usable values; page 1's readings were lost to
         // never having a parseable value, not to pagination stopping early.
         expect(result.field.values.length, 50);
-        expect(
-          result.field.values.first.createdAt,
-          page2Times.first.toLocal(),
-        );
+        expect(result.field.values.first.createdAt, page2Times.first.toLocal());
       },
     );
 
@@ -732,93 +729,87 @@ void main() {
       },
     );
 
-    test(
-      'collects invalidAt markers from an all-invalid page and continues '
-      'pagination past it',
-      () async {
-        final end = DateTime.utc(2024, 1, 10);
-        final start = DateTime.utc(2023, 11, 1);
+    test('collects invalidAt markers from an all-invalid page and continues '
+        'pagination past it', () async {
+      final end = DateTime.utc(2024, 1, 10);
+      final start = DateTime.utc(2023, 11, 1);
 
-        // Newest page: a full page of valid readings.
-        final page1Times = List.generate(
-          8000,
-          (i) => end.subtract(Duration(seconds: 7999 - i)),
-        );
-        final page1 = feedForTimes(page1Times);
+      // Newest page: a full page of valid readings.
+      final page1Times = List.generate(
+        8000,
+        (i) => end.subtract(Duration(seconds: 7999 - i)),
+      );
+      final page1 = feedForTimes(page1Times);
 
-        // Middle page: a full page whose every value is non-finite.
-        final page1Oldest = page1Times.first;
-        final page2End = page1Oldest.subtract(const Duration(seconds: 1));
-        final page2Times = List.generate(
-          8000,
-          (i) => page2End.subtract(Duration(seconds: 7999 - i)),
-        );
-        final page2 = feedForEntries([
-          for (final t in page2Times) (createdAt: t, value: 'NaN'),
-        ]);
+      // Middle page: a full page whose every value is non-finite.
+      final page1Oldest = page1Times.first;
+      final page2End = page1Oldest.subtract(const Duration(seconds: 1));
+      final page2Times = List.generate(
+        8000,
+        (i) => page2End.subtract(Duration(seconds: 7999 - i)),
+      );
+      final page2 = feedForEntries([
+        for (final t in page2Times) (createdAt: t, value: 'NaN'),
+      ]);
 
-        // Oldest page: a short page of valid readings, terminating pagination.
-        final page2Oldest = page2Times.first;
-        final page3End = page2Oldest.subtract(const Duration(seconds: 1));
-        final page3Times = List.generate(
-          50,
-          (i) => page3End.subtract(Duration(seconds: 49 - i)),
-        );
-        final page3 = feedForTimes(page3Times);
+      // Oldest page: a short page of valid readings, terminating pagination.
+      final page2Oldest = page2Times.first;
+      final page3End = page2Oldest.subtract(const Duration(seconds: 1));
+      final page3Times = List.generate(
+        50,
+        (i) => page3End.subtract(Duration(seconds: 49 - i)),
+      );
+      final page3 = feedForTimes(page3Times);
 
-        var callCount = 0;
-        when(mockClient.get(any)).thenAnswer((_) async {
-          callCount++;
-          return ok(switch (callCount) {
-            1 => page1,
-            2 => page2,
-            _ => page3,
-          });
+      var callCount = 0;
+      when(mockClient.get(any)).thenAnswer((_) async {
+        callCount++;
+        return ok(switch (callCount) {
+          1 => page1,
+          2 => page2,
+          _ => page3,
         });
+      });
 
-        final result = await api.readFieldRange(
-          publicChannel,
-          1,
-          start: start,
-          end: end,
-        );
+      final result = await api.readFieldRange(
+        publicChannel,
+        1,
+        start: start,
+        end: end,
+      );
 
-        expect(callCount, 3);
-        expect(result.truncated, isFalse);
-        expect(result.field.values.length, 8000 + 50);
-        expect(result.field.invalidAt.length, 8000);
-        expect(
-          result.field.invalidAt.toSet(),
-          page2Times.map((t) => t.toLocal()).toSet(),
-        );
-      },
-    );
+      expect(callCount, 3);
+      expect(result.truncated, isFalse);
+      expect(result.field.values.length, 8000 + 50);
+      expect(result.field.invalidAt.length, 8000);
+      expect(
+        result.field.invalidAt.toSet(),
+        page2Times.map((t) => t.toLocal()).toSet(),
+      );
+    });
 
-    test(
-      'stops and reports truncated when a full page has no parseable '
-      'created_at anywhere on it',
-      () async {
-        final end = DateTime.utc(2024, 1, 10);
-        final start = DateTime.utc(2023, 12, 1);
+    test('stops and reports truncated when a full page has no parseable '
+        'created_at anywhere on it', () async {
+      final end = DateTime.utc(2024, 1, 10);
+      final start = DateTime.utc(2023, 12, 1);
 
-        final page = feedForEntries([
-          for (var i = 0; i < 8000; i++) (createdAt: null, value: '1.0'),
-        ]);
+      final page = feedForEntries([
+        for (var i = 0; i < 8000; i++) (createdAt: null, value: '1.0'),
+      ]);
 
-        when(mockClient.get(any)).thenAnswer((_) async => ok(page));
+      when(mockClient.get(any)).thenAnswer((_) async => ok(page));
 
-        final result = await api.readFieldRange(
-          publicChannel,
-          1,
-          start: start,
-          end: end,
-        );
+      final result = await api.readFieldRange(
+        publicChannel,
+        1,
+        start: start,
+        end: end,
+      );
 
-        expect(result.truncated, isTrue);
-        expect(result.field.values, isEmpty);
-        verify(mockClient.get(any)).called(1);
-      },
-    );
+      expect(result.truncated, isTrue);
+      expect(result.field.values, isEmpty);
+      verify(mockClient.get(any)).called(1);
+    });
   });
 
   group('readLastFieldEntry', () {
@@ -831,7 +822,10 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.value, 3646.0);
-      expect(result.createdAt, DateTime.parse('2026-07-20T08:15:30Z').toLocal());
+      expect(
+        result.createdAt,
+        DateTime.parse('2026-07-20T08:15:30Z').toLocal(),
+      );
     });
 
     test('returns null on a 404 with body -1 (field never written)', () async {

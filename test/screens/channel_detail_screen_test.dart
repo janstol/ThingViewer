@@ -1091,7 +1091,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(ListTile, longLabelField.first.label!));
+        await tester.tap(
+          find.widgetWithText(ListTile, longLabelField.first.label!),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 90));
         expect(tester.takeException(), isNull);

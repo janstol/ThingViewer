@@ -63,9 +63,8 @@ class PinnedFieldsStorage {
       .where((p) => channels.any((c) => p.matches(c)))
       .toList(growable: false);
 
-  bool isPinned(Channel channel, int fieldId) => _pins.any(
-    (p) => p.matches(channel) && p.fieldId == fieldId,
-  );
+  bool isPinned(Channel channel, int fieldId) =>
+      _pins.any((p) => p.matches(channel) && p.fieldId == fieldId);
 
   Future<void> toggle(Channel channel, int fieldId) async {
     final index = _pins.indexWhere(
@@ -91,10 +90,7 @@ class PinnedFieldsStorage {
     var changed = false;
     for (var i = 0; i < _pins.length; i++) {
       if (_pins[i].matches(from)) {
-        _pins[i] = _pins[i].copyWith(
-          serverUrl: to.serverUrl,
-          channelId: to.id,
-        );
+        _pins[i] = _pins[i].copyWith(serverUrl: to.serverUrl, channelId: to.id);
         changed = true;
       }
     }
@@ -112,7 +108,9 @@ class PinnedFieldsStorage {
   /// for merging a partial import selection without disturbing other pins.
   Future<void> mergeJson(List<dynamic> json) async {
     final existing = _pins.toSet();
-    for (final pin in json.whereType<Map<String, dynamic>>().map(PinnedField.fromJson)) {
+    for (final pin in json.whereType<Map<String, dynamic>>().map(
+      PinnedField.fromJson,
+    )) {
       if (existing.add(pin)) _pins.add(pin);
     }
     await _persist();

@@ -515,23 +515,20 @@ void main() {
       },
     );
 
-    test(
-      'dispose during an in-flight refresh suppresses the write',
-      () async {
-        storage = await seededStorage([(_channelA, 1)]);
-        snapshotStorage = await sharedSnapshotStorage();
-        final pending = Completer<FeedData>();
-        when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
+    test('dispose during an in-flight refresh suppresses the write', () async {
+      storage = await seededStorage([(_channelA, 1)]);
+      snapshotStorage = await sharedSnapshotStorage();
+      final pending = Completer<FeedData>();
+      when(mockApi.readFeed(any, any)).thenAnswer((_) => pending.future);
 
-        final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
-          _channelA,
-        ]);
-        notifier.dispose();
-        pending.complete(feedWithValue(23.5));
-        await Future<void>.delayed(Duration.zero);
+      final notifier = PinnedNotifier(mockApi, storage, snapshotStorage, [
+        _channelA,
+      ]);
+      notifier.dispose();
+      pending.complete(feedWithValue(23.5));
+      await Future<void>.delayed(Duration.zero);
 
-        expect(snapshotStorage.snapshotFor(_channelA), isNull);
-      },
-    );
+      expect(snapshotStorage.snapshotFor(_channelA), isNull);
+    });
   });
 }

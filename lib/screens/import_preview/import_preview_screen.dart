@@ -242,7 +242,9 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
         Padding(
           padding: const EdgeInsets.only(left: 32),
           child: CheckboxListTile(
-            value: selected && diff.chartSettingKeys.every(_selectedChartKeys.contains),
+            value:
+                selected &&
+                diff.chartSettingKeys.every(_selectedChartKeys.contains),
             onChanged: !selected
                 ? null
                 : (v) {
@@ -430,8 +432,8 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
         return value as String? ?? '';
       case BackupSettingKey.timezoneDisplay:
         return switch (TimezoneDisplay.values.elementAtOrNull(
-          value as int? ?? 0,
-        ) ??
+              value as int? ?? 0,
+            ) ??
             TimezoneDisplay.off) {
           TimezoneDisplay.off => l10n.settingsTimezoneOff,
           TimezoneDisplay.offset => l10n.settingsTimezoneOffset,
@@ -439,8 +441,8 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
         };
       case BackupSettingKey.entryTimeDisplay:
         return switch (EntryTimeDisplay.values.elementAtOrNull(
-          value as int? ?? 0,
-        ) ??
+              value as int? ?? 0,
+            ) ??
             EntryTimeDisplay.both) {
           EntryTimeDisplay.absolute => l10n.settingsEntryTimeAbsolute,
           EntryTimeDisplay.age => l10n.settingsEntryTimeAge,

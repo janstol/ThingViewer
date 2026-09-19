@@ -216,7 +216,8 @@ void main() {
       // that used to flash Dismissible's "still part of the tree" error.
       SharedPreferences.setMockInitialValues({
         'channels': Channel.listToJson([_channel]),
-        'channelSnapshots': '{"https://api.thingspeak.com|1":'
+        'channelSnapshots':
+            '{"https://api.thingspeak.com|1":'
             '{"fields":[],"statuses":[],'
             '"fetchedAt":"2024-01-01T00:00:00.000"}}',
       });
@@ -520,68 +521,57 @@ void main() {
       await tester.tap(find.text('Temp'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('No values for the selected date range.'),
-        findsNothing,
-      );
+      expect(find.text('No values for the selected date range.'), findsNothing);
       expect(find.byType(LineChart), findsOneWidget);
     },
   );
 
   group('channel row data line', () {
-    testWidgets(
-      'a channel with a seeded snapshot shows the freshness age; one '
-      'without a snapshot shows only the identity line',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({
-          'channels': Channel.listToJson([_channel, _otherChannel]),
-        });
-        final storage = ChannelStorage(await SharedPreferences.getInstance());
-        final channelSnapshotStorage = await _channelSnapshotStorage();
-        // A margin past the nominal 2 days: `now` on the row is the
-        // screen's own captured clock, always a hair earlier than this
-        // calculation, and `formatEntryAge` floors — an exact 2-day gap
-        // would read back as "1 day ago".
-        final valueAt = DateTime.now().subtract(
-          const Duration(days: 2, hours: 12),
-        );
-        await channelSnapshotStorage.save(
-          _channel,
-          ChannelSnapshot(
-            fields: [
-              FieldSnapshot(
-                id: 1,
-                label: 'Temp',
-                value: 23.5,
-                valueAt: valueAt,
-              ),
-            ],
-            fetchedAt: DateTime.now(),
-          ),
-        );
+    testWidgets('a channel with a seeded snapshot shows the freshness age; one '
+        'without a snapshot shows only the identity line', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel, _otherChannel]),
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+      final channelSnapshotStorage = await _channelSnapshotStorage();
+      // A margin past the nominal 2 days: `now` on the row is the
+      // screen's own captured clock, always a hair earlier than this
+      // calculation, and `formatEntryAge` floors — an exact 2-day gap
+      // would read back as "1 day ago".
+      final valueAt = DateTime.now().subtract(
+        const Duration(days: 2, hours: 12),
+      );
+      await channelSnapshotStorage.save(
+        _channel,
+        ChannelSnapshot(
+          fields: [
+            FieldSnapshot(id: 1, label: 'Temp', value: 23.5, valueAt: valueAt),
+          ],
+          fetchedAt: DateTime.now(),
+        ),
+      );
 
-        await tester.pumpWidget(
-          _wrap(
-            ChannelListScreen(
-              api: mockApi,
-              channelStorage: storage,
-              settings: await _settings(),
-              fieldSettingsStorage: await _fieldSettingsStorage(),
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-              channelSnapshotStorage: channelSnapshotStorage,
-              backupService: await _backupService(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: channelSnapshotStorage,
+            backupService: await _backupService(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // _channel has a snapshot: just the freshness age, no field values.
-        expect(find.text('2 days ago'), findsOneWidget);
-        // Both tiles keep their identity line regardless of snapshot state.
-        expect(find.text('https://api.thingspeak.com · 1'), findsOneWidget);
-        expect(find.text('https://api.thingspeak.com · 2'), findsOneWidget);
-      },
-    );
+      // _channel has a snapshot: just the freshness age, no field values.
+      expect(find.text('2 days ago'), findsOneWidget);
+      // Both tiles keep their identity line regardless of snapshot state.
+      expect(find.text('https://api.thingspeak.com · 1'), findsOneWidget);
+      expect(find.text('https://api.thingspeak.com · 2'), findsOneWidget);
+    });
 
     testWidgets(
       'saving a snapshot while the list is mounted rebuilds the row',

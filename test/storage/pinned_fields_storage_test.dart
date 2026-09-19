@@ -66,14 +66,10 @@ void main() {
 
     test('persists across storage instances', () async {
       SharedPreferences.setMockInitialValues({});
-      final first = PinnedFieldsStorage(
-        await SharedPreferences.getInstance(),
-      );
+      final first = PinnedFieldsStorage(await SharedPreferences.getInstance());
       await first.toggle(_channel, 1);
 
-      final second = PinnedFieldsStorage(
-        await SharedPreferences.getInstance(),
-      );
+      final second = PinnedFieldsStorage(await SharedPreferences.getInstance());
 
       expect(second.isPinned(_channel, 1), isTrue);
     });
@@ -206,9 +202,7 @@ void main() {
       final exported = storage.exportJson();
 
       SharedPreferences.setMockInitialValues({});
-      final target = PinnedFieldsStorage(
-        await SharedPreferences.getInstance(),
-      );
+      final target = PinnedFieldsStorage(await SharedPreferences.getInstance());
       await target.mergeJson(exported);
 
       expect(target.isPinned(_channel, 1), isTrue);

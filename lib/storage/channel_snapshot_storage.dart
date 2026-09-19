@@ -55,7 +55,9 @@ class ChannelSnapshotStorage extends ChangeNotifier {
   Future<void> save(Channel channel, ChannelSnapshot snapshot) async {
     final key = _key(channel);
     final existing = _snapshots[key];
-    _snapshots[key] = existing == null ? snapshot : snapshot.mergedWith(existing);
+    _snapshots[key] = existing == null
+        ? snapshot
+        : snapshot.mergedWith(existing);
     await _persist();
     notifyListeners();
   }

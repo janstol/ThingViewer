@@ -214,9 +214,7 @@ void main() {
 
   group('a corrupt blob', () {
     test('yields no snapshots instead of throwing', () async {
-      SharedPreferences.setMockInitialValues({
-        'channelSnapshots': 'not json',
-      });
+      SharedPreferences.setMockInitialValues({'channelSnapshots': 'not json'});
       final storage = ChannelSnapshotStorage(
         await SharedPreferences.getInstance(),
       );
@@ -226,9 +224,7 @@ void main() {
     });
 
     test('is preserved via corruptRaw and survives a later write', () async {
-      SharedPreferences.setMockInitialValues({
-        'channelSnapshots': 'not json',
-      });
+      SharedPreferences.setMockInitialValues({'channelSnapshots': 'not json'});
       final storage = ChannelSnapshotStorage(
         await SharedPreferences.getInstance(),
       );
@@ -243,9 +239,7 @@ void main() {
     });
 
     test('discardCorrupt clears the quarantine and the issue', () async {
-      SharedPreferences.setMockInitialValues({
-        'channelSnapshots': 'not json',
-      });
+      SharedPreferences.setMockInitialValues({'channelSnapshots': 'not json'});
       final storage = ChannelSnapshotStorage(
         await SharedPreferences.getInstance(),
       );

@@ -25,10 +25,7 @@ void main() {
       );
       final expectedTimestamp = local.toUtc().toIso8601String();
       expect(expectedTimestamp, endsWith('Z'));
-      expect(
-        csv,
-        'timestamp,value\r\n$expectedTimestamp,12.345678901\r\n',
-      );
+      expect(csv, 'timestamp,value\r\n$expectedTimestamp,12.345678901\r\n');
     });
 
     test('formatted mode uses formatTimestamp and formatFieldValue', () {

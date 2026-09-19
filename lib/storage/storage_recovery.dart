@@ -72,16 +72,19 @@ void quarantine(
 ) {
   if (quarantinedRaw(prefs, key) != null) return;
   unawaited(prefs.setString(quarantineKey(key), raw));
-  unawaited(prefs.setString(quarantineMetaKey(key), jsonEncode(issue.toJson())));
+  unawaited(
+    prefs.setString(quarantineMetaKey(key), jsonEncode(issue.toJson())),
+  );
 }
 
 String? quarantinedRaw(SharedPreferences prefs, String key) =>
     prefs.getString(quarantineKey(key));
 
-Future<void> clearQuarantine(SharedPreferences prefs, String key) => Future.wait([
-  prefs.remove(quarantineKey(key)),
-  prefs.remove(quarantineMetaKey(key)),
-]);
+Future<void> clearQuarantine(SharedPreferences prefs, String key) =>
+    Future.wait([
+      prefs.remove(quarantineKey(key)),
+      prefs.remove(quarantineMetaKey(key)),
+    ]);
 
 /// Reads [key] as a JSON list, salvaging what it can.
 ///

@@ -85,8 +85,7 @@ class PinnedNotifier extends ChangeNotifier {
   /// newer one (setChannels, refresh) or by disposal, so its result must be
   /// dropped before any side effect: the snapshot store or the visible
   /// entries.
-  bool _stale(int generation) =>
-      _disposed || generation != _requestGeneration;
+  bool _stale(int generation) => _disposed || generation != _requestGeneration;
 
   /// Drops any in-flight refresh without starting a new one — a
   /// `setChannels`/`refresh` will follow. Used by callers about to mutate

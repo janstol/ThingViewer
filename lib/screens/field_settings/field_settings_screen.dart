@@ -426,8 +426,7 @@ class _RoundingTile extends StatelessWidget {
               children: [
                 RadioGroup<int?>(
                   groupValue: current,
-                  onChanged: (v) =>
-                      Navigator.pop(context, _RoundingChoice(v)),
+                  onChanged: (v) => Navigator.pop(context, _RoundingChoice(v)),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

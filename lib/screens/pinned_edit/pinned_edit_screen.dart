@@ -103,9 +103,7 @@ class _PinnedEditScreenState extends State<PinnedEditScreen> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Center(
-            child: CircularProgressIndicator(
-              semanticsLabel: l10n.labelLoading,
-            ),
+            child: CircularProgressIndicator(semanticsLabel: l10n.labelLoading),
           ),
         ),
       ];

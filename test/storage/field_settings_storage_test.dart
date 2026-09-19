@@ -220,22 +220,24 @@ void main() {
       expect(target.settingsFor(_otherChannel, 2), forField2);
     });
 
-    test('mergeJson overwrites matching keys but leaves other saved entries',
-        () async {
-      SharedPreferences.setMockInitialValues({});
-      final storage = FieldSettingsStorage(
-        await SharedPreferences.getInstance(),
-      );
-      await storage.save(_channel, 1, const FieldChartSettings(decimals: 5));
+    test(
+      'mergeJson overwrites matching keys but leaves other saved entries',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final storage = FieldSettingsStorage(
+          await SharedPreferences.getInstance(),
+        );
+        await storage.save(_channel, 1, const FieldChartSettings(decimals: 5));
 
-      await storage.mergeJson({
-        '${_otherChannel.serverUrl}|${_otherChannel.id}|1':
-            const FieldChartSettings(type: ChartType.column).toJson(),
-      });
+        await storage.mergeJson({
+          '${_otherChannel.serverUrl}|${_otherChannel.id}|1':
+              const FieldChartSettings(type: ChartType.column).toJson(),
+        });
 
-      expect(storage.settingsFor(_channel, 1).decimals, 5);
-      expect(storage.settingsFor(_otherChannel, 1).type, ChartType.column);
-    });
+        expect(storage.settingsFor(_channel, 1).decimals, 5);
+        expect(storage.settingsFor(_otherChannel, 1).type, ChartType.column);
+      },
+    );
 
     test('mergeJson overwrites an entry that already exists', () async {
       SharedPreferences.setMockInitialValues({});
@@ -245,8 +247,9 @@ void main() {
       await storage.save(_channel, 1, const FieldChartSettings(decimals: 5));
 
       await storage.mergeJson({
-        '${_channel.serverUrl}|${_channel.id}|1':
-            const FieldChartSettings(type: ChartType.column).toJson(),
+        '${_channel.serverUrl}|${_channel.id}|1': const FieldChartSettings(
+          type: ChartType.column,
+        ).toJson(),
       });
 
       expect(storage.settingsFor(_channel, 1).type, ChartType.column);

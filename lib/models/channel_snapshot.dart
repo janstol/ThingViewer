@@ -91,8 +91,7 @@ class ChannelSnapshot {
 
   factory ChannelSnapshot.fromJson(Map<String, dynamic> json) {
     final fetchedAt =
-        DateTime.tryParse(json['fetchedAt'] as String? ?? '') ??
-        DateTime.now();
+        DateTime.tryParse(json['fetchedAt'] as String? ?? '') ?? DateTime.now();
     final fieldsJson = json['fields'] as List<dynamic>? ?? [];
     final statusesJson = json['statuses'] as List<dynamic>? ?? [];
     return ChannelSnapshot(
@@ -121,9 +120,7 @@ class ChannelSnapshot {
     final seenIds = <int>{};
     for (final field in fields) {
       final match = older.fields.where((o) => o.id == field.id);
-      mergedFields.add(
-        match.isEmpty ? field : field.mergedWith(match.first),
-      );
+      mergedFields.add(match.isEmpty ? field : field.mergedWith(match.first));
       seenIds.add(field.id);
     }
     for (final field in older.fields) {
