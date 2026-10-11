@@ -27,7 +27,7 @@ dependencies:
   http: ^1.2.2
   package_info_plus: ^10.2.1
   shared_preferences: ^2.5.6
-  url_launcher: ^6.3.0
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
