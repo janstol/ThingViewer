@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-11
+
 ### Fixed
 
 - A successful (HTTP 200) response carrying something other than usable feed data left the channel detail, field chart and pinned-field screens stuck on a spinner with no error and no way to retry. This covers an HTML error or captive-portal page, truncated JSON, and a ThingSpeak error object delivered under a 200 status. Such a response is now reported as a readable error, an auth error object under 200 is recognised as a credentials failure, and a single junk feed entry no longer discards the rest of an otherwise good response.
@@ -17,12 +19,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Bumped Flutter to 3.47.7 (Dart 3.13.5), which fixes VoiceOver focus and tap frames on iOS, and refreshed the lockfile (16 transitive bumps, mostly `file_picker` platform packages). Also bumped `file_picker` to 13.1.0 (removes the parameters deprecated in 12.0, none of which the app used), `package_info_plus` to 10.2.2, `shared_preferences` to 2.5.6, `url_launcher` to 6.3.3 and `build_runner` to 2.16.2.
-- Bumped Flutter to 3.47.5 (Dart 3.13.4) in `mise.toml` and all CI workflows, and refreshed the lockfile against it: `file_picker` 12.3.0, `image` 4.10.1, `archive` 4.3.0, `platform` 3.2.0, and seven other transitive bumps within the existing constraints.
-- Bumped Flutter to 3.47.2 (Dart 3.13.2). The CI pin was 3.47.0 while `mise.toml` was 3.47.1; both now read 3.47.2. Also bumped `file_picker` to 12.2.0, which re-adds `PlatformFile.lengthSync()` and adds a `darwinOptions` parameter to `pickFile()`, and refreshed the lockfile against the new Flutter version.
+- Bumped Flutter to 3.47.7 (Dart 3.13.5) in `mise.toml` and all CI workflows, which fixes VoiceOver focus and tap frames on iOS. Also bumped `file_picker` to 13.1.0, `package_info_plus` to 10.2.2, `shared_preferences` to 2.5.6, `url_launcher` to 6.3.3 and `build_runner` to 2.16.2, and refreshed the lockfile.
+- Bumped the Android Gradle Plugin to 9.1.0, Gradle to 9.3.1, and the Kotlin Gradle Plugin to 2.4.0, which required the `file_picker` 12 upgrade. On Android, saving a backup or CSV export now goes through the Storage Access Framework and returns a content URI instead of a file path; this doesn't change what's visible to the user.
 - The field chart screen's bottom-pinned Filter button is replaced by a date-range chip in the header, above the stats row. The chip shows the currently active range and opens the same filter sheet, so the window is now visible without opening it, and the chart gets back the vertical space the button used to take. The empty and no-cached-data states keep their own centred Filter button. (The nav-bar-clearance test for the removed button is dropped along with it; the sibling test for the filter sheet's own Apply button stays.)
 - The channel list's row subtitle now leads with a freshness line (when a cached snapshot has a value), with the server URL and channel id demoted to a smaller, muted line below. The channel list also updates live when a snapshot is written by the channel detail screen or a pinned-fields refresh, not just when a channel screen is popped.
-- Bumped the Android Gradle Plugin to 9.1.0, Gradle to 9.3.1, and the Kotlin Gradle Plugin to 2.4.0. Required bumping `file_picker` to 12.0.0 and `package_info_plus` to 10.2.1 along with it. On Android, saving a backup or CSV export now goes through the Storage Access Framework and returns a content URI instead of a file path; this doesn't change what's visible to the user.
 - The channel detail screen's field rows now give the value more visual weight than the label, and pinned fields get their own "Pinned fields" section above the rest.
 - Loading, empty, error, and loaded states now fade into each other on the channel list, channel detail, and field chart screens, instead of cutting hard from one to the next. The chart/table toggle on the field chart screen now crossfades too. A field's displayed value now briefly pulses its "changed" colour when a refresh actually changes it, so a value that changed reads differently from one that didn't.
 - Tapping a field row on the channel detail screen now flies its label into the chart's AppBar title instead of cutting to the platform's default page transition, so the eye doesn't have to re-find what it just tapped. Skipped when the field has a custom chart title (morphing into a different string would read as a glitch) and for pinned fields opened from the channel list, since the wide/tablet layout can show the same field in two places at once.
@@ -155,6 +155,8 @@ Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into
 - Migrated from Hive/get_it/BLoC to `SharedPreferences` + `ChangeNotifier`.
 - Updated dependencies to their latest versions compatible with existing constraints (`build_runner`, `equatable`, `path_provider_android`, and others).
 
+[0.13.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.13.0
+[0.12.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.12.0
 [0.11.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.11.0
 [0.10.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.10.0
 [0.9.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.9.0
