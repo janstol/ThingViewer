@@ -21,7 +21,7 @@ import 'field_chart.dart';
 import 'field_chart_notifier.dart';
 import 'field_table.dart';
 import 'filter_sheet.dart';
-import 'range_chip.dart';
+import 'range_selector.dart';
 
 class FieldChartScreen extends StatefulWidget {
   final Channel channel;
@@ -64,10 +64,15 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
   @override
   void initState() {
     super.initState();
-    _notifier = FieldChartNotifier(widget.api, widget.channel, widget.field);
     _chartSettings = widget.fieldSettingsStorage.settingsFor(
       widget.channel,
       widget.field.id,
+    );
+    _notifier = FieldChartNotifier(
+      widget.api,
+      widget.channel,
+      widget.field,
+      initialPreset: _chartSettings.defaultRange,
     );
     _pinned = widget.pinnedFieldsStorage.isPinned(
       widget.channel,
@@ -102,7 +107,10 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
               widget.field.id,
               next,
             );
+            final rangeChanged =
+                next.defaultRange != _chartSettings.defaultRange;
             setState(() => _chartSettings = next);
+            if (rangeChanged) _notifier.applyDefault(next.defaultRange);
           },
         ),
       ),
@@ -225,199 +233,172 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       ),
       body: ListenableBuilder(
         listenable: _notifier,
-        builder: (context, _) => MotionSwitcher(
-          child: switch (_notifier.state) {
-            FieldChartLoading() => Center(
-              key: const ValueKey('loading'),
-              child: CircularProgressIndicator(
-                semanticsLabel: l10n.labelLoading,
-              ),
+        builder: (context, _) => Column(
+          children: [
+            RangeSelector(
+              range: _notifier.range,
+              activePreset: _notifier.activePreset,
+              settings: widget.settings,
+              onPreset: _notifier.applyPreset,
+              onCustom: () => _showFilterSheet(context),
             ),
-            FieldChartEmpty() => Center(
-              key: const ValueKey('empty'),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(l10n.fieldChartNoValues),
-                  const SizedBox(height: 8),
-                  FilledButton.icon(
-                    onPressed: () => _showFilterSheet(context),
-                    icon: const Icon(Icons.filter_list),
-                    label: Text(l10n.filterTitle),
-                  ),
-                ],
-              ),
-            ),
-            FieldChartError(
-              :final cachedValues,
-              :final errorCode,
-              :final serverMessage,
-              :final range,
-            ) =>
-              Builder(
-                key: const ValueKey('error'),
-                builder: (context) {
-                  final l10n = AppLocalizations.of(context)!;
-                  final message = switch (errorCode) {
-                    ApiErrorCode.network => l10n.errorNetwork,
-                    ApiErrorCode.credentials => l10n.errorApiCredentials,
-                    ApiErrorCode.invalidResponse => l10n.errorInvalidResponse,
-                    ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
-                  };
-                  if (cachedValues.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            message,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          FilledButton.icon(
-                            onPressed: () => _showFilterSheet(context),
-                            icon: const Icon(Icons.filter_list),
-                            label: Text(l10n.filterTitle),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return Column(
+            Expanded(child: _buildBody(context, l10n, chartTitle)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    String chartTitle,
+  ) {
+    return MotionSwitcher(
+      child: switch (_notifier.state) {
+        FieldChartLoading() => Center(
+          key: const ValueKey('loading'),
+          child: CircularProgressIndicator(semanticsLabel: l10n.labelLoading),
+        ),
+        FieldChartEmpty() => Center(
+          key: const ValueKey('empty'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [Text(l10n.fieldChartNoValues)],
+          ),
+        ),
+        FieldChartError(
+          :final cachedValues,
+          :final errorCode,
+          :final serverMessage,
+        ) =>
+          Builder(
+            key: const ValueKey('error'),
+            builder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              final message = switch (errorCode) {
+                ApiErrorCode.network => l10n.errorNetwork,
+                ApiErrorCode.credentials => l10n.errorApiCredentials,
+                ApiErrorCode.invalidResponse => l10n.errorInvalidResponse,
+                ApiErrorCode.general => serverMessage ?? l10n.errorGeneral,
+              };
+              if (cachedValues.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: RangeChip(
-                          range: range,
-                          settings: widget.settings,
-                          onPressed: () => _showFilterSheet(context),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _StatsBar(
-                          count: cachedValues.length,
-                          stats: computeFieldStats(_seriesFor(cachedValues)),
-                          chartSettings: _chartSettings,
-                        ),
-                      ),
-                      Expanded(
-                        child: MotionSwitcher(
-                          child: _showTable
-                              ? FieldTable(
-                                  key: const ValueKey('table'),
-                                  values: cachedValues,
-                                  settings: widget.settings,
-                                  chartSettings: _chartSettings,
-                                )
-                              : FieldChart(
-                                  key: const ValueKey('chart'),
-                                  values: cachedValues,
-                                  invalidAt: const [],
-                                  settings: widget.settings,
-                                  chartSettings: _chartSettings,
-                                  title: chartTitle,
-                                ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(
-                          message,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
                         ),
                       ),
                     ],
-                  );
-                },
-              ),
-            FieldChartLoaded(
-              :final values,
-              :final invalidAt,
-              :final truncated,
-              :final range,
-            ) =>
-              Column(
-                key: const ValueKey('loaded'),
+                  ),
+                );
+              }
+              return Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: RangeChip(
-                      range: range,
-                      settings: widget.settings,
-                      onPressed: () => _showFilterSheet(context),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
                     child: _StatsBar(
-                      count: values.length,
-                      stats: computeFieldStats(_seriesFor(values)),
+                      count: cachedValues.length,
+                      stats: computeFieldStats(_seriesFor(cachedValues)),
                       chartSettings: _chartSettings,
                     ),
                   ),
-                  if (truncated)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        l10n.fieldChartTruncated,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
                   Expanded(
                     child: MotionSwitcher(
                       child: _showTable
                           ? FieldTable(
                               key: const ValueKey('table'),
-                              values: values,
+                              values: cachedValues,
                               settings: widget.settings,
                               chartSettings: _chartSettings,
                             )
                           : FieldChart(
                               key: const ValueKey('chart'),
-                              values: values,
-                              invalidAt: invalidAt,
+                              values: cachedValues,
+                              invalidAt: const [],
                               settings: widget.settings,
                               chartSettings: _chartSettings,
                               title: chartTitle,
                             ),
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
                 ],
+              );
+            },
+          ),
+        FieldChartLoaded(:final values, :final invalidAt, :final truncated) =>
+          Column(
+            key: const ValueKey('loaded'),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _StatsBar(
+                  count: values.length,
+                  stats: computeFieldStats(_seriesFor(values)),
+                  chartSettings: _chartSettings,
+                ),
               ),
-          },
-        ),
-      ),
+              if (truncated)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    l10n.fieldChartTruncated,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: MotionSwitcher(
+                  child: _showTable
+                      ? FieldTable(
+                          key: const ValueKey('table'),
+                          values: values,
+                          settings: widget.settings,
+                          chartSettings: _chartSettings,
+                        )
+                      : FieldChart(
+                          key: const ValueKey('chart'),
+                          values: values,
+                          invalidAt: invalidAt,
+                          settings: widget.settings,
+                          chartSettings: _chartSettings,
+                          title: chartTitle,
+                        ),
+                ),
+              ),
+            ],
+          ),
+      },
     );
   }
 
   Future<void> _showFilterSheet(BuildContext context) async {
-    final currentState = _notifier.state;
-    final currentRange = switch (currentState) {
-      FieldChartLoaded(:final range) => range,
-      FieldChartEmpty(:final range) => range,
-      FieldChartError(:final range) => range,
-      FieldChartLoading() => DateTimeRange(
-        start: DateTime.now().subtract(const Duration(days: 7)),
-        end: DateTime.now(),
-      ),
-    };
-
     final range = await showModalBottomSheet<DateTimeRange>(
       context: context,
+      // Large text sizes can push the sheet past the default 9/16 height
+      // cap, clipping Cancel/Apply.
+      isScrollControlled: true,
       builder: (context) =>
-          FilterSheet(initialRange: currentRange, settings: widget.settings),
+          FilterSheet(initialRange: _notifier.range, settings: widget.settings),
     );
 
     if (range != null) _notifier.applyFilter(range);

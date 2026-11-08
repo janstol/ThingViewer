@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/thingspeak_api.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
+import '../../models/range_preset.dart';
 
 sealed class FieldChartState {}
 
@@ -66,14 +67,34 @@ class FieldChartNotifier extends ChangeNotifier {
   /// overwriting a newer one that resolved first.
   int _requestGeneration = 0;
 
-  FieldChartNotifier(this._api, this._channel, this._field)
-    : _cache = List.of(_field.values),
-      _invalidCache = Set.of(_field.invalidAt) {
-    // Always fetch the default range from the API on first open. The single
+  /// The preset the current range came from, or null for a custom range.
+  RangePreset? _activePreset;
+  RangePreset? get activePreset => _activePreset;
+
+  /// The range most recently requested, including while it is loading.
+  late DateTimeRange _range;
+  DateTimeRange get range => _range;
+
+  FieldChartNotifier(
+    this._api,
+    this._channel,
+    this._field, {
+    RangePreset? initialPreset,
+  }) : _cache = List.of(_field.values),
+       _invalidCache = Set.of(_field.invalidAt) {
+    // Always fetch the initial range from the API on first open. The single
     // cached value from the channel detail screen is not enough to draw a
     // useful chart, and isn't recorded as covered.
-    applyFilter(_defaultRange());
+    applyDefault(initialPreset);
   }
+
+  /// Shows [preset], or the built-in default range when it is null.
+  ///
+  /// The built-in default reports itself as [RangePreset.last7Days]: it is
+  /// the same window, only anchored on a stale field's last reading.
+  Future<void> applyDefault(RangePreset? preset) => preset != null
+      ? applyPreset(preset)
+      : _load(_defaultRange(), RangePreset.last7Days);
 
   @override
   void dispose() {
@@ -81,7 +102,17 @@ class FieldChartNotifier extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> applyFilter(DateTimeRange range) async {
+  /// Shows [preset]'s window ending now. Unlike the built-in default, this
+  /// does not anchor on a stale field's last reading: "last hour" means the
+  /// last hour, even if it turns out empty.
+  Future<void> applyPreset(RangePreset preset) =>
+      _load(preset.rangeEndingAt(DateTime.now()), preset);
+
+  Future<void> applyFilter(DateTimeRange range) => _load(range, null);
+
+  Future<void> _load(DateTimeRange range, RangePreset? preset) async {
+    _activePreset = preset;
+    _range = range;
     final generation = ++_requestGeneration;
     _state = FieldChartLoading();
     notifyListeners();

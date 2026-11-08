@@ -4,6 +4,7 @@ import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
+import 'package:thingviewer/models/range_preset.dart';
 import 'package:thingviewer/screens/field_settings/field_settings_screen.dart';
 import 'package:thingviewer/theme.dart';
 
@@ -177,6 +178,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Y-axis max'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Y-axis max'));
     await tester.pumpAndSettle();
 
@@ -188,5 +191,39 @@ void main() {
     // showing the original value.
     expect(changed, isNull);
     expect(find.text('10'), findsOneWidget);
+  });
+
+  testWidgets('picking a default range fires onChanged, and Default clears '
+      'it back to null', (tester) async {
+    FieldChartSettings? changed;
+
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel,
+          field: _field,
+          settings: FieldChartSettings.defaults,
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Default (Last 7 days)'), findsOneWidget);
+
+    await tester.tap(find.text('Default range'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Last hour'));
+    await tester.pumpAndSettle();
+
+    expect(changed!.defaultRange, RangePreset.lastHour);
+    expect(find.text('Last hour'), findsOneWidget);
+
+    await tester.tap(find.text('Default range'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Default (Last 7 days)').last);
+    await tester.pumpAndSettle();
+
+    expect(changed!.defaultRange, isNull);
   });
 }

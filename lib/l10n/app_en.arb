@@ -134,16 +134,24 @@
       "end": { "type": "String" }
     }
   },
-  "fieldChartRangeSemantics": "Date range {start} to {end}",
+  "fieldChartRangeSemantics": "Showing {start} to {end}",
   "@fieldChartRangeSemantics": {
     "placeholders": {
       "start": { "type": "String" },
       "end": { "type": "String" }
     }
   },
-  "filterTitle": "Filter",
+  "rangeCustom": "Custom range",
   "filterFrom": "From",
   "filterTo": "To",
+  "rangePresetLastHour": "Last hour",
+  "rangePresetLast24Hours": "Last 24 hours",
+  "rangePresetLast7Days": "Last 7 days",
+  "rangePresetLast30Days": "Last 30 days",
+  "rangePresetShortLastHour": "1h",
+  "rangePresetShortLast24Hours": "24h",
+  "rangePresetShortLast7Days": "7d",
+  "rangePresetShortLast30Days": "30d",
   "settingsTitle": "Settings",
   "settingsTooltip": "Settings",
   "settingsTheme": "Theme",
@@ -266,6 +274,13 @@
   "fieldSettingsTypeStep": "Step",
   "fieldSettingsTypeColumn": "Column",
   "fieldSettingsTypeScatter": "Scatter",
+  "fieldSettingsDefaultRange": "Default range",
+  "fieldSettingsDefaultRangeDefault": "Default ({range})",
+  "@fieldSettingsDefaultRangeDefault": {
+    "placeholders": {
+      "range": {"type": "String"}
+    }
+  },
   "fieldSettingsChartTitle": "Title",
   "fieldSettingsXAxisLabel": "X-axis label",
   "fieldSettingsYAxisLabel": "Y-axis label",

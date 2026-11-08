@@ -7,6 +7,7 @@ import 'package:mockito/mockito.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
+import 'package:thingviewer/models/range_preset.dart';
 import 'package:thingviewer/screens/field_chart/field_chart_notifier.dart';
 
 import 'field_chart_notifier_test.mocks.dart';
@@ -473,5 +474,69 @@ void main() {
       expect(notifier.state, isA<FieldChartEmpty>());
       notifier.dispose();
     });
+  });
+
+  group('presets', () {
+    List<dynamic> capturedRange() => verify(
+      mockApi.readFieldRange(
+        any,
+        any,
+        apiKey: anyNamed('apiKey'),
+        start: captureAnyNamed('start'),
+        end: captureAnyNamed('end'),
+      ),
+    ).captured;
+
+    test('initialPreset opens on that window ending now, even for a stale '
+        'field', () async {
+      final before = DateTime.now();
+      final notifier = FieldChartNotifier(
+        mockApi,
+        channel,
+        fieldWithValues([DateTime(2025, 11, 4)]),
+        initialPreset: RangePreset.lastHour,
+      );
+      await pumpEventQueue();
+
+      final captured = capturedRange();
+      final start = captured[0] as DateTime;
+      final end = captured[1] as DateTime;
+      expect(end.isBefore(before), isFalse);
+      expect(end.difference(start), const Duration(hours: 1));
+      expect(notifier.activePreset, RangePreset.lastHour);
+      notifier.dispose();
+    });
+
+    test(
+      'without initialPreset the built-in default reports as 7 days',
+      () async {
+        final notifier = await settleNotifier(
+          const Field(id: 1, label: 'Temp'),
+        );
+        expect(notifier.activePreset, RangePreset.last7Days);
+        notifier.dispose();
+      },
+    );
+
+    test(
+      'applyPreset sets the active preset and applyFilter clears it',
+      () async {
+        final notifier = await settleNotifier(
+          const Field(id: 1, label: 'Temp'),
+        );
+
+        await notifier.applyPreset(RangePreset.last24Hours);
+        expect(notifier.activePreset, RangePreset.last24Hours);
+        final captured = capturedRange();
+        expect(
+          (captured[1] as DateTime).difference(captured[0] as DateTime),
+          const Duration(hours: 24),
+        );
+
+        await notifier.applyFilter(DateTimeRange(start: twoDaysAgo, end: now));
+        expect(notifier.activePreset, isNull);
+        notifier.dispose();
+      },
+    );
   });
 }

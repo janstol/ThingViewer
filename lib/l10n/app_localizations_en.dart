@@ -303,17 +303,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String fieldChartRangeSemantics(String start, String end) {
-    return 'Date range $start to $end';
+    return 'Showing $start to $end';
   }
 
   @override
-  String get filterTitle => 'Filter';
+  String get rangeCustom => 'Custom range';
 
   @override
   String get filterFrom => 'From';
 
   @override
   String get filterTo => 'To';
+
+  @override
+  String get rangePresetLastHour => 'Last hour';
+
+  @override
+  String get rangePresetLast24Hours => 'Last 24 hours';
+
+  @override
+  String get rangePresetLast7Days => 'Last 7 days';
+
+  @override
+  String get rangePresetLast30Days => 'Last 30 days';
+
+  @override
+  String get rangePresetShortLastHour => '1h';
+
+  @override
+  String get rangePresetShortLast24Hours => '24h';
+
+  @override
+  String get rangePresetShortLast7Days => '7d';
+
+  @override
+  String get rangePresetShortLast30Days => '30d';
 
   @override
   String get settingsTitle => 'Settings';
@@ -651,6 +675,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fieldSettingsTypeScatter => 'Scatter';
+
+  @override
+  String get fieldSettingsDefaultRange => 'Default range';
+
+  @override
+  String fieldSettingsDefaultRangeDefault(String range) {
+    return 'Default ($range)';
+  }
 
   @override
   String get fieldSettingsChartTitle => 'Title';

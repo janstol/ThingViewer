@@ -1,3 +1,5 @@
+import 'range_preset.dart';
+
 enum ChartType { line, spline, step, column, scatter }
 
 ChartType _parseType(dynamic value) {
@@ -44,6 +46,11 @@ class FieldChartSettings {
   final bool markMin;
   final bool markMax;
 
+  /// Window the chart opens on. Null means "not set": the app default
+  /// today, and the place a channel-level default can slot in later without
+  /// overriding fields the user pinned explicitly.
+  final RangePreset? defaultRange;
+
   const FieldChartSettings({
     this.type = ChartType.line,
     this.title,
@@ -60,6 +67,7 @@ class FieldChartSettings {
     this.showMax = true,
     this.markMin = false,
     this.markMax = false,
+    this.defaultRange,
   });
 
   static const defaults = FieldChartSettings();
@@ -79,7 +87,8 @@ class FieldChartSettings {
       showMin == true &&
       showMax == true &&
       markMin == false &&
-      markMax == false;
+      markMax == false &&
+      defaultRange == null;
 
   FieldChartSettings copyWith({
     ChartType? type,
@@ -97,6 +106,7 @@ class FieldChartSettings {
     bool? showMax,
     bool? markMin,
     bool? markMax,
+    RangePreset? defaultRange,
   }) {
     return FieldChartSettings(
       type: type ?? this.type,
@@ -114,6 +124,7 @@ class FieldChartSettings {
       showMax: showMax ?? this.showMax,
       markMin: markMin ?? this.markMin,
       markMax: markMax ?? this.markMax,
+      defaultRange: defaultRange ?? this.defaultRange,
     );
   }
 
@@ -135,6 +146,7 @@ class FieldChartSettings {
     if (!showMax) 'showMax': showMax,
     if (markMin) 'markMin': markMin,
     if (markMax) 'markMax': markMax,
+    if (defaultRange != null) 'defaultRange': defaultRange!.name,
   };
 
   factory FieldChartSettings.fromJson(Map<String, dynamic> json) =>
@@ -154,6 +166,7 @@ class FieldChartSettings {
         showMax: json['showMax'] as bool? ?? true,
         markMin: json['markMin'] as bool? ?? false,
         markMax: json['markMax'] as bool? ?? false,
+        defaultRange: RangePreset.tryParse(json['defaultRange']),
       );
 
   @override
@@ -173,7 +186,8 @@ class FieldChartSettings {
       showMin == other.showMin &&
       showMax == other.showMax &&
       markMin == other.markMin &&
-      markMax == other.markMax;
+      markMax == other.markMax &&
+      defaultRange == other.defaultRange;
 
   @override
   int get hashCode => Object.hash(
@@ -187,6 +201,6 @@ class FieldChartSettings {
     showDelta,
     gapOnInvalid,
     Object.hash(showSum, showAverage, showMin, showMax),
-    Object.hash(markMin, markMax),
+    Object.hash(markMin, markMax, defaultRange),
   );
 }

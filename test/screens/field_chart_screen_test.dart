@@ -8,6 +8,8 @@ import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
+import 'package:thingviewer/models/range_preset.dart';
+import 'package:thingviewer/screens/field_chart/field_chart.dart';
 import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
 import 'package:thingviewer/screens/field_chart/field_table.dart';
 import 'package:thingviewer/screens/settings/settings_notifier.dart';
@@ -646,7 +648,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byTooltip('Filter'));
+        await tester.tap(find.byTooltip('Custom range'));
         await tester.pumpAndSettle();
 
         final applyRect = tester.getRect(
@@ -684,7 +686,7 @@ void main() {
           .data
           .minX;
 
-      await tester.tap(find.byTooltip('Filter'));
+      await tester.tap(find.byTooltip('Custom range'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -716,7 +718,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Filter'));
+      await tester.tap(find.byTooltip('Custom range'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('From'));
       await tester.pumpAndSettle();
@@ -766,7 +768,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Filter'));
+      await tester.tap(find.byTooltip('Custom range'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('To'));
       await tester.pumpAndSettle();
@@ -796,39 +798,46 @@ void main() {
     });
   });
 
-  group('range chip', () {
-    testWidgets(
-      'loaded state renders the chip with the default 7-day window and no '
-      'Filter FilledButton',
-      (tester) async {
-        final settings = await _settings();
+  group('range selector', () {
+    testWidgets('opens on the 7d preset with its window in the readout', (
+      tester,
+    ) async {
+      final settings = await _settings();
 
-        await tester.pumpWidget(
-          _wrap(
-            FieldChartScreen(
-              channel: _channel,
-              field: _field,
-              api: mockApi,
-              settings: settings,
-              fieldSettingsStorage: await _fieldSettingsStorage(),
-              pinnedFieldsStorage: await _pinnedFieldsStorage(),
-            ),
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: settings,
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        final rangeEnd = _field.values.last.createdAt;
-        final rangeStart = rangeEnd.subtract(const Duration(days: 7));
-        final label =
-            '${settings.formatDate(rangeStart)} - ${settings.formatDate(rangeEnd)}';
+      final rangeEnd = _field.values.last.createdAt;
+      final rangeStart = rangeEnd.subtract(const Duration(days: 7));
+      final label =
+          '${settings.formatDateTime(rangeStart)} - '
+          '${settings.formatDateTime(rangeEnd)}';
 
-        expect(find.text(label), findsOneWidget);
-        expect(find.byTooltip('Filter'), findsOneWidget);
-        expect(find.widgetWithText(FilledButton, 'Filter'), findsNothing);
-      },
-    );
+      expect(find.text(label), findsOneWidget);
+      expect(
+        tester
+            .widget<SegmentedButton<RangePreset>>(
+              find.byType(SegmentedButton<RangePreset>),
+            )
+            .selected,
+        {RangePreset.last7Days},
+      );
+    });
 
-    testWidgets('tapping the chip opens the filter sheet', (tester) async {
+    testWidgets('the custom range button opens the From/To sheet', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           FieldChartScreen(
@@ -843,14 +852,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Filter'));
+      await tester.tap(find.byTooltip('Custom range'));
       await tester.pumpAndSettle();
 
       expect(find.text('From'), findsOneWidget);
       expect(find.text('To'), findsOneWidget);
     });
 
-    testWidgets('applying a new range updates the chip label', (tester) async {
+    testWidgets('applying a custom range updates the readout and selects '
+        'the custom button', (tester) async {
       final settings = await _settings();
       final rangeEnd = _field.values.last.createdAt;
       final newStart = rangeEnd.subtract(const Duration(days: 10));
@@ -869,7 +879,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Filter'));
+      await tester.tap(find.byTooltip('Custom range'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('From'));
       await tester.pumpAndSettle();
@@ -904,8 +914,25 @@ void main() {
         newStart.day,
       );
       final expectedLabel =
-          '${settings.formatDate(expectedStart)} - ${settings.formatDate(rangeEnd)}';
+          '${settings.formatDateTime(expectedStart)} - '
+          '${settings.formatDateTime(rangeEnd)}';
       expect(find.text(expectedLabel), findsOneWidget);
+      expect(
+        tester
+            .widget<SegmentedButton<RangePreset>>(
+              find.byType(SegmentedButton<RangePreset>),
+            )
+            .selected,
+        isEmpty,
+      );
+      expect(
+        tester
+            .widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.edit_calendar),
+            )
+            .isSelected,
+        isTrue,
+      );
     });
   });
 
@@ -1137,7 +1164,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Page 2 of 3'), findsOneWidget);
 
-        await tester.tap(find.byTooltip('Filter'));
+        await tester.tap(find.byTooltip('Custom range'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Apply'));
         await tester.pumpAndSettle();
@@ -1768,6 +1795,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('range selector fits a 360dp-wide phone at 2x text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      _wrapScaled(
+        FieldChartScreen(
+          channel: _channel,
+          field: _field,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+        ),
+        2,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SegmentedButton<RangePreset>), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   group('field label Hero', () {
     testWidgets('AppBar title is a Hero when heroTag is passed', (
       tester,
@@ -1861,5 +1914,166 @@ void main() {
         );
       },
     );
+  });
+
+  group('range presets', () {
+    List<dynamic> capturedRanges() => verify(
+      mockApi.readFieldRange(
+        any,
+        any,
+        apiKey: anyNamed('apiKey'),
+        start: captureAnyNamed('start'),
+        end: captureAnyNamed('end'),
+      ),
+    ).captured;
+
+    testWidgets('tapping a preset segment applies it and selects it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      clearInteractions(mockApi);
+
+      await tester.tap(find.text('1h'));
+      await tester.pumpAndSettle();
+
+      final captured = capturedRanges();
+      expect(
+        (captured[1] as DateTime).difference(captured[0] as DateTime),
+        const Duration(hours: 1),
+      );
+
+      expect(
+        tester
+            .widget<SegmentedButton<RangePreset>>(
+              find.byType(SegmentedButton<RangePreset>),
+            )
+            .selected,
+        {RangePreset.lastHour},
+      );
+    });
+
+    testWidgets('a field with a default range opens on it', (tester) async {
+      final fieldSettings = await _fieldSettingsStorage();
+      await fieldSettings.save(
+        _channel,
+        _field.id,
+        const FieldChartSettings(defaultRange: RangePreset.last24Hours),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettings,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final captured = capturedRanges();
+      expect(
+        (captured[1] as DateTime).difference(captured[0] as DateTime),
+        const Duration(hours: 24),
+      );
+    });
+  });
+
+  testWidgets('changing the default range in chart settings applies it '
+      'right away', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        FieldChartScreen(
+          channel: _channel,
+          field: _field,
+          api: mockApi,
+          settings: await _settings(),
+          fieldSettingsStorage: await _fieldSettingsStorage(),
+          pinnedFieldsStorage: await _pinnedFieldsStorage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    clearInteractions(mockApi);
+
+    await tester.tap(find.byTooltip('Chart settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Default range'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Last hour'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    final captured = verify(
+      mockApi.readFieldRange(
+        any,
+        any,
+        apiKey: anyNamed('apiKey'),
+        start: captureAnyNamed('start'),
+        end: captureAnyNamed('end'),
+      ),
+    ).captured;
+    expect(
+      (captured[1] as DateTime).difference(captured[0] as DateTime),
+      const Duration(hours: 1),
+    );
+  });
+
+  testWidgets('FieldChart refits its window when given a new series', (
+    tester,
+  ) async {
+    final settings = await _settings();
+    var values = _field.values;
+    late StateSetter setValues;
+
+    await tester.pumpWidget(
+      _wrap(
+        Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              setValues = setState;
+              return FieldChart(
+                values: values,
+                invalidAt: const [],
+                settings: settings,
+                chartSettings: FieldChartSettings.defaults,
+                title: 'Temp',
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final recent = [
+      FieldValue(
+        createdAt: _now.subtract(const Duration(minutes: 30)),
+        value: 1,
+      ),
+      FieldValue(createdAt: _now, value: 2),
+    ];
+    setValues(() => values = recent);
+    await tester.pumpAndSettle();
+
+    final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+    expect(data.minX, recent.first.createdAt.millisecondsSinceEpoch.toDouble());
+    expect(data.maxX, recent.last.createdAt.millisecondsSinceEpoch.toDouble());
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
+import 'package:thingviewer/models/range_preset.dart';
 
 void main() {
   group('isDefault', () {
@@ -46,6 +47,12 @@ void main() {
       );
       expect(
         FieldChartSettings.defaults.copyWith(markMax: true).isDefault,
+        isFalse,
+      );
+      expect(
+        FieldChartSettings.defaults
+            .copyWith(defaultRange: RangePreset.lastHour)
+            .isDefault,
         isFalse,
       );
     });
@@ -150,6 +157,7 @@ void main() {
         showMax: false,
         markMin: true,
         markMax: true,
+        defaultRange: RangePreset.lastHour,
       );
 
       final roundTripped = FieldChartSettings.fromJson(settings.toJson());
@@ -219,6 +227,11 @@ void main() {
   });
 
   group('fromJson tolerance', () {
+    test('unknown defaultRange falls back to null (app default)', () {
+      final parsed = FieldChartSettings.fromJson({'defaultRange': 'lastYear'});
+      expect(parsed.defaultRange, isNull);
+    });
+
     test('unknown type string falls back to line', () {
       final settings = FieldChartSettings.fromJson({'type': 'bar'});
 

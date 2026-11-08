@@ -102,6 +102,11 @@ class _FieldChartState extends State<FieldChart> {
     super.initState();
     _recomputeDisplayValues();
     _recomputeSpots();
+    _resetViewport();
+  }
+
+  /// Fits the visible window to the whole series, dropping any pinch-zoom.
+  void _resetViewport() {
     if (_isSinglePoint) {
       final displayValues = _displayValues;
       final anchor = displayValues.isNotEmpty
@@ -128,7 +133,13 @@ class _FieldChartState extends State<FieldChart> {
         oldWidget.invalidAt != widget.invalidAt ||
         oldWidget.chartSettings.gapOnInvalid !=
             widget.chartSettings.gapOnInvalid;
-    if (valuesChanged) _recomputeDisplayValues();
+    if (valuesChanged) {
+      _recomputeDisplayValues();
+      // A new series (different range, delta on/off) would otherwise keep
+      // the previous series' window, leaving the new data off-screen or
+      // squashed into a corner.
+      _resetViewport();
+    }
     if (spotsInputsChanged) _recomputeSpots();
   }
 

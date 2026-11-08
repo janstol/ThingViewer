@@ -536,14 +536,14 @@ abstract class AppLocalizations {
   /// No description provided for @fieldChartRangeSemantics.
   ///
   /// In en, this message translates to:
-  /// **'Date range {start} to {end}'**
+  /// **'Showing {start} to {end}'**
   String fieldChartRangeSemantics(String start, String end);
 
-  /// No description provided for @filterTitle.
+  /// No description provided for @rangeCustom.
   ///
   /// In en, this message translates to:
-  /// **'Filter'**
-  String get filterTitle;
+  /// **'Custom range'**
+  String get rangeCustom;
 
   /// No description provided for @filterFrom.
   ///
@@ -556,6 +556,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To'**
   String get filterTo;
+
+  /// No description provided for @rangePresetLastHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Last hour'**
+  String get rangePresetLastHour;
+
+  /// No description provided for @rangePresetLast24Hours.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 24 hours'**
+  String get rangePresetLast24Hours;
+
+  /// No description provided for @rangePresetLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get rangePresetLast7Days;
+
+  /// No description provided for @rangePresetLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get rangePresetLast30Days;
+
+  /// No description provided for @rangePresetShortLastHour.
+  ///
+  /// In en, this message translates to:
+  /// **'1h'**
+  String get rangePresetShortLastHour;
+
+  /// No description provided for @rangePresetShortLast24Hours.
+  ///
+  /// In en, this message translates to:
+  /// **'24h'**
+  String get rangePresetShortLast24Hours;
+
+  /// No description provided for @rangePresetShortLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'7d'**
+  String get rangePresetShortLast7Days;
+
+  /// No description provided for @rangePresetShortLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'30d'**
+  String get rangePresetShortLast30Days;
 
   /// No description provided for @settingsTitle.
   ///
@@ -1168,6 +1216,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scatter'**
   String get fieldSettingsTypeScatter;
+
+  /// No description provided for @fieldSettingsDefaultRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Default range'**
+  String get fieldSettingsDefaultRange;
+
+  /// No description provided for @fieldSettingsDefaultRangeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default ({range})'**
+  String fieldSettingsDefaultRangeDefault(String range);
 
   /// No description provided for @fieldSettingsChartTitle.
   ///

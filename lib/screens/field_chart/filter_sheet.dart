@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../settings/settings_notifier.dart';
 
+/// Custom From/To picker. Pops with the chosen [DateTimeRange], or null on
+/// Cancel.
+
 class FilterSheet extends StatefulWidget {
   final DateTimeRange initialRange;
   final SettingsNotifier settings;
@@ -34,14 +37,14 @@ class _FilterSheetState extends State<FilterSheet> {
     // cover the Cancel/Apply row. top: false since this is a bottom sheet.
     return SafeArea(
       top: false,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              l10n.filterTitle,
+              l10n.rangeCustom,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
