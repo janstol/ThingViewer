@@ -88,13 +88,27 @@ class FieldChartNotifier extends ChangeNotifier {
     applyDefault(initialPreset);
   }
 
-  /// Shows [preset], or the built-in default range when it is null.
-  ///
-  /// The built-in default reports itself as [RangePreset.last7Days]: it is
-  /// the same window, only anchored on a stale field's last reading.
-  Future<void> applyDefault(RangePreset? preset) => preset != null
-      ? applyPreset(preset)
-      : _load(_defaultRange(), RangePreset.last7Days);
+  /// Shows [preset], or the last 7 days when it is null.
+  Future<void> applyDefault(RangePreset? preset) =>
+      applyPreset(preset ?? RangePreset.last7Days);
+
+  /// Newest reading seen so far, from the channel screen or any fetch.
+  DateTime? get lastReading => _cache.isEmpty ? null : _cache.last.createdAt;
+
+  /// Moves to a window that contains [lastReading]: the smallest preset that
+  /// reaches back to it, or the 7 days before it when it is older than every
+  /// preset.
+  Future<void> showLastReading() async {
+    final last = lastReading;
+    if (last == null) return;
+    final now = DateTime.now();
+    for (final preset in RangePreset.values) {
+      if (!now.subtract(preset.duration).isAfter(last)) {
+        return applyPreset(preset);
+      }
+    }
+    return applyFilter(RangePreset.last7Days.rangeEndingAt(last));
+  }
 
   @override
   void dispose() {
@@ -247,20 +261,4 @@ class FieldChartNotifier extends ChangeNotifier {
           .where((d) => !d.isBefore(range.start) && !d.isAfter(range.end))
           .toList()
         ..sort();
-
-  /// Last 7 days ending now — or, for a field that hasn't reported in a
-  /// while, ending at its last known reading instead. Anchoring to
-  /// `DateTime.now()` unconditionally would open a stale field's chart on an
-  /// empty window even though older data exists.
-  DateTimeRange _defaultRange() {
-    final now = DateTime.now();
-    final lastUpdated = _field.lastUpdated;
-    final end = (lastUpdated != null && lastUpdated.isBefore(now))
-        ? lastUpdated
-        : now;
-    return DateTimeRange(
-      start: end.subtract(const Duration(days: 7)),
-      end: end,
-    );
-  }
 }

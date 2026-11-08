@@ -128,34 +128,33 @@ void main() {
       notifier.dispose();
     });
 
-    test(
-      'anchors the default range on a stale field\'s last value, not now',
-      () async {
-        final lastUpdated = DateTime(2025, 11, 4);
-        final notifier = FieldChartNotifier(
-          mockApi,
-          channel,
-          fieldWithValues([lastUpdated]),
-        );
-        await pumpEventQueue();
+    test('the default range is the last 7 days ending now, even for a stale '
+        'field', () async {
+      final lastUpdated = DateTime(2025, 11, 4);
+      final before = DateTime.now();
+      final notifier = FieldChartNotifier(
+        mockApi,
+        channel,
+        fieldWithValues([lastUpdated]),
+      );
+      await pumpEventQueue();
 
-        final captured = verify(
-          mockApi.readFieldRange(
-            any,
-            any,
-            apiKey: anyNamed('apiKey'),
-            start: captureAnyNamed('start'),
-            end: captureAnyNamed('end'),
-          ),
-        ).captured;
-        final requestedStart = captured[0] as DateTime;
-        final requestedEnd = captured[1] as DateTime;
+      final captured = verify(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: captureAnyNamed('start'),
+          end: captureAnyNamed('end'),
+        ),
+      ).captured;
+      final requestedStart = captured[0] as DateTime;
+      final requestedEnd = captured[1] as DateTime;
 
-        expect(requestedEnd, lastUpdated);
-        expect(requestedStart, lastUpdated.subtract(const Duration(days: 7)));
-        notifier.dispose();
-      },
-    );
+      expect(requestedEnd.isBefore(before), isFalse);
+      expect(requestedEnd.difference(requestedStart), const Duration(days: 7));
+      notifier.dispose();
+    });
   });
 
   group('applyFilter', () {
@@ -538,5 +537,64 @@ void main() {
         notifier.dispose();
       },
     );
+  });
+
+  group('showLastReading', () {
+    List<dynamic> capturedRange() => verify(
+      mockApi.readFieldRange(
+        any,
+        any,
+        apiKey: anyNamed('apiKey'),
+        start: captureAnyNamed('start'),
+        end: captureAnyNamed('end'),
+      ),
+    ).captured;
+
+    test('picks the smallest preset that reaches the last reading', () async {
+      final last = DateTime.now().subtract(const Duration(hours: 3));
+      final notifier = FieldChartNotifier(
+        mockApi,
+        channel,
+        fieldWithValues([last]),
+        initialPreset: RangePreset.lastHour,
+      );
+      await pumpEventQueue();
+      clearInteractions(mockApi);
+
+      await notifier.showLastReading();
+
+      expect(notifier.activePreset, RangePreset.last24Hours);
+      notifier.dispose();
+    });
+
+    test('falls back to the 7 days before a reading older than every '
+        'preset', () async {
+      final last = DateTime(2025, 11, 4);
+      final notifier = FieldChartNotifier(
+        mockApi,
+        channel,
+        fieldWithValues([last]),
+      );
+      await pumpEventQueue();
+      clearInteractions(mockApi);
+
+      await notifier.showLastReading();
+
+      final captured = capturedRange();
+      expect(captured[1], last);
+      expect(captured[0], last.subtract(const Duration(days: 7)));
+      expect(notifier.activePreset, isNull);
+      notifier.dispose();
+    });
+
+    test('does nothing without any known reading', () async {
+      final notifier = await settleNotifier(const Field(id: 1, label: 'Temp'));
+      expect(notifier.lastReading, isNull);
+
+      await notifier.showLastReading();
+
+      verifyNever(anyReadFieldRange());
+      notifier.dispose();
+    });
   });
 }

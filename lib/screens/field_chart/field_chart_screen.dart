@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../export/csv_export.dart';
+import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
@@ -260,12 +261,11 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
           key: const ValueKey('loading'),
           child: CircularProgressIndicator(semanticsLabel: l10n.labelLoading),
         ),
-        FieldChartEmpty() => Center(
+        FieldChartEmpty(:final range) => _EmptyState(
           key: const ValueKey('empty'),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [Text(l10n.fieldChartNoValues)],
-          ),
+          range: range,
+          lastReading: _notifier.lastReading,
+          onShowLastReading: _notifier.showLastReading,
         ),
         FieldChartError(
           :final cachedValues,
@@ -402,6 +402,55 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
     );
 
     if (range != null) _notifier.applyFilter(range);
+  }
+}
+
+/// Empty-window message. When the field's newest reading is older than the
+/// window (it stopped reporting), says how long ago that was and offers a
+/// way to it, instead of leaving the user to guess a wider range.
+class _EmptyState extends StatelessWidget {
+  final DateTimeRange range;
+  final DateTime? lastReading;
+  final VoidCallback onShowLastReading;
+
+  const _EmptyState({
+    super.key,
+    required this.range,
+    required this.lastReading,
+    required this.onShowLastReading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final lastReading = this.lastReading;
+    final stale = lastReading != null && lastReading.isBefore(range.start);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.fieldChartNoValues, textAlign: TextAlign.center),
+            if (stale) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.fieldChartLastReading(
+                  formatEntryAge(l10n, DateTime.now().difference(lastReading)),
+                ),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: onShowLastReading,
+                child: Text(l10n.fieldChartShowLastReading),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 

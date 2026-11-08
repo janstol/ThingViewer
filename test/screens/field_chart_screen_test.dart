@@ -2076,4 +2076,98 @@ void main() {
     expect(data.minX, recent.first.createdAt.millisecondsSinceEpoch.toDouble());
     expect(data.maxX, recent.last.createdAt.millisecondsSinceEpoch.toDouble());
   });
+
+  group('empty state', () {
+    final staleAt = DateTime.now().subtract(const Duration(days: 3));
+    final staleField = Field(
+      id: 1,
+      label: 'Temp',
+      values: [FieldValue(createdAt: staleAt, value: 1)],
+    );
+
+    testWidgets('a stale field says when it last reported and the button '
+        'moves to a window containing that reading', (tester) async {
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenAnswer(
+        (_) async => const FieldRange(field: Field(id: 1), truncated: false),
+      );
+      final fieldSettings = await _fieldSettingsStorage();
+      await fieldSettings.save(
+        _channel,
+        staleField.id,
+        const FieldChartSettings(defaultRange: RangePreset.last24Hours),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: staleField,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: fieldSettings,
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Last reading 3 days ago'), findsOneWidget);
+
+      await tester.tap(find.text('Show last reading'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<SegmentedButton<RangePreset>>(
+              find.byType(SegmentedButton<RangePreset>),
+            )
+            .selected,
+        {RangePreset.last7Days},
+      );
+      expect(find.text('Show last reading'), findsNothing);
+    });
+
+    testWidgets('an empty custom range after the last reading shows no '
+        'last-reading hint', (tester) async {
+      when(
+        mockApi.readFieldRange(
+          any,
+          any,
+          apiKey: anyNamed('apiKey'),
+          start: anyNamed('start'),
+          end: anyNamed('end'),
+        ),
+      ).thenAnswer(
+        (_) async => const FieldRange(field: Field(id: 1), truncated: false),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: const Field(id: 1, label: 'Temp'),
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No values for the selected date range.'),
+        findsOneWidget,
+      );
+      expect(find.text('Show last reading'), findsNothing);
+    });
+  });
 }

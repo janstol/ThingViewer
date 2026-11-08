@@ -9,6 +9,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Quick range buttons above the field chart: last hour, last 24 hours, last 7 days and last 30 days, each ending at the current time, plus a custom range button for picking From/To. They replace the date-range chip and filter sheet ([#35](https://github.com/janstol/ThingViewer/issues/35)).
 - Per-field "Default range" chart setting, so a chart can open on one of the presets instead of the last 7 days ([#35](https://github.com/janstol/ThingViewer/issues/35)).
+- An empty chart for a field that stopped reporting now says when its last reading was and offers a "Show last reading" button that moves to a window containing it.
+
+### Changed
+
+- A field chart now always opens on the last 7 days ending now. Previously, for a field that had stopped reporting, the window ended at its last reading instead.
 
 ## [0.13.0] - 2026-10-11
 

@@ -364,6 +364,18 @@ abstract class AppLocalizations {
   /// **'No values for the selected date range.'**
   String get fieldChartNoValues;
 
+  /// No description provided for @fieldChartLastReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Last reading {age}'**
+  String fieldChartLastReading(String age);
+
+  /// No description provided for @fieldChartShowLastReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Show last reading'**
+  String get fieldChartShowLastReading;
+
   /// No description provided for @fieldChartNoValuesInZoom.
   ///
   /// In en, this message translates to:

@@ -191,6 +191,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldChartNoValues => 'No values for the selected date range.';
 
   @override
+  String fieldChartLastReading(String age) {
+    return 'Last reading $age';
+  }
+
+  @override
+  String get fieldChartShowLastReading => 'Show last reading';
+
+  @override
   String get fieldChartNoValuesInZoom => 'No data at this zoom level.';
 
   @override

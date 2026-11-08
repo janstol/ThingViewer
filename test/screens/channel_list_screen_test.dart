@@ -447,7 +447,7 @@ void main() {
 
   testWidgets(
     'tapping a pinned field whose last reading is older than the default '
-    'chart range still shows values',
+    'chart range explains why it is empty and gets to the values in one tap',
     (tester) async {
       SharedPreferences.setMockInitialValues({
         'channels': Channel.listToJson([_channel]),
@@ -519,6 +519,11 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Temp'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Last reading'), findsOneWidget);
+
+      await tester.tap(find.text('Show last reading'));
       await tester.pumpAndSettle();
 
       expect(find.text('No values for the selected date range.'), findsNothing);
