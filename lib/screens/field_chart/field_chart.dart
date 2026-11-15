@@ -1,3 +1,5 @@
+import 'dart:math' show max;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,6 +10,8 @@ import '../../models/field_stats.dart';
 import '../../theme.dart';
 import '../settings/settings_notifier.dart';
 import 'time_axis.dart';
+
+const _tooltipDateFontSize = 11.0;
 
 /// Fixed padding applied around a lone data point so the chart doesn't get
 /// a zero-width x-range (minX == maxX).
@@ -225,6 +229,22 @@ class _FieldChartState extends State<FieldChart> {
     if (width == null || !width.isFinite) return 6;
     final plotWidth = width - _scaledReservedSize(48);
     return (plotWidth / _scaledReservedSize(56)).floor().clamp(2, 12);
+  }
+
+  /// Tooltip width that fits the timestamp line on one row. fl_chart's default of 120 wraps a timezone suffix onto its own line.
+  double get _tooltipMaxWidth {
+    // A late-December evening is about as wide as a formatted timestamp gets.
+    final painter = TextPainter(
+      text: TextSpan(
+        text: _dateText(DateTime(2000, 12, 28, 23, 58)),
+        style: const TextStyle(fontSize: _tooltipDateFontSize),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = painter.width;
+    painter.dispose();
+    return max(120, width.ceilToDouble() + 8);
   }
 
   String _timeAxisText(DateTime dt, Duration interval) => timeAxisLabel(
@@ -553,6 +573,9 @@ class _FieldChartState extends State<FieldChart> {
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
+            maxContentWidth: _tooltipMaxWidth,
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
             getTooltipColor: (_) => colorScheme.inverseSurface,
             getTooltipItems: (spots) => spots.map((s) {
               final dt = DateTime.fromMillisecondsSinceEpoch(s.x.toInt());
@@ -570,7 +593,7 @@ class _FieldChartState extends State<FieldChart> {
                         alpha: 0.7,
                       ),
                       fontWeight: FontWeight.normal,
-                      fontSize: 11,
+                      fontSize: _tooltipDateFontSize,
                     ),
                   ),
                 ],
@@ -698,6 +721,9 @@ class _FieldChartState extends State<FieldChart> {
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
+            maxContentWidth: _tooltipMaxWidth,
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
             getTooltipColor: (_) => colorScheme.inverseSurface,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               if (groupIndex < 0 || groupIndex >= bars.length) return null;
@@ -715,7 +741,7 @@ class _FieldChartState extends State<FieldChart> {
                         alpha: 0.7,
                       ),
                       fontWeight: FontWeight.normal,
-                      fontSize: 11,
+                      fontSize: _tooltipDateFontSize,
                     ),
                   ),
                 ],

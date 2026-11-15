@@ -562,6 +562,44 @@ void main() {
   );
 
   testWidgets(
+    'Line chart tooltip is wide enough for a timestamp with a timezone suffix',
+    (tester) async {
+      final settings = await _settings();
+      await settings.setTimezoneDisplay(TimezoneDisplay.offset);
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: settings,
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final tooltip = tester
+          .widget<LineChart>(find.byType(LineChart))
+          .data
+          .lineTouchData
+          .touchTooltipData;
+      final painter = TextPainter(
+        text: TextSpan(
+          text: settings.formatDateTime(DateTime(2026, 11, 11, 18, 45)),
+          style: const TextStyle(fontSize: 11),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      addTearDown(painter.dispose);
+
+      expect(tooltip.maxContentWidth, greaterThanOrEqualTo(painter.width));
+      expect(tooltip.fitInsideHorizontally, isTrue);
+    },
+  );
+
+  testWidgets(
     'Line chart labels a short range with times and skips the edge labels',
     (tester) async {
       final settings = await _settings();
