@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
@@ -161,7 +162,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
     final bytes = Uint8List.fromList(utf8.encode(csv));
     final fileName =
         'thingviewer-${widget.channel.id}-field${widget.field.id}-'
-        '${DateFormat('yyyy-MM-dd').format(DateTime.now())}.csv';
+        '${DateFormat('yyyy-MM-dd').format(clock.now())}.csv';
 
     final Uri? uri;
     try {
@@ -436,7 +437,7 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 l10n.fieldChartLastReading(
-                  formatEntryAge(l10n, DateTime.now().difference(lastReading)),
+                  formatEntryAge(l10n, clock.now().difference(lastReading)),
                 ),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,

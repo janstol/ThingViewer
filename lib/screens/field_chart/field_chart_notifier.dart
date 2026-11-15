@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../api/thingspeak_api.dart';
@@ -101,7 +102,7 @@ class FieldChartNotifier extends ChangeNotifier {
   Future<void> showLastReading() async {
     final last = lastReading;
     if (last == null) return;
-    final now = DateTime.now();
+    final now = clock.now();
     for (final preset in RangePreset.values) {
       if (!now.subtract(preset.duration).isAfter(last)) {
         return applyPreset(preset);
@@ -120,7 +121,7 @@ class FieldChartNotifier extends ChangeNotifier {
   /// does not anchor on a stale field's last reading: "last hour" means the
   /// last hour, even if it turns out empty.
   Future<void> applyPreset(RangePreset preset) =>
-      _load(preset.rangeEndingAt(DateTime.now()), preset);
+      _load(preset.rangeEndingAt(clock.now()), preset);
 
   Future<void> applyFilter(DateTimeRange range) => _load(range, null);
 
