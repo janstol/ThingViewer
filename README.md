@@ -20,9 +20,9 @@ The GitHub APKs are signed with a different key than the Play Store version (Pla
 ## Screenshots
 
 <p>
-<img src="docs/screenshots/channel_list_light.png" alt="Channel list, light mode" width="250" />
-<img src="docs/screenshots/chart_dark.png" alt="Field chart, dark mode" width="250" />
-<img src="docs/screenshots/channel_detail_dark.png" alt="Channel detail, dark mode" width="250" />
+<img src="docs/screenshots/phone/01_list_light.png" alt="Channel list with pinned fields, light mode" width="250" />
+<img src="docs/screenshots/phone/02_chart24_dark.png" alt="Field chart for the last 24 hours, dark mode" width="250" />
+<img src="docs/screenshots/phone/03_detail_light.png" alt="Channel detail, light mode" width="250" />
 </p>
 
 ## Features

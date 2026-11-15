@@ -1,0 +1,32 @@
+# Screenshots
+
+The Google Play store listing screenshots. The phone set also illustrates the main README.
+
+- `phone/`: 1080x1920 (9:16), Play's phone slot
+- `tablet/`: 2560x1440 (16:9), Play's 7-inch and 10-inch tablet slots
+
+Both sets are plain captures from a release build, uploaded as 24-bit PNGs without alpha (Play rejects an alpha channel). Google's guidelines discourage device frames and allow captions only when needed, so there are none.
+
+## Alt text
+
+Play asks for alt text (up to 140 characters) with each screenshot.
+
+| File | Alt text |
+|---|---|
+| `phone/01_list_light.png` | Channel list with live pinned air quality readings |
+| `phone/02_chart24_dark.png` | Temperature chart for the last 24 hours in dark mode |
+| `phone/03_detail_light.png` | Channel detail showing the latest value of each field |
+| `phone/04_chart7d_light.png` | Seven-day temperature chart with a selected reading |
+| `phone/05_list_dark.png` | Channel list in dark mode showing a channel with an authentication error |
+| `phone/06_add_dark.png` | Adding a private ThingSpeak channel with its read API key |
+| `tablet/01_split_light.png` | Channel list and channel detail side by side |
+| `tablet/02_chart24_light.png` | Temperature chart for the last 24 hours on a tablet |
+| `tablet/03_split_dark.png` | Channel list and channel detail side by side in dark mode |
+| `tablet/04_table_light.png` | Table of temperature readings |
+
+## Retaking them
+
+- Use emulators whose screens already have Play's aspect ratios, so captures need no cropping: a Pixel 2 profile (1080x1920, 420 dpi) for the phone, and a Pixel Tablet profile set to 2560x1440 (`hw.lcd.height=1440`) for the tablet.
+- Load real data by importing a backup in the app.
+- Clean up the status bar with Android's demo mode (`adb shell settings put global sysui_demo_allowed 1`, then `am broadcast -a com.android.systemui.demo -e command ...`). Set the clock to the real time in 24-hour format, so it matches the timestamps the app shows.
+- Strip the alpha channel before uploading, e.g. `magick in.png -background black -alpha remove -alpha off PNG24:out.png`.
