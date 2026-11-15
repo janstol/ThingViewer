@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-11-15
+
 ### Fixed
 
 - Chart time axis labels now follow the visible range: times of day for short ranges like the last hour or 24 hours (with the date at midnight), dates for longer ones, on round steps aligned to local time. Previously every label showed only a date, so a 24-hour chart read "14.11.2026, 14.11.2026, 15.11.2026...".
@@ -180,6 +182,7 @@ Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into
 - Migrated from Hive/get_it/BLoC to `SharedPreferences` + `ChangeNotifier`.
 - Updated dependencies to their latest versions compatible with existing constraints (`build_runner`, `equatable`, `path_provider_android`, and others).
 
+[0.14.1]: https://github.com/janstol/ThingViewer/releases/tag/v0.14.1
 [0.14.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.14.0
 [0.13.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.13.0
 [0.12.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.12.0
