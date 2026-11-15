@@ -15,6 +15,7 @@ import '../../storage/storage_recovery.dart';
 import '../../widgets/section_header.dart';
 import '../settings/import_flow.dart';
 import '../settings/settings_notifier.dart';
+import '../../widgets/content_width.dart';
 
 /// Writes [raw] to a user-chosen file named after [storeKey], so unreadable
 /// data can be inspected or attached to a bug report instead of lost.
@@ -204,28 +205,30 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     final stores = _stores(l10n);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recoveryTitle)),
-      body: ListView(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.download_outlined),
-            title: Text(l10n.recoveryImportBackup),
-            onTap: _import,
-          ),
-          if (stores.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(l10n.recoveryNothingToRecover),
-            )
-          else
-            for (final store in stores) ...[
-              SectionHeader(title: store.title),
-              _StoreTile(
-                store: store,
-                onSave: () => _save(store),
-                onDiscard: () => _discard(store),
-              ),
-            ],
-        ],
+      body: ContentWidth(
+        child: ListView(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: Text(l10n.recoveryImportBackup),
+              onTap: _import,
+            ),
+            if (stores.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(l10n.recoveryNothingToRecover),
+              )
+            else
+              for (final store in stores) ...[
+                SectionHeader(title: store.title),
+                _StoreTile(
+                  store: store,
+                  onSave: () => _save(store),
+                  onDiscard: () => _discard(store),
+                ),
+              ],
+          ],
+        ),
       ),
     );
   }

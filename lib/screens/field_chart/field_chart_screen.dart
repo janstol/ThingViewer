@@ -24,6 +24,7 @@ import 'field_chart_notifier.dart';
 import 'field_table.dart';
 import 'filter_sheet.dart';
 import 'range_selector.dart';
+import '../../widgets/content_width.dart';
 
 class FieldChartScreen extends StatefulWidget {
   final Channel channel;
@@ -311,11 +312,13 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
                   Expanded(
                     child: MotionSwitcher(
                       child: _showTable
-                          ? FieldTable(
+                          ? ContentWidth(
                               key: const ValueKey('table'),
-                              values: cachedValues,
-                              settings: widget.settings,
-                              chartSettings: _chartSettings,
+                              child: FieldTable(
+                                values: cachedValues,
+                                settings: widget.settings,
+                                chartSettings: _chartSettings,
+                              ),
                             )
                           : FieldChart(
                               key: const ValueKey('chart'),
@@ -370,11 +373,13 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
               Expanded(
                 child: MotionSwitcher(
                   child: _showTable
-                      ? FieldTable(
+                      ? ContentWidth(
                           key: const ValueKey('table'),
-                          values: values,
-                          settings: widget.settings,
-                          chartSettings: _chartSettings,
+                          child: FieldTable(
+                            values: values,
+                            settings: widget.settings,
+                            chartSettings: _chartSettings,
+                          ),
                         )
                       : FieldChart(
                           key: const ValueKey('chart'),

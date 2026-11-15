@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../widgets/content_width.dart';
 
 const _defaultServerUrl = 'https://api.thingspeak.com';
 
@@ -65,76 +66,78 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
               : l10n.editChannelTitle,
         ),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          // Explicit padding suppresses ListView's automatic nav-bar
-          // inset, so it's added back here to keep Save clear of it.
-          padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + MediaQuery.paddingOf(context).bottom,
-          ),
-          children: [
-            TextFormField(
-              controller: _serverUrlController,
-              decoration: InputDecoration(labelText: l10n.fieldServerUrl),
-              keyboardType: TextInputType.url,
-              validator: (v) => _validateServerUrl(v, l10n),
+      body: ContentWidth(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            // Explicit padding suppresses ListView's automatic nav-bar
+            // inset, so it's added back here to keep Save clear of it.
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.paddingOf(context).bottom,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _channelIdController,
-              decoration: InputDecoration(labelText: l10n.fieldChannelId),
-              keyboardType: TextInputType.number,
-              validator: (v) => _validateChannelId(v, l10n),
-            ),
-            const SizedBox(height: 12),
-            SegmentedButton<bool>(
-              segments: [
-                ButtonSegment(value: true, label: Text(l10n.fieldPublic)),
-                ButtonSegment(value: false, label: Text(l10n.fieldPrivate)),
-              ],
-              selected: {_isPublic},
-              onSelectionChanged: (s) => setState(() {
-                _isPublic = s.first;
-              }),
-            ),
-            if (!_isPublic) ...[
+            children: [
+              TextFormField(
+                controller: _serverUrlController,
+                decoration: InputDecoration(labelText: l10n.fieldServerUrl),
+                keyboardType: TextInputType.url,
+                validator: (v) => _validateServerUrl(v, l10n),
+              ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _apiKeyController,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldApiKey,
-                  helperText: l10n.fieldApiKeyHelper,
-                  helperMaxLines: 2,
+                controller: _channelIdController,
+                decoration: InputDecoration(labelText: l10n.fieldChannelId),
+                keyboardType: TextInputType.number,
+                validator: (v) => _validateChannelId(v, l10n),
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment(value: true, label: Text(l10n.fieldPublic)),
+                  ButtonSegment(value: false, label: Text(l10n.fieldPrivate)),
+                ],
+                selected: {_isPublic},
+                onSelectionChanged: (s) => setState(() {
+                  _isPublic = s.first;
+                }),
+              ),
+              if (!_isPublic) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _apiKeyController,
+                  decoration: InputDecoration(
+                    labelText: l10n.fieldApiKey,
+                    helperText: l10n.fieldApiKeyHelper,
+                    helperMaxLines: 2,
+                  ),
+                  validator: (v) => _validateApiKey(v, l10n),
                 ),
-                validator: (v) => _validateApiKey(v, l10n),
+              ],
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _errorMessage!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _isSaving ? null : _submit,
+                child: _isSaving
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          semanticsLabel: l10n.labelSaving,
+                        ),
+                      )
+                    : Text(l10n.labelSave),
               ),
             ],
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _isSaving ? null : _submit,
-              child: _isSaving
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        semanticsLabel: l10n.labelSaving,
-                      ),
-                    )
-                  : Text(l10n.labelSave),
-            ),
-          ],
+          ),
         ),
       ),
     );

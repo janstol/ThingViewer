@@ -8,6 +8,7 @@ import '../../storage/settings_storage.dart';
 import '../../theme.dart';
 import '../../widgets/section_header.dart';
 import '../settings/settings_notifier.dart';
+import '../../widgets/content_width.dart';
 
 /// Shows a diff of [plan] against everything currently saved, lets the user
 /// check/uncheck individual channels, chart overrides, pinned fields, and
@@ -114,22 +115,24 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.backupImportTitle)),
-      body: ListView(
-        children: [
-          ..._buildFileSection(l10n),
-          if (nothingInFile)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(l10n.importPreviewNothingToImport),
-            ),
-          if (_plan.channels.isNotEmpty) ..._buildChannelsSection(l10n),
-          if (_plan.orphanChartSettingKeys.isNotEmpty ||
-              _plan.orphanPinnedFields.isNotEmpty)
-            ..._buildOtherOverridesSection(l10n),
-          if (_plan.settings.isNotEmpty) ..._buildSettingsSection(l10n),
-          if (_plan.onlyOnDevice.isNotEmpty)
-            ..._buildOnlyOnDeviceSection(l10n, colorScheme),
-        ],
+      body: ContentWidth(
+        child: ListView(
+          children: [
+            ..._buildFileSection(l10n),
+            if (nothingInFile)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(l10n.importPreviewNothingToImport),
+              ),
+            if (_plan.channels.isNotEmpty) ..._buildChannelsSection(l10n),
+            if (_plan.orphanChartSettingKeys.isNotEmpty ||
+                _plan.orphanPinnedFields.isNotEmpty)
+              ..._buildOtherOverridesSection(l10n),
+            if (_plan.settings.isNotEmpty) ..._buildSettingsSection(l10n),
+            if (_plan.onlyOnDevice.isNotEmpty)
+              ..._buildOnlyOnDeviceSection(l10n, colorScheme),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(

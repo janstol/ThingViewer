@@ -7,6 +7,7 @@ import '../../models/field_chart_settings.dart';
 import '../../models/range_preset.dart';
 import '../field_chart/range_preset_label.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/content_width.dart';
 
 const _unset = Object();
 
@@ -107,117 +108,119 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.fieldSettingsTitle)),
-      body: ListView(
-        children: [
-          SectionHeader(title: l10n.fieldSettingsSectionChart),
-          _TypeTile(
-            current: _settings.type,
-            onChanged: (v) => _apply(type: v),
-          ),
-          _DefaultRangeTile(
-            current: _settings.defaultRange,
-            onChanged: (v) => _apply(defaultRange: v),
-          ),
-          _TextTile(
-            icon: Icons.title,
-            title: l10n.fieldSettingsChartTitle,
-            value: _settings.title,
-            placeholder: widget.field.displayLabel,
-            onChanged: (v) => _apply(title: v),
-          ),
-          _TextTile(
-            icon: Icons.swap_horiz,
-            title: l10n.fieldSettingsXAxisLabel,
-            value: _settings.xAxisLabel,
-            placeholder: l10n.fieldSettingsAuto,
-            onChanged: (v) => _apply(xAxisLabel: v),
-          ),
-          _TextTile(
-            icon: Icons.swap_vert,
-            title: l10n.fieldSettingsYAxisLabel,
-            value: _settings.yAxisLabel,
-            placeholder: l10n.fieldSettingsAuto,
-            onChanged: (v) => _apply(yAxisLabel: v),
-          ),
-          SectionHeader(title: l10n.fieldSettingsSectionAxis),
-          _NumberTile(
-            icon: Icons.vertical_align_bottom,
-            title: l10n.fieldSettingsYMin,
-            value: _settings.yMin,
-            placeholder: l10n.fieldSettingsAuto,
-            onChanged: _setYMin,
-          ),
-          _NumberTile(
-            icon: Icons.vertical_align_top,
-            title: l10n.fieldSettingsYMax,
-            value: _settings.yMax,
-            placeholder: l10n.fieldSettingsAuto,
-            onChanged: _setYMax,
-          ),
-          _RoundingTile(
-            current: _settings.decimals,
-            onChanged: (v) => _apply(decimals: v),
-          ),
-          SectionHeader(title: l10n.fieldSettingsSectionData),
-          SwitchListTile(
-            secondary: const Icon(Icons.trending_up),
-            title: Text(l10n.fieldSettingsShowDelta),
-            subtitle: Text(l10n.fieldSettingsShowDeltaSubtitle),
-            value: _settings.showDelta,
-            onChanged: (v) => _apply(showDelta: v),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.timeline),
-            title: Text(l10n.fieldSettingsGapOnInvalid),
-            subtitle: Text(l10n.fieldSettingsGapOnInvalidSubtitle),
-            value: _settings.gapOnInvalid,
-            onChanged: (v) => _apply(gapOnInvalid: v),
-          ),
-          SectionHeader(title: l10n.fieldSettingsSectionStats),
-          SwitchListTile(
-            secondary: const Icon(Icons.functions),
-            title: Text(l10n.fieldSettingsShowSum),
-            value: _settings.showSum,
-            onChanged: (v) => _apply(showSum: v),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.equalizer),
-            title: Text(l10n.fieldSettingsShowAverage),
-            value: _settings.showAverage,
-            onChanged: (v) => _apply(showAverage: v),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.arrow_downward),
-            title: Text(l10n.fieldSettingsShowMin),
-            value: _settings.showMin,
-            onChanged: (v) => _apply(showMin: v),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.arrow_upward),
-            title: Text(l10n.fieldSettingsShowMax),
-            value: _settings.showMax,
-            onChanged: (v) => _apply(showMax: v),
-          ),
-          SectionHeader(title: l10n.fieldSettingsSectionMarkers),
-          SwitchListTile(
-            secondary: const Icon(Icons.south),
-            title: Text(l10n.fieldSettingsMarkMin),
-            value: _settings.markMin,
-            onChanged: (v) => _apply(markMin: v),
-          ),
-          SwitchListTile(
-            secondary: const Icon(Icons.north),
-            title: Text(l10n.fieldSettingsMarkMax),
-            value: _settings.markMax,
-            onChanged: (v) => _apply(markMax: v),
-          ),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.restart_alt),
-            title: Text(l10n.fieldSettingsReset),
-            onTap: _reset,
-          ),
-        ],
+      body: ContentWidth(
+        child: ListView(
+          children: [
+            SectionHeader(title: l10n.fieldSettingsSectionChart),
+            _TypeTile(
+              current: _settings.type,
+              onChanged: (v) => _apply(type: v),
+            ),
+            _DefaultRangeTile(
+              current: _settings.defaultRange,
+              onChanged: (v) => _apply(defaultRange: v),
+            ),
+            _TextTile(
+              icon: Icons.title,
+              title: l10n.fieldSettingsChartTitle,
+              value: _settings.title,
+              placeholder: widget.field.displayLabel,
+              onChanged: (v) => _apply(title: v),
+            ),
+            _TextTile(
+              icon: Icons.swap_horiz,
+              title: l10n.fieldSettingsXAxisLabel,
+              value: _settings.xAxisLabel,
+              placeholder: l10n.fieldSettingsAuto,
+              onChanged: (v) => _apply(xAxisLabel: v),
+            ),
+            _TextTile(
+              icon: Icons.swap_vert,
+              title: l10n.fieldSettingsYAxisLabel,
+              value: _settings.yAxisLabel,
+              placeholder: l10n.fieldSettingsAuto,
+              onChanged: (v) => _apply(yAxisLabel: v),
+            ),
+            SectionHeader(title: l10n.fieldSettingsSectionAxis),
+            _NumberTile(
+              icon: Icons.vertical_align_bottom,
+              title: l10n.fieldSettingsYMin,
+              value: _settings.yMin,
+              placeholder: l10n.fieldSettingsAuto,
+              onChanged: _setYMin,
+            ),
+            _NumberTile(
+              icon: Icons.vertical_align_top,
+              title: l10n.fieldSettingsYMax,
+              value: _settings.yMax,
+              placeholder: l10n.fieldSettingsAuto,
+              onChanged: _setYMax,
+            ),
+            _RoundingTile(
+              current: _settings.decimals,
+              onChanged: (v) => _apply(decimals: v),
+            ),
+            SectionHeader(title: l10n.fieldSettingsSectionData),
+            SwitchListTile(
+              secondary: const Icon(Icons.trending_up),
+              title: Text(l10n.fieldSettingsShowDelta),
+              subtitle: Text(l10n.fieldSettingsShowDeltaSubtitle),
+              value: _settings.showDelta,
+              onChanged: (v) => _apply(showDelta: v),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.timeline),
+              title: Text(l10n.fieldSettingsGapOnInvalid),
+              subtitle: Text(l10n.fieldSettingsGapOnInvalidSubtitle),
+              value: _settings.gapOnInvalid,
+              onChanged: (v) => _apply(gapOnInvalid: v),
+            ),
+            SectionHeader(title: l10n.fieldSettingsSectionStats),
+            SwitchListTile(
+              secondary: const Icon(Icons.functions),
+              title: Text(l10n.fieldSettingsShowSum),
+              value: _settings.showSum,
+              onChanged: (v) => _apply(showSum: v),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.equalizer),
+              title: Text(l10n.fieldSettingsShowAverage),
+              value: _settings.showAverage,
+              onChanged: (v) => _apply(showAverage: v),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.arrow_downward),
+              title: Text(l10n.fieldSettingsShowMin),
+              value: _settings.showMin,
+              onChanged: (v) => _apply(showMin: v),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.arrow_upward),
+              title: Text(l10n.fieldSettingsShowMax),
+              value: _settings.showMax,
+              onChanged: (v) => _apply(showMax: v),
+            ),
+            SectionHeader(title: l10n.fieldSettingsSectionMarkers),
+            SwitchListTile(
+              secondary: const Icon(Icons.south),
+              title: Text(l10n.fieldSettingsMarkMin),
+              value: _settings.markMin,
+              onChanged: (v) => _apply(markMin: v),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.north),
+              title: Text(l10n.fieldSettingsMarkMax),
+              value: _settings.markMax,
+              onChanged: (v) => _apply(markMax: v),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.restart_alt),
+              title: Text(l10n.fieldSettingsReset),
+              onTap: _reset,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -9,6 +9,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Chart time axis labels now follow the visible range: times of day for short ranges like the last hour or 24 hours (with the date at midnight), dates for longer ones, on round steps aligned to local time. Previously every label showed only a date, so a 24-hour chart read "14.11.2026, 14.11.2026, 15.11.2026...".
 - Chart axes no longer draw an extra label at the exact minimum and maximum that overlapped the neighbouring labels. The exact minimum and maximum are still shown in the stats row above the chart.
+- On tablets, the add channel button no longer floats over the channel detail panel, where it covered field values. It now sits in the channel list panel.
+- The chart tooltip now fits the timestamp on one line. With timezone display turned on, the UTC offset used to wrap onto its own line.
+- The table view's page buttons no longer sit under the system navigation bar.
+
+### Changed
+
+- Settings, chart settings, pinned fields, add channel, import, recovery, status log and the table view no longer stretch across the whole screen on tablets. Their content is now capped at a readable width and centred.
 
 ## [0.14.0] - 2026-11-15
 

@@ -23,6 +23,7 @@ import '../pinned_edit/pinned_edit_screen.dart';
 import '../recovery/recovery_screen.dart';
 import 'import_flow.dart';
 import 'settings_notifier.dart';
+import '../../widgets/content_width.dart';
 
 const _dateFormats = ['dd.MM.yyyy', 'dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'];
 const _timeFormats = ['HH:mm', 'HH:mm:ss', 'hh:mm a', 'hh:mm:ss a'];
@@ -56,88 +57,90 @@ class SettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
-      body: ListenableBuilder(
-        listenable: settings,
-        builder: (context, _) => ListView(
-          children: [
-            SectionHeader(title: l10n.settingsSectionAppearance),
-            _ThemeTile(settings: settings),
-            SectionHeader(title: l10n.settingsSectionGeneral),
-            _StartScreenTile(settings: settings, channels: channels),
-            ListTile(
-              leading: const Icon(Icons.push_pin_outlined),
-              title: Text(l10n.settingsPinnedFields),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PinnedEditScreen(
-                    api: api,
-                    pinnedFieldsStorage: pinnedFieldsStorage,
-                    channels: channels,
+      body: ContentWidth(
+        child: ListenableBuilder(
+          listenable: settings,
+          builder: (context, _) => ListView(
+            children: [
+              SectionHeader(title: l10n.settingsSectionAppearance),
+              _ThemeTile(settings: settings),
+              SectionHeader(title: l10n.settingsSectionGeneral),
+              _StartScreenTile(settings: settings, channels: channels),
+              ListTile(
+                leading: const Icon(Icons.push_pin_outlined),
+                title: Text(l10n.settingsPinnedFields),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PinnedEditScreen(
+                      api: api,
+                      pinnedFieldsStorage: pinnedFieldsStorage,
+                      channels: channels,
+                    ),
                   ),
                 ),
               ),
-            ),
-            SectionHeader(title: l10n.settingsSectionDateTime),
-            _FormatTile(
-              icon: Icons.calendar_today_outlined,
-              title: l10n.settingsDateFormat,
-              current: settings.dateFormat,
-              options: _dateFormats,
-              dialogTitle: l10n.settingsDateFormatChoose,
-              onSelected: settings.setDateFormat,
-            ),
-            _FormatTile(
-              icon: Icons.access_time_outlined,
-              title: l10n.settingsTimeFormat,
-              current: settings.timeFormat,
-              options: _timeFormats,
-              dialogTitle: l10n.settingsTimeFormatChoose,
-              onSelected: settings.setTimeFormat,
-            ),
-            _TimezoneTile(settings: settings),
-            _EntryTimeTile(settings: settings),
-            SectionHeader(title: l10n.settingsSectionBackup),
-            _ExportTile(backupService: backupService),
-            _ImportTile(
-              backupService: backupService,
-              settings: settings,
-              onImported: onImported,
-            ),
-            if (channelStorage.issue != null ||
-                fieldSettingsStorage.issue != null ||
-                pinnedFieldsStorage.issue != null ||
-                channelSnapshotStorage.issue != null)
-              _RecoveryTile(
-                channelStorage: channelStorage,
-                fieldSettingsStorage: fieldSettingsStorage,
-                pinnedFieldsStorage: pinnedFieldsStorage,
-                channelSnapshotStorage: channelSnapshotStorage,
+              SectionHeader(title: l10n.settingsSectionDateTime),
+              _FormatTile(
+                icon: Icons.calendar_today_outlined,
+                title: l10n.settingsDateFormat,
+                current: settings.dateFormat,
+                options: _dateFormats,
+                dialogTitle: l10n.settingsDateFormatChoose,
+                onSelected: settings.setDateFormat,
+              ),
+              _FormatTile(
+                icon: Icons.access_time_outlined,
+                title: l10n.settingsTimeFormat,
+                current: settings.timeFormat,
+                options: _timeFormats,
+                dialogTitle: l10n.settingsTimeFormatChoose,
+                onSelected: settings.setTimeFormat,
+              ),
+              _TimezoneTile(settings: settings),
+              _EntryTimeTile(settings: settings),
+              SectionHeader(title: l10n.settingsSectionBackup),
+              _ExportTile(backupService: backupService),
+              _ImportTile(
                 backupService: backupService,
                 settings: settings,
                 onImported: onImported,
               ),
-            SectionHeader(title: l10n.settingsSectionInfo),
-            ListTile(
-              leading: const Icon(Icons.privacy_tip_outlined),
-              title: Text(l10n.privacyPolicy),
-              onTap: () => launchUrl(
-                Uri.parse(
-                  'https://sites.google.com/view/thingviewer-privacy-policy/home',
+              if (channelStorage.issue != null ||
+                  fieldSettingsStorage.issue != null ||
+                  pinnedFieldsStorage.issue != null ||
+                  channelSnapshotStorage.issue != null)
+                _RecoveryTile(
+                  channelStorage: channelStorage,
+                  fieldSettingsStorage: fieldSettingsStorage,
+                  pinnedFieldsStorage: pinnedFieldsStorage,
+                  channelSnapshotStorage: channelSnapshotStorage,
+                  backupService: backupService,
+                  settings: settings,
+                  onImported: onImported,
                 ),
-                mode: LaunchMode.externalApplication,
+              SectionHeader(title: l10n.settingsSectionInfo),
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: Text(l10n.privacyPolicy),
+                onTap: () => launchUrl(
+                  Uri.parse(
+                    'https://sites.google.com/view/thingviewer-privacy-policy/home',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.code),
-              title: Text(l10n.settingsSourceCode),
-              onTap: () => launchUrl(
-                Uri.parse('https://github.com/janstol/ThingViewer'),
-                mode: LaunchMode.externalApplication,
+              ListTile(
+                leading: const Icon(Icons.code),
+                title: Text(l10n.settingsSourceCode),
+                onTap: () => launchUrl(
+                  Uri.parse('https://github.com/janstol/ThingViewer'),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
-            ),
-            _AboutTile(l10n: l10n),
-          ],
+              _AboutTile(l10n: l10n),
+            ],
+          ),
         ),
       ),
     );

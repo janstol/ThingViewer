@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../storage/pinned_fields_storage.dart';
+import '../../widgets/content_width.dart';
 
 /// Picker for choosing which fields are pinned to the channel-list dashboard.
 ///
@@ -66,26 +67,31 @@ class _PinnedEditScreenState extends State<PinnedEditScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.pinnedEditTitle)),
-      body: widget.channels.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(l10n.pinnedEditEmpty, textAlign: TextAlign.center),
+      body: ContentWidth(
+        child: widget.channels.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    l10n.pinnedEditEmpty,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            : ListView.builder(
+                itemCount: widget.channels.length,
+                itemBuilder: (context, index) {
+                  final channel = widget.channels[index];
+                  return ExpansionTile(
+                    title: Text(channel.displayName),
+                    onExpansionChanged: (expanded) {
+                      if (expanded) _loadFields(channel);
+                    },
+                    children: _buildChildren(channel, l10n),
+                  );
+                },
               ),
-            )
-          : ListView.builder(
-              itemCount: widget.channels.length,
-              itemBuilder: (context, index) {
-                final channel = widget.channels[index];
-                return ExpansionTile(
-                  title: Text(channel.displayName),
-                  onExpansionChanged: (expanded) {
-                    if (expanded) _loadFields(channel);
-                  },
-                  children: _buildChildren(channel, l10n),
-                );
-              },
-            ),
+      ),
     );
   }
 
