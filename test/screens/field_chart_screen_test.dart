@@ -757,6 +757,42 @@ void main() {
         );
       },
     );
+
+    testWidgets('the table view pager clears the simulated nav bar inset', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const bottomInset = 48.0;
+
+      await tester.pumpWidget(
+        _wrapWithBottomInset(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+          bottomInset,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Table view'));
+      await tester.pumpAndSettle();
+
+      final nextRect = tester.getRect(find.byTooltip('Next page'));
+      expect(
+        nextRect.bottom,
+        lessThanOrEqualTo(800 - bottomInset),
+        reason: 'pager must not sit under the simulated nav bar',
+      );
+    });
   });
 
   group('filter sheet', () {

@@ -140,27 +140,34 @@ class _FieldTableState extends State<FieldTable> {
           ),
         ),
         const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                tooltip: l10n.fieldTablePreviousPage,
-                onPressed: _page > 0 ? () => setState(() => _page--) : null,
-              ),
-              Text(
-                l10n.fieldTablePage(_page + 1, pageCount == 0 ? 1 : pageCount),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                tooltip: l10n.fieldTableNextPage,
-                onPressed: _page < pageCount - 1
-                    ? () => setState(() => _page++)
-                    : null,
-              ),
-            ],
+        // The pager is the last thing on screen, so it has to clear the system navigation bar itself.
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  tooltip: l10n.fieldTablePreviousPage,
+                  onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                ),
+                Text(
+                  l10n.fieldTablePage(
+                    _page + 1,
+                    pageCount == 0 ? 1 : pageCount,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  tooltip: l10n.fieldTableNextPage,
+                  onPressed: _page < pageCount - 1
+                      ? () => setState(() => _page++)
+                      : null,
+                ),
+              ],
+            ),
           ),
         ),
       ],
