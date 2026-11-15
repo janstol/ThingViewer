@@ -27,17 +27,18 @@ The GitHub APKs are signed with a different key than the Play Store version (Pla
 
 ## Features
 
-- Browse and manage multiple ThingSpeak channels, with a configurable start screen (channel list or a chosen channel's detail screen)
-- View latest field values per channel, including its description and website/source links when set, with pull-to-refresh
-- Visualize field data as line, spline, step, or column charts, with date and time range filtering
-- Per-field chart settings: custom title, axis labels, Y-axis min/max, fixed decimal rounding, and a "show change between readings" mode for counters
+- Browse and manage multiple ThingSpeak channels, public or private (Read API Key), on api.thingspeak.com or a self-hosted server, with a configurable start screen (channel list or a chosen channel's detail screen)
+- Pin the fields you check most; pinned fields show their latest value at the top of the channel list
+- View latest field values per channel, its status messages, and its description and website/source links when set, with pull-to-refresh
+- Last known values from a local cache show immediately, including offline, with a note on how old they are
+- Charts for the last hour, 24 hours, 7 days or 30 days, or a custom range, as line, spline, step, or column charts, with minimum, maximum, average and sum for the shown range
+- Per-field chart settings: title, axis labels, Y-axis min/max, decimal rounding, default range, min/max markers, and a "show change between readings" mode for counters
+- Table of individual readings, with CSV export
 - Automatically pages past ThingSpeak's per-request result cap so large date ranges aren't silently truncated; non-finite (`NaN`/`Infinity`) readings are skipped rather than breaking the chart
-- Supports public and private (API key) channels
-- Custom server URL (self-hosted ThingSpeak instances)
 - Light / dark / system theme
 - Configurable date and time formats, with an optional timezone indicator (offset or name)
-- Export/import a full backup (saved channels, app settings, and per-field chart overrides) as a single JSON file
-- Responsive layout — master-detail split on tablets
+- Export/import a full backup (saved channels, app settings, pinned fields, and per-field chart overrides) as a single JSON file, with a preview of what an import changes
+- Responsive layout: list and detail side by side on tablets
 
 Android is the actively supported and tested target. Web is built and deployed to the [demo](https://janstol.github.io/ThingViewer/) on every push, but isn't covered by automated tests. Android and web are built on every pull request; iOS/macOS/Windows/Linux are build-checked weekly in CI, but aren't otherwise supported or tested.
 
