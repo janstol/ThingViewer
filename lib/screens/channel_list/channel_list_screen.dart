@@ -525,36 +525,48 @@ class _WideLayout extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l10n.addChannelTooltip,
-        onPressed: onAddChannel,
-        child: const Icon(Icons.add),
-      ),
       body: Row(
         children: [
-          // Left panel: channel list
+          // Left panel: channel list. The add button lives in this panel rather than in the Scaffold, which would float it over the detail panel's content.
           SizedBox(
             width: 320,
-            child: _ChannelListBody(
-              notifier: notifier,
-              l10n: l10n,
-              channelStorage: channelStorage,
-              channelSnapshotStorage: channelSnapshotStorage,
-              backupService: backupService,
-              settings: settings,
-              onImported: onImported,
-              issueBannerVisible: issueBannerVisible,
-              onDismissIssueBanner: onDismissIssueBanner,
-              onOpenRecovery: onOpenRecovery,
-              selectedChannel: selectedChannel,
-              onTap: onChannelSelected,
-              onDelete: onChannelRemoved,
-              pinnedEntries: pinnedEntries,
-              now: now,
-              onEditPinned: onEditPinned,
-              onTapPinned: onTapPinned,
-              onPinnedRefresh: onPinnedRefresh,
-              fabClearance: false,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: _ChannelListBody(
+                    notifier: notifier,
+                    l10n: l10n,
+                    channelStorage: channelStorage,
+                    channelSnapshotStorage: channelSnapshotStorage,
+                    backupService: backupService,
+                    settings: settings,
+                    onImported: onImported,
+                    issueBannerVisible: issueBannerVisible,
+                    onDismissIssueBanner: onDismissIssueBanner,
+                    onOpenRecovery: onOpenRecovery,
+                    selectedChannel: selectedChannel,
+                    onTap: onChannelSelected,
+                    onDelete: onChannelRemoved,
+                    pinnedEntries: pinnedEntries,
+                    now: now,
+                    onEditPinned: onEditPinned,
+                    onTapPinned: onTapPinned,
+                    onPinnedRefresh: onPinnedRefresh,
+                    fabClearance: true,
+                  ),
+                ),
+                Positioned(
+                  right: kFloatingActionButtonMargin,
+                  bottom:
+                      kFloatingActionButtonMargin +
+                      MediaQuery.paddingOf(context).bottom,
+                  child: FloatingActionButton(
+                    tooltip: l10n.addChannelTooltip,
+                    onPressed: onAddChannel,
+                    child: const Icon(Icons.add),
+                  ),
+                ),
+              ],
             ),
           ),
           const VerticalDivider(width: 1),
@@ -576,7 +588,6 @@ class _WideLayout extends StatelessWidget {
                     onChannelUpdated: notifier.updateChannel,
                     onChannelEdited: onChannelEdited,
                     onPinnedChanged: onPinnedChanged,
-                    fabClearance: true,
                   )
                 : Center(
                     child: Text(

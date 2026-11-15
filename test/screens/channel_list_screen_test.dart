@@ -9,6 +9,7 @@ import 'package:thingviewer/models/channel.dart';
 import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/backup/backup_service.dart';
+import 'package:thingviewer/screens/channel_detail/channel_detail_screen.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/channel_list/pinned_section.dart';
 import 'package:thingviewer/screens/field_chart/field_chart_screen.dart';
@@ -631,6 +632,47 @@ void main() {
       },
     );
   });
+
+  testWidgets(
+    'wide layout keeps the add button inside the list panel, clear of the detail panel',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel]),
+        'startChannelId': _channel.id,
+        'startChannelServerUrl': _channel.serverUrl,
+      });
+      final storage = ChannelStorage(await SharedPreferences.getInstance());
+      when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: _fields, statuses: []));
+
+      await tester.pumpWidget(
+        _wrap(
+          ChannelListScreen(
+            api: mockApi,
+            channelStorage: storage,
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+            backupService: await _backupService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fabRect = tester.getRect(find.byType(FloatingActionButton));
+      final detailRect = tester.getRect(find.byType(ChannelDetailScreen));
+      expect(fabRect.right, lessThanOrEqualTo(320));
+      expect(fabRect.overlaps(detailRect), isFalse);
+    },
+  );
 
   group('wide layout field label Hero', () {
     // A pinned field can render twice at once in the wide/tablet layout:
