@@ -76,6 +76,8 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
+          # Tag pushes create a draft, published by hand after Play internal testing. Manual rebuilds of a past tag publish directly, as before.
+          draft: ${{ github.event_name == 'push' }}
           files: |
             build/app/outputs/flutter-apk/thingviewer-${{ env.RELEASE_TAG }}-arm64-v8a.apk
             build/app/outputs/flutter-apk/thingviewer-${{ env.RELEASE_TAG }}-armeabi-v7a.apk
