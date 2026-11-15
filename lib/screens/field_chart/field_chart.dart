@@ -7,6 +7,7 @@ import '../../models/field_chart_settings.dart';
 import '../../models/field_stats.dart';
 import '../../theme.dart';
 import '../settings/settings_notifier.dart';
+import 'time_axis.dart';
 
 /// Fixed padding applied around a lone data point so the chart doesn't get
 /// a zero-width x-range (minX == maxX).
@@ -218,11 +219,29 @@ class _FieldChartState extends State<FieldChart> {
   double _scaledReservedSize(double base) =>
       MediaQuery.textScalerOf(context).scale(base);
 
+  /// How many rotated time labels fit along the x-axis without crowding.
+  int get _maxTimeLabels {
+    final width = _constraints?.maxWidth;
+    if (width == null || !width.isFinite) return 6;
+    final plotWidth = width - _scaledReservedSize(48);
+    return (plotWidth / _scaledReservedSize(56)).floor().clamp(2, 12);
+  }
+
+  String _timeAxisText(DateTime dt, Duration interval) => timeAxisLabel(
+    dt,
+    interval,
+    formatDate: widget.settings.formatDate,
+    formatTime: widget.settings.formatTime,
+  );
+
   AxisTitles _leftTitles(FieldChartSettings chartSettings) => AxisTitles(
     axisNameWidget: _axisName(chartSettings.yAxisLabel),
     sideTitles: SideTitles(
       showTitles: true,
       reservedSize: _scaledReservedSize(48),
+      // fl_chart otherwise adds labels at the exact axis min and max, which collide with the neighbouring ticks. The stats row shows both values.
+      minIncluded: false,
+      maxIncluded: false,
       getTitlesWidget: (value, meta) => SideTitleWidget(
         meta: meta,
         child: Text(
@@ -448,6 +467,15 @@ class _FieldChartState extends State<FieldChart> {
         _markerStats != null &&
         (chartSettings.markMin || chartSettings.markMax);
     final (minY, maxY) = _effectiveYBounds(chartSettings);
+    final xInterval = timeAxisInterval(
+      Duration(milliseconds: (_maxX - _minX).round()),
+      _maxTimeLabels,
+    );
+    final xIntervalMs = xInterval.inMilliseconds.toDouble();
+    // Ticks fall on multiples of the interval counted from baselineX. Shifting it by the local UTC offset puts them on local hours and midnights. The offset at the end of the window wins, so the most recent ticks are exact when the window crosses a DST change.
+    final xBaseline = -DateTime.fromMillisecondsSinceEpoch(
+      _maxX.toInt(),
+    ).timeZoneOffset.inMilliseconds.toDouble();
 
     return LineChart(
       LineChartData(
@@ -455,6 +483,7 @@ class _FieldChartState extends State<FieldChart> {
         maxX: _maxX,
         minY: minY,
         maxY: maxY,
+        baselineX: xBaseline,
         extraLinesData: _markerLines(colorScheme, brand, chartSettings),
         lineBarsData: [
           LineChartBarData(
@@ -497,13 +526,16 @@ class _FieldChartState extends State<FieldChart> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: _scaledReservedSize(52),
+              interval: xIntervalMs,
+              minIncluded: false,
+              maxIncluded: false,
               getTitlesWidget: (value, meta) {
                 final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
                 return SideTitleWidget(
                   meta: meta,
                   angle: -0.6,
                   child: Text(
-                    widget.settings.formatDate(dt),
+                    _timeAxisText(dt, xInterval),
                     style: const TextStyle(fontSize: 10),
                   ),
                 );
@@ -517,7 +549,7 @@ class _FieldChartState extends State<FieldChart> {
             sideTitles: SideTitles(showTitles: false),
           ),
         ),
-        gridData: const FlGridData(show: true),
+        gridData: FlGridData(verticalInterval: xIntervalMs),
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
@@ -595,6 +627,10 @@ class _FieldChartState extends State<FieldChart> {
     int labelStep,
   ) {
     final (minY, maxY) = _effectiveYBounds(chartSettings);
+    final barSpan = bars.length < 2
+        ? Duration.zero
+        : bars.last.createdAt.difference(bars.first.createdAt);
+    final barLabelInterval = timeAxisInterval(barSpan, 5);
     return BarChart(
       // The bar count changes on every frame during pinch-zoom/pan (each
       // rebuild re-buckets the visible window). fl_chart's default 150ms
@@ -644,7 +680,7 @@ class _FieldChartState extends State<FieldChart> {
                   meta: meta,
                   angle: -0.6,
                   child: Text(
-                    widget.settings.formatDate(bars[index].createdAt),
+                    _timeAxisText(bars[index].createdAt, barLabelInterval),
                     style: const TextStyle(fontSize: 10),
                   ),
                 );

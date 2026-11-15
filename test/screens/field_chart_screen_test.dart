@@ -562,6 +562,56 @@ void main() {
   );
 
   testWidgets(
+    'Line chart labels a short range with times and skips the edge labels',
+    (tester) async {
+      final settings = await _settings();
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            channel: _channel,
+            field: _field,
+            api: mockApi,
+            settings: settings,
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      final bottom = data.titlesData.bottomTitles.sideTitles;
+      final left = data.titlesData.leftTitles.sideTitles;
+      expect(bottom.minIncluded, isFalse);
+      expect(bottom.maxIncluded, isFalse);
+      expect(left.minIncluded, isFalse);
+      expect(left.maxIncluded, isFalse);
+
+      // The fixture spans two days, so ticks land less than a day apart.
+      final interval = bottom.interval!;
+      expect(interval, lessThan(const Duration(days: 1).inMilliseconds));
+      expect(data.gridData.verticalInterval, interval);
+
+      final tick = DateTime(2026, 11, 15, 6);
+      final meta = TitleMeta(
+        min: data.minX,
+        max: data.maxX,
+        parentAxisSize: 400,
+        axisPosition: 0,
+        appliedInterval: interval,
+        sideTitles: bottom,
+        formattedValue: '',
+        axisSide: AxisSide.bottom,
+        rotationQuarterTurns: 0,
+      );
+      final title =
+          bottom.getTitlesWidget(tick.millisecondsSinceEpoch.toDouble(), meta)
+              as SideTitleWidget;
+      expect((title.child as Text).data, settings.formatTime(tick));
+    },
+  );
+
+  testWidgets(
     'Column chart bottom titles thin out to every Nth label past 5 bars',
     (tester) async {
       final manyValuesField = Field(

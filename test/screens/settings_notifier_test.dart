@@ -343,6 +343,34 @@ void main() {
     );
   });
 
+  group('formatTime', () {
+    test(
+      'formats using the configured time format, no timezone suffix',
+      () async {
+        final storage = _FakeSettingsStorage(
+          timeFormat: 'HH:mm',
+          timezoneDisplay: TimezoneDisplay.offset,
+        );
+        final notifier = SettingsNotifier(storage);
+
+        expect(notifier.formatTime(DateTime(2026, 3, 5, 14, 30)), '14:30');
+        notifier.dispose();
+      },
+    );
+
+    test('follows a time format change', () async {
+      final storage = _FakeSettingsStorage(timeFormat: 'HH:mm');
+      final notifier = SettingsNotifier(storage);
+      final dt = DateTime(2026, 3, 5, 14, 30);
+      expect(notifier.formatTime(dt), '14:30');
+
+      await notifier.setTimeFormat('h:mm a');
+
+      expect(notifier.formatTime(dt), '2:30 PM');
+      notifier.dispose();
+    });
+  });
+
   group('formatDateTime', () {
     test('off mode appends nothing', () async {
       final storage = _FakeSettingsStorage(

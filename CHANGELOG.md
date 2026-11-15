@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Chart time axis labels now follow the visible range: times of day for short ranges like the last hour or 24 hours (with the date at midnight), dates for longer ones, on round steps aligned to local time. Previously every label showed only a date, so a 24-hour chart read "14.11.2026, 14.11.2026, 15.11.2026...".
+- Chart axes no longer draw an extra label at the exact minimum and maximum that overlapped the neighbouring labels. The exact minimum and maximum are still shown in the stats row above the chart.
+
 ## [0.14.0] - 2026-11-15
 
 ### Added

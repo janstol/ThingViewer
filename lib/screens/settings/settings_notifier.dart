@@ -17,6 +17,7 @@ class SettingsNotifier extends ChangeNotifier {
 
   DateFormat? _cachedDateFmt;
   DateFormat? _cachedDateTimeFmt;
+  DateFormat? _cachedTimeFmt;
 
   SettingsNotifier(this._storage) {
     _themeMode = _storage.themeMode;
@@ -39,6 +40,7 @@ class SettingsNotifier extends ChangeNotifier {
     _startChannelServerUrl = _storage.startChannelServerUrl;
     _cachedDateFmt = null;
     _cachedDateTimeFmt = null;
+    _cachedTimeFmt = null;
     notifyListeners();
   }
 
@@ -80,12 +82,14 @@ class SettingsNotifier extends ChangeNotifier {
     final previous = _timeFormat;
     _timeFormat = format;
     _cachedDateTimeFmt = null;
+    _cachedTimeFmt = null;
     notifyListeners();
     try {
       await _storage.saveTimeFormat(format);
     } catch (_) {
       _timeFormat = previous;
       _cachedDateTimeFmt = null;
+      _cachedTimeFmt = null;
       notifyListeners();
     }
   }
@@ -105,6 +109,10 @@ class SettingsNotifier extends ChangeNotifier {
   /// Formats [dt] as a date only, never with a timezone suffix.
   String formatDate(DateTime dt) =>
       (_cachedDateFmt ??= DateFormat(_dateFormat)).format(dt);
+
+  /// Formats [dt] as a time of day only, never with a timezone suffix.
+  String formatTime(DateTime dt) =>
+      (_cachedTimeFmt ??= DateFormat(_timeFormat)).format(dt);
 
   /// Formats [dt] as date + time, with a timezone suffix per [timezoneDisplay].
   String formatDateTime(DateTime dt) {
