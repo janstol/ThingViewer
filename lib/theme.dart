@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Brand colours from the old Material 2 app (AppThemeColors).
 const brandBlue = Color(0xFF067BC2);

@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - A field chart now always opens on the last 7 days ending now. Previously, for a field that had stopped reporting, the window ended at its last reading instead.
+- Bumped Flutter to 3.50.0 (Dart 3.14.0) in `mise.toml` and all CI workflows, and AGP to 9.1.1 (Flutter 3.50's minimum). Moved Material and Cupertino imports to the new `material_ui` and `cupertino_ui` packages, since `package:flutter/material.dart` is deprecated as of 3.50. Also bumped `fl_chart` to 1.3.1 and `file_picker` to 13.3.3, and refreshed the lockfile.
 
 ## [0.13.0] - 2026-10-11
 

@@ -1,5 +1,6 @@
+import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,6 +40,13 @@ final _field = Field(
     FieldValue(createdAt: _now, value: 3),
   ],
 );
+
+// For tests that compare formatted times against _now: the widget reads the clock when it builds, after _now was captured, so on a slow runner a minute boundary can pass in between. Pinning the clock to _now keeps the two in sync. Not applied file-wide because some tests rely on time moving past the initial fetch window.
+void _testWidgetsAtNow(String description, WidgetTesterCallback callback) =>
+    testWidgets(
+      description,
+      (tester) => withClock(Clock.fixed(_now), () => callback(tester)),
+    );
 
 Widget _wrap(Widget child) => MaterialApp(
   theme: AppTheme.light,
@@ -698,57 +706,58 @@ void main() {
       expect(minXAfter, minXBefore);
     });
 
-    testWidgets('picking a From value past the current To clamps it back', (
-      tester,
-    ) async {
-      final rangeEnd = _field.values.last.createdAt;
-      final settings = await _settings();
+    _testWidgetsAtNow(
+      'picking a From value past the current To clamps it back',
+      (tester) async {
+        final rangeEnd = _field.values.last.createdAt;
+        final settings = await _settings();
 
-      await tester.pumpWidget(
-        _wrap24(
-          FieldChartScreen(
-            channel: _channel,
-            field: _field,
-            api: mockApi,
-            settings: settings,
-            fieldSettingsStorage: await _fieldSettingsStorage(),
-            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+        await tester.pumpWidget(
+          _wrap24(
+            FieldChartScreen(
+              channel: _channel,
+              field: _field,
+              api: mockApi,
+              settings: settings,
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Custom range'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('From'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Custom range'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('From'));
+        await tester.pumpAndSettle();
 
-      // Date picker: switch to text input, type a date past the current To.
-      await tester.tap(find.byIcon(Icons.edit_outlined));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byType(TextFormField),
-        _compactDate(rangeEnd),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
+        // Date picker: switch to text input, type a date past the current To.
+        await tester.tap(find.byIcon(Icons.edit_outlined));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextFormField),
+          _compactDate(rangeEnd),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
 
-      // Time picker: switch to text input, type a time past the current To.
-      await tester.tap(find.byIcon(Icons.keyboard_outlined));
-      await tester.pumpAndSettle();
-      final timeFields = find.byType(TextFormField);
-      await tester.enterText(timeFields.at(0), '23');
-      await tester.enterText(timeFields.at(1), '59');
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
+        // Time picker: switch to text input, type a time past the current To.
+        await tester.tap(find.byIcon(Icons.keyboard_outlined));
+        await tester.pumpAndSettle();
+        final timeFields = find.byType(TextFormField);
+        await tester.enterText(timeFields.at(0), '23');
+        await tester.enterText(timeFields.at(1), '59');
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
 
-      final expected = rangeEnd.subtract(const Duration(minutes: 1));
-      expect(find.text(settings.formatDateTime(expected)), findsOneWidget);
-    });
+        final expected = rangeEnd.subtract(const Duration(minutes: 1));
+        expect(find.text(settings.formatDateTime(expected)), findsOneWidget);
+      },
+    );
 
-    testWidgets('picking a future To value clamps it back to now', (
+    _testWidgetsAtNow('picking a future To value clamps it back to now', (
       tester,
     ) async {
       final rangeEnd = _field.values.last.createdAt;
@@ -799,7 +808,7 @@ void main() {
   });
 
   group('range selector', () {
-    testWidgets('opens on the 7d preset with its window in the readout', (
+    _testWidgetsAtNow('opens on the 7d preset with its window in the readout', (
       tester,
     ) async {
       final settings = await _settings();
@@ -859,7 +868,7 @@ void main() {
       expect(find.text('To'), findsOneWidget);
     });
 
-    testWidgets('applying a custom range updates the readout and selects '
+    _testWidgetsAtNow('applying a custom range updates the readout and selects '
         'the custom button', (tester) async {
       final settings = await _settings();
       final rangeEnd = _field.values.last.createdAt;

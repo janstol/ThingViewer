@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:clock/clock.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../settings/settings_notifier.dart';
@@ -98,7 +99,7 @@ class _FilterSheetState extends State<FilterSheet> {
   }
 
   Future<void> _pickTo(BuildContext context) async {
-    final now = DateTime.now();
+    final now = clock.now();
     var dateTime = await _pickDateTime(
       context,
       initial: _range.end,

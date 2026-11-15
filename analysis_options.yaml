@@ -16,6 +16,8 @@ analyzer:
     todo: ignore
   exclude:
     - "**/*.g.dart"
+    # gen-l10n output still uses the deprecated flutter_localizations delegates
+    - lib/l10n/app_localizations*.dart
     - build/**
     - android/**
     - ios/**
