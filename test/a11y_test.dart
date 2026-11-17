@@ -544,6 +544,21 @@ void main() {
         await _checkA11y(tester);
       });
 
+      testWidgets('channel edit - private', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            ChannelAddScreen(
+              api: mockApi,
+              initialChannel: _channel.copyWith(isPublic: false, apiKey: 'KEY'),
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
       testWidgets('channel edit', (tester) async {
         await tester.pumpWidget(
           _wrap(

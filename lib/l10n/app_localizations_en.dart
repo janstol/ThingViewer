@@ -80,6 +80,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldApiKey => 'Read API Key';
 
   @override
+  String get showApiKeyTooltip => 'Show API key';
+
+  @override
+  String get hideApiKeyTooltip => 'Hide API key';
+
+  @override
   String get fieldApiKeyHelper =>
       'Required for private channels. Find it on the channel\'s API Keys tab on ThingSpeak.';
 

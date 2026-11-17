@@ -232,6 +232,18 @@ abstract class AppLocalizations {
   /// **'Read API Key'**
   String get fieldApiKey;
 
+  /// No description provided for @showApiKeyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show API key'**
+  String get showApiKeyTooltip;
+
+  /// No description provided for @hideApiKeyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide API key'**
+  String get hideApiKeyTooltip;
+
   /// No description provided for @fieldApiKeyHelper.
   ///
   /// In en, this message translates to:

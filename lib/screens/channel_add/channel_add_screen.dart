@@ -32,6 +32,7 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
 
   late bool _isPublic;
   bool _isSaving = false;
+  bool _showApiKey = false;
   String? _errorMessage;
 
   @override
@@ -108,10 +109,23 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _apiKeyController,
+                  obscureText: !_showApiKey,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   decoration: InputDecoration(
                     labelText: l10n.fieldApiKey,
                     helperText: l10n.fieldApiKeyHelper,
                     helperMaxLines: 2,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _showApiKey ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      tooltip: _showApiKey
+                          ? l10n.hideApiKeyTooltip
+                          : l10n.showApiKeyTooltip,
+                      onPressed: () =>
+                          setState(() => _showApiKey = !_showApiKey),
+                    ),
                   ),
                   validator: (v) => _validateApiKey(v, l10n),
                 ),

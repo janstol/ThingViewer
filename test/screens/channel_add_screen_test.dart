@@ -156,6 +156,32 @@ void main() {
     expect(find.text('secret-key'), findsOneWidget);
   });
 
+  testWidgets('the API key is hidden until the eye button is tapped', (
+    tester,
+  ) async {
+    final initial = _existing.copyWith(isPublic: false, apiKey: 'secret-key');
+    await tester.pumpWidget(
+      _wrap(ChannelAddScreen(api: mockApi, initialChannel: initial)),
+    );
+
+    bool obscured() => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.widgetWithText(TextFormField, 'Read API Key'),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .obscureText;
+
+    expect(obscured(), isTrue);
+
+    await tester.tap(find.byTooltip('Show API key'));
+    await tester.pump();
+
+    expect(obscured(), isFalse);
+    expect(find.byTooltip('Hide API key'), findsOneWidget);
+  });
+
   testWidgets('editing keeps the channel settings', (tester) async {
     const settings = ChannelSettings(rememberRange: true);
     final initial = _existing.copyWith(settings: settings);

@@ -23,6 +23,8 @@
   "fieldPublic": "Public",
   "fieldPrivate": "Private",
   "fieldApiKey": "Read API Key",
+  "showApiKeyTooltip": "Show API key",
+  "hideApiKeyTooltip": "Hide API key",
   "fieldApiKeyHelper": "Required for private channels. Find it on the channel's API Keys tab on ThingSpeak.",
   "channelDetailRefresh": "Refresh",
   "channelDetailLastEntry": "Last entry",
