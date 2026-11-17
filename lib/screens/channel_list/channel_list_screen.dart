@@ -788,11 +788,18 @@ class _ChannelListBody extends StatelessWidget {
                             SectionHeader(title: l10n.channelListSectionTitle),
                           ],
                         ),
+                        // The default desktop handle is drawn on top of the
+                        // tile's own trailing icon, so desktop and web showed
+                        // two. The drag listeners are added by hand below.
+                        buildDefaultDragHandles: false,
                         itemCount: channels.length,
                         onReorderItem: notifier.reorderChannels,
                         itemBuilder: (context, index) {
                           final channel = channels[index];
-                          return Dismissible(
+                          final dragsByHandle = _dragsByHandle(
+                            Theme.of(context).platform,
+                          );
+                          final item = Dismissible(
                             key: ValueKey(channel),
                             direction: DismissDirection.endToStart,
                             confirmDismiss: (_) =>
@@ -823,6 +830,8 @@ class _ChannelListBody extends StatelessWidget {
                                 },
                               },
                               child: _ChannelTile(
+                                index: index,
+                                dragsByHandle: dragsByHandle,
                                 channel: channel,
                                 snapshot: channelSnapshotStorage.snapshotFor(
                                   channel,
@@ -833,6 +842,16 @@ class _ChannelListBody extends StatelessWidget {
                               ),
                             ),
                           );
+                          // Same split as the default handles: desktop (and
+                          // web on a desktop OS) drags from the handle right
+                          // away, touch platforms long-press the whole row.
+                          return dragsByHandle
+                              ? item
+                              : ReorderableDelayedDragStartListener(
+                                  key: ValueKey(channel),
+                                  index: index,
+                                  child: item,
+                                );
                         },
                       ),
             },
@@ -976,7 +995,21 @@ DateTime? _newestValueAt(ChannelSnapshot? snapshot) {
   return newest;
 }
 
+bool _dragsByHandle(TargetPlatform platform) => switch (platform) {
+  TargetPlatform.linux ||
+  TargetPlatform.windows ||
+  TargetPlatform.macOS => true,
+  TargetPlatform.android ||
+  TargetPlatform.iOS ||
+  TargetPlatform.fuchsia => false,
+};
+
 class _ChannelTile extends StatelessWidget {
+  final int index;
+
+  /// Whether the trailing icon starts a drag (desktop) rather than being
+  /// decorative (touch, where the whole row is long-pressed instead).
+  final bool dragsByHandle;
   final Channel channel;
   final ChannelSnapshot? snapshot;
   final DateTime now;
@@ -984,6 +1017,8 @@ class _ChannelTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ChannelTile({
+    required this.index,
+    required this.dragsByHandle,
     required this.channel,
     required this.snapshot,
     required this.now,
@@ -999,6 +1034,12 @@ class _ChannelTile extends StatelessWidget {
     final hasDataLine = newestValueAt != null;
     final identityStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
       color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    final handle = ExcludeSemantics(
+      child: Icon(
+        Icons.drag_handle,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
 
     return MergeSemantics(
@@ -1042,12 +1083,15 @@ class _ChannelTile extends StatelessWidget {
           context,
         ).colorScheme.secondaryContainer.withValues(alpha: 0.4),
         onTap: onTap,
-        trailing: ExcludeSemantics(
-          child: Icon(
-            Icons.drag_handle,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
+        trailing: dragsByHandle
+            ? ReorderableDragStartListener(
+                index: index,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: handle,
+                ),
+              )
+            : handle,
       ),
     );
   }

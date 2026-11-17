@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -171,6 +173,84 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('My Channel'), findsOneWidget);
+  });
+
+  group('reordering', () {
+    Future<void> pumpTwoChannels(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({
+        'channels': Channel.listToJson([_channel, _otherChannel]),
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          // AppTheme.light is created once per test process, so its platform
+          // is whatever the first test ran on. Match the current variant.
+          theme: AppTheme.light.copyWith(platform: defaultTargetPlatform),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChannelListScreen(
+            api: mockApi,
+            channelStorage: ChannelStorage(
+              await SharedPreferences.getInstance(),
+            ),
+            settings: await _settings(),
+            fieldSettingsStorage: await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+            channelSnapshotStorage: await _channelSnapshotStorage(),
+            backupService: await _backupService(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> dragDown(
+      WidgetTester tester,
+      Finder from, {
+      Duration hold = Duration.zero,
+    }) async {
+      final gesture = await tester.startGesture(tester.getCenter(from));
+      await tester.pump(hold);
+      for (var i = 0; i < 10; i++) {
+        await gesture.moveBy(const Offset(0, 30));
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    Future<List<int>> savedOrder() async => ChannelStorage(
+      await SharedPreferences.getInstance(),
+    ).loadChannels().map((c) => c.id).toList();
+
+    testWidgets(
+      'desktop shows one drag handle per channel, and dragging it reorders',
+      (tester) async {
+        await pumpTwoChannels(tester);
+
+        expect(find.byIcon(Icons.drag_handle), findsNWidgets(2));
+
+        await dragDown(tester, find.byIcon(Icons.drag_handle).first);
+
+        expect(await savedOrder(), [2, 1]);
+      },
+      variant: TargetPlatformVariant.desktop(),
+    );
+
+    testWidgets('touch platforms reorder with a long press on the row', (
+      tester,
+    ) async {
+      await pumpTwoChannels(tester);
+
+      expect(find.byIcon(Icons.drag_handle), findsNWidgets(2));
+
+      await dragDown(
+        tester,
+        find.text('My Channel'),
+        hold: kLongPressTimeout + const Duration(milliseconds: 100),
+      );
+
+      expect(await savedOrder(), [2, 1]);
+    }, variant: TargetPlatformVariant.mobile());
   });
 
   testWidgets('cancelling the swipe-to-dismiss dialog keeps the channel', (

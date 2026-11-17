@@ -15,6 +15,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - The API key is hidden while you type or edit it. Tap the eye button to show it.
 
+### Fixed
+
+- On the web and desktop, each channel in the list showed two drag handles. It now shows one, and you drag the channel by it.
+
 ## [0.14.1] - 2026-11-15
 
 ### Fixed
