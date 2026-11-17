@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../api/thingspeak_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../models/channel_settings.dart';
 import '../../widgets/content_width.dart';
 
 const _defaultServerUrl = 'https://api.thingspeak.com';
@@ -176,6 +177,7 @@ class _ChannelAddScreenState extends State<ChannelAddScreen> {
       serverUrl: _serverUrlController.text.trim(),
       isPublic: _isPublic,
       apiKey: _isPublic ? null : _apiKeyController.text.trim(),
+      settings: widget.initialChannel?.settings ?? ChannelSettings.defaults,
     );
 
     try {

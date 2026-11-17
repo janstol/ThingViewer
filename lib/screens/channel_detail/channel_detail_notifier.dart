@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../api/thingspeak_api.dart';
 import '../../models/channel.dart';
+import '../../models/channel_settings.dart';
 import '../../models/channel_snapshot.dart';
 import '../../models/channel_status.dart';
 import '../../models/field.dart';
@@ -142,6 +143,24 @@ class ChannelDetailNotifier extends ChangeNotifier {
     await _fetch();
   }
 
+  /// Applies locally edited channel settings without re-fetching.
+  void updateSettings(ChannelSettings settings) {
+    _channel = _channel.copyWith(settings: settings);
+    final current = _state;
+    if (current is ChannelDetailLoaded) {
+      _state = ChannelDetailLoaded(
+        _channel,
+        current.fields,
+        current.statuses,
+        cachedAt: current.cachedAt,
+        refreshing: current.refreshing,
+        refreshError: current.refreshError,
+      );
+    }
+    onChannelUpdated?.call(_channel);
+    notifyListeners();
+  }
+
   Future<void> _fetch() async {
     final generation = ++_requestGeneration;
     // The request's own channel: an edit via setChannel mid-request must not
@@ -160,7 +179,12 @@ class ChannelDetailNotifier extends ChangeNotifier {
       if (_stale(generation)) return;
       final updated = results[0] as Channel;
       final feedData = results[1] as FeedData;
-      _channel = updated.copyWith(authError: false);
+      // Settings may have changed while this request was in flight; the
+      // fetched channel still carries the ones from when it started.
+      _channel = updated.copyWith(
+        authError: false,
+        settings: _channel.settings,
+      );
       onChannelUpdated?.call(_channel);
 
       var fields = feedData.fields;

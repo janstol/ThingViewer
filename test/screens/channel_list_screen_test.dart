@@ -741,5 +741,71 @@ void main() {
         expect(find.byType(FieldChartScreen), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'a pinned chart opens with channel settings edited in the detail '
+      'panel',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'channels': Channel.listToJson([_channel]),
+          'startChannelId': _channel.id,
+          'startChannelServerUrl': _channel.serverUrl,
+        });
+        final storage = ChannelStorage(await SharedPreferences.getInstance());
+        final pinnedFieldsStorage = await _pinnedFieldsStorage();
+        await pinnedFieldsStorage.toggle(_channel, 1);
+
+        when(mockApi.readChannel(any)).thenAnswer((_) async => _channel);
+        when(
+          mockApi.readFeed(any, any),
+        ).thenAnswer((_) async => FeedData(fields: _fields, statuses: []));
+        when(
+          mockApi.readFieldRange(
+            any,
+            any,
+            apiKey: anyNamed('apiKey'),
+            start: anyNamed('start'),
+            end: anyNamed('end'),
+          ),
+        ).thenAnswer(
+          (_) async => FieldRange(field: _fields.first, truncated: false),
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ChannelListScreen(
+              api: mockApi,
+              channelStorage: storage,
+              settings: await _settings(),
+              fieldSettingsStorage: await _fieldSettingsStorage(),
+              pinnedFieldsStorage: pinnedFieldsStorage,
+              channelSnapshotStorage: await _channelSnapshotStorage(),
+              backupService: await _backupService(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Channel settings'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Remember selected range'));
+        await tester.pumpAndSettle();
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(PinnedSection),
+            matching: find.text('Temp'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final chart = tester.widget<FieldChartScreen>(
+          find.byType(FieldChartScreen),
+        );
+        expect(chart.channel.settings.rememberRange, isTrue);
+      },
+    );
   });
 }

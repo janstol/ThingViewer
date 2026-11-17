@@ -6,6 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_settings.dart';
 import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
@@ -493,6 +494,57 @@ void main() {
       },
     );
   });
+  group('updateSettings', () {
+    const settings = ChannelSettings(rememberRange: true);
+
+    test('updates the loaded channel and reports it', () async {
+      when(mockApi.readChannel(any)).thenAnswer((_) async => enrichedChannel);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+      final reported = <Channel>[];
+      final notifier = ChannelDetailNotifier(
+        mockApi,
+        storage,
+        channel,
+        onChannelUpdated: reported.add,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      notifier.updateSettings(settings);
+
+      final loaded = notifier.state as ChannelDetailLoaded;
+      expect(loaded.channel.settings, settings);
+      expect(loaded.channel.name, 'My Channel');
+      expect(reported.last.settings, settings);
+      notifier.dispose();
+    });
+
+    test('survive a fetch that was in flight when they changed', () async {
+      final pending = Completer<Channel>();
+      when(mockApi.readChannel(any)).thenAnswer((_) => pending.future);
+      when(
+        mockApi.readFeed(any, any),
+      ).thenAnswer((_) async => FeedData(fields: fields, statuses: []));
+      final reported = <Channel>[];
+      final notifier = ChannelDetailNotifier(
+        mockApi,
+        storage,
+        channel,
+        onChannelUpdated: reported.add,
+      );
+
+      notifier.updateSettings(settings);
+      pending.complete(enrichedChannel);
+      await Future<void>.delayed(Duration.zero);
+
+      final loaded = notifier.state as ChannelDetailLoaded;
+      expect(loaded.channel.settings, settings);
+      expect(reported.last.settings, settings);
+      notifier.dispose();
+    });
+  });
+
   group('superseded requests', () {
     List<Field> fieldsWithValue(double value) => [
       Field(

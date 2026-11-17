@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Channel settings, opened with the new button on a channel's screen. They're included in backups. Editing the channel ID, server and API key has moved there too, under "Connection".
+- A default range for every chart in a channel. A field with its own default range keeps it, and the field's "Default" option now shows the channel's range.
+- "Remember selected range" for a channel (off by default). When it's on, charts in that channel open with the last range you picked until the app is closed, so you don't have to pick it again for every field.
+
 ## [0.14.1] - 2026-11-15
 
 ### Fixed

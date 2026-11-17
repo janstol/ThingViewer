@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_settings.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
 import 'package:thingviewer/models/range_preset.dart';
@@ -225,5 +226,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(changed!.defaultRange, isNull);
+  });
+
+  testWidgets('Default shows the channel default range when it has one', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        FieldSettingsScreen(
+          channel: _channel.copyWith(
+            settings: const ChannelSettings(
+              defaultRange: RangePreset.last30Days,
+            ),
+          ),
+          field: _field,
+          settings: FieldChartSettings.defaults,
+          onChanged: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Default (Last 30 days)'), findsOneWidget);
   });
 }

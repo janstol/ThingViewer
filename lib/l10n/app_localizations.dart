@@ -1229,6 +1229,54 @@ abstract class AppLocalizations {
   /// **'Scatter'**
   String get fieldSettingsTypeScatter;
 
+  /// No description provided for @channelSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel settings'**
+  String get channelSettingsTitle;
+
+  /// No description provided for @channelSettingsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel settings'**
+  String get channelSettingsTooltip;
+
+  /// No description provided for @channelSettingsSectionCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'Charts'**
+  String get channelSettingsSectionCharts;
+
+  /// No description provided for @channelSettingsDefaultRangeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{range}. Fields with their own default range keep it.'**
+  String channelSettingsDefaultRangeSubtitle(String range);
+
+  /// No description provided for @channelSettingsRememberRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember selected range'**
+  String get channelSettingsRememberRange;
+
+  /// No description provided for @channelSettingsSectionConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get channelSettingsSectionConnection;
+
+  /// No description provided for @channelSettingsEditChannelSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel ID, server and API key'**
+  String get channelSettingsEditChannelSubtitle;
+
+  /// No description provided for @channelSettingsRememberRangeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Charts in this channel open with the last range you picked, until the app is closed.'**
+  String get channelSettingsRememberRangeSubtitle;
+
   /// No description provided for @fieldSettingsDefaultRange.
   ///
   /// In en, this message translates to:
@@ -1504,6 +1552,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Visibility'**
   String get importPreviewChangeVisibility;
+
+  /// No description provided for @importPreviewChangeChannelSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel settings changed'**
+  String get importPreviewChangeChannelSettings;
 
   /// No description provided for @importPreviewNeedsApiKey.
   ///

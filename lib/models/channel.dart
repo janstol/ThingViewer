@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'channel_settings.dart';
+
 class Channel {
   final int id;
   final String serverUrl;
@@ -12,6 +14,7 @@ class Channel {
   final DateTime? updatedAt;
   final int fieldCount;
   final bool authError;
+  final ChannelSettings settings;
 
   const Channel({
     required this.id,
@@ -25,6 +28,7 @@ class Channel {
     this.updatedAt,
     this.fieldCount = 0,
     this.authError = false,
+    this.settings = ChannelSettings.defaults,
   });
 
   String get displayName => name?.isNotEmpty == true ? name! : 'Channel $id';
@@ -41,6 +45,7 @@ class Channel {
     DateTime? updatedAt,
     int? fieldCount,
     bool? authError,
+    ChannelSettings? settings,
   }) {
     return Channel(
       id: id ?? this.id,
@@ -54,6 +59,7 @@ class Channel {
       updatedAt: updatedAt ?? this.updatedAt,
       fieldCount: fieldCount ?? this.fieldCount,
       authError: authError ?? this.authError,
+      settings: settings ?? this.settings,
     );
   }
 
@@ -64,6 +70,7 @@ class Channel {
     if (apiKey != null) 'apiKey': apiKey,
     if (name != null) 'name': name,
     if (authError) 'authError': authError,
+    if (!settings.isDefault) 'settings': settings.toJson(),
   };
 
   factory Channel.fromJson(Map<String, dynamic> json) => Channel(
@@ -73,6 +80,9 @@ class Channel {
     apiKey: json['apiKey'] as String?,
     name: json['name'] as String?,
     authError: json['authError'] as bool? ?? false,
+    settings: json['settings'] is Map<String, dynamic>
+        ? ChannelSettings.fromJson(json['settings'] as Map<String, dynamic>)
+        : ChannelSettings.defaults,
   );
 
   static List<Channel> listFromJson(String raw) {

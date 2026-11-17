@@ -302,6 +302,35 @@ void main() {
     });
   });
 
+  group('remembered range', () {
+    final range = DateTimeRange(
+      start: DateTime(2025, 3, 1),
+      end: DateTime(2025, 3, 31),
+    );
+
+    test('is kept per channel', () {
+      final notifier = SettingsNotifier(_FakeSettingsStorage());
+
+      notifier.recordRange(_channel, (preset: null, range: range));
+
+      expect(notifier.rememberedRange(_channel)?.range, range);
+      expect(notifier.rememberedRange(_otherChannel), isNull);
+      notifier.dispose();
+    });
+
+    test('forgetRange drops it for that channel only', () {
+      final notifier = SettingsNotifier(_FakeSettingsStorage());
+      notifier.recordRange(_channel, (preset: null, range: range));
+      notifier.recordRange(_otherChannel, (preset: null, range: range));
+
+      notifier.forgetRange(_channel);
+
+      expect(notifier.rememberedRange(_channel), isNull);
+      expect(notifier.rememberedRange(_otherChannel)?.range, range);
+      notifier.dispose();
+    });
+  });
+
   group('setEntryTimeDisplay', () {
     test('updates and persists', () async {
       final storage = _FakeSettingsStorage();

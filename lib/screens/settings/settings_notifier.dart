@@ -2,7 +2,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/channel.dart';
+import '../../models/range_preset.dart';
 import '../../storage/settings_storage.dart';
+
+/// A chart range the user picked: a [preset] that is re-anchored to the
+/// current time when reused, or a fixed custom [range] when [preset] is null.
+typedef ChartRangeSelection = ({RangePreset? preset, DateTimeRange range});
 
 class SettingsNotifier extends ChangeNotifier {
   final SettingsStorage _storage;
@@ -49,6 +54,19 @@ class SettingsNotifier extends ChangeNotifier {
   String get timeFormat => _timeFormat;
   TimezoneDisplay get timezoneDisplay => _timezoneDisplay;
   EntryTimeDisplay get entryTimeDisplay => _entryTimeDisplay;
+
+  /// Last chart range picked per channel, for channels with
+  /// `ChannelSettings.rememberRange` on. Kept in memory on purpose, so it
+  /// lasts only until the app is closed.
+  final Map<Channel, ChartRangeSelection> _sessionRanges = {};
+
+  ChartRangeSelection? rememberedRange(Channel channel) =>
+      _sessionRanges[channel];
+
+  void recordRange(Channel channel, ChartRangeSelection selection) =>
+      _sessionRanges[channel] = selection;
+
+  void forgetRange(Channel channel) => _sessionRanges.remove(channel);
 
   Future<void> setThemeMode(ThemeMode mode) async {
     final previous = _themeMode;

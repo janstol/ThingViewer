@@ -685,6 +685,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldSettingsTypeScatter => 'Scatter';
 
   @override
+  String get channelSettingsTitle => 'Channel settings';
+
+  @override
+  String get channelSettingsTooltip => 'Channel settings';
+
+  @override
+  String get channelSettingsSectionCharts => 'Charts';
+
+  @override
+  String channelSettingsDefaultRangeSubtitle(String range) {
+    return '$range. Fields with their own default range keep it.';
+  }
+
+  @override
+  String get channelSettingsRememberRange => 'Remember selected range';
+
+  @override
+  String get channelSettingsSectionConnection => 'Connection';
+
+  @override
+  String get channelSettingsEditChannelSubtitle =>
+      'Channel ID, server and API key';
+
+  @override
+  String get channelSettingsRememberRangeSubtitle =>
+      'Charts in this channel open with the last range you picked, until the app is closed.';
+
+  @override
   String get fieldSettingsDefaultRange => 'Default range';
 
   @override
@@ -841,6 +869,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importPreviewChangeVisibility => 'Visibility';
+
+  @override
+  String get importPreviewChangeChannelSettings => 'Channel settings changed';
 
   @override
   String get importPreviewNeedsApiKey =>

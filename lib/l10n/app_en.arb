@@ -281,6 +281,19 @@
   "fieldSettingsTypeStep": "Step",
   "fieldSettingsTypeColumn": "Column",
   "fieldSettingsTypeScatter": "Scatter",
+  "channelSettingsTitle": "Channel settings",
+  "channelSettingsTooltip": "Channel settings",
+  "channelSettingsSectionCharts": "Charts",
+  "channelSettingsDefaultRangeSubtitle": "{range}. Fields with their own default range keep it.",
+  "@channelSettingsDefaultRangeSubtitle": {
+    "placeholders": {
+      "range": {"type": "String"}
+    }
+  },
+  "channelSettingsRememberRange": "Remember selected range",
+  "channelSettingsSectionConnection": "Connection",
+  "channelSettingsEditChannelSubtitle": "Channel ID, server and API key",
+  "channelSettingsRememberRangeSubtitle": "Charts in this channel open with the last range you picked, until the app is closed.",
   "fieldSettingsDefaultRange": "Default range",
   "fieldSettingsDefaultRangeDefault": "Default ({range})",
   "@fieldSettingsDefaultRangeDefault": {
@@ -347,6 +360,7 @@
   "importPreviewChangeName": "Name",
   "importPreviewChangeApiKey": "API key changed",
   "importPreviewChangeVisibility": "Visibility",
+  "importPreviewChangeChannelSettings": "Channel settings changed",
   "importPreviewNeedsApiKey": "Needs an API key re-entered after importing",
   "importPreviewChartOverrides": "{count, plural, =1{1 chart override} other{{count} chart overrides}}",
   "@importPreviewChartOverrides": {

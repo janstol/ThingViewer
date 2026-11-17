@@ -257,6 +257,9 @@ class BackupService {
         if (effective.isPublic != existing.isPublic) {
           changes.add(ChannelFieldChange.visibility);
         }
+        if (effective.settings != existing.settings) {
+          changes.add(ChannelFieldChange.settings);
+        }
       }
       final change = existing == null
           ? ChannelChange.added

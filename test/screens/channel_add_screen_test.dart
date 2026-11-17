@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_settings.dart';
 import 'package:thingviewer/screens/channel_add/channel_add_screen.dart';
 
 import 'channel_detail_notifier_test.mocks.dart';
@@ -153,6 +154,20 @@ void main() {
     expect(find.text('https://example.com'), findsOneWidget);
     expect(find.text('42'), findsOneWidget);
     expect(find.text('secret-key'), findsOneWidget);
+  });
+
+  testWidgets('editing keeps the channel settings', (tester) async {
+    const settings = ChannelSettings(rememberRange: true);
+    final initial = _existing.copyWith(settings: settings);
+    when(mockApi.readChannel(any)).thenAnswer((_) async => _existing);
+    await tester.pumpWidget(
+      _wrap(ChannelAddScreen(api: mockApi, initialChannel: initial)),
+    );
+    await _tapSave(tester);
+
+    final sent =
+        verify(mockApi.readChannel(captureAny)).captured.single as Channel;
+    expect(sent.settings, settings);
   });
 
   testWidgets('duplicate check exempts the channel being edited from itself', (

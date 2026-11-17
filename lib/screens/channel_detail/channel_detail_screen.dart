@@ -7,6 +7,7 @@ import '../../api/thingspeak_api.dart';
 import '../../entry_age.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/channel.dart';
+import '../../models/channel_settings.dart';
 import '../../models/channel_status.dart';
 import '../../models/field.dart';
 import '../../storage/channel_snapshot_storage.dart';
@@ -17,6 +18,7 @@ import '../../widgets/motion.dart';
 import '../../widgets/section_header.dart';
 import '../channel_add/channel_add_screen.dart';
 import '../channel_status/channel_status_screen.dart';
+import '../channel_settings/channel_settings_screen.dart';
 import '../field_chart/field_chart_screen.dart';
 import '../settings/settings_notifier.dart';
 import 'channel_detail_notifier.dart';
@@ -266,6 +268,26 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
     await _notifier.setChannel(updated);
   }
 
+  void _openChannelSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChannelSettingsScreen(
+          settings: _channel.settings,
+          onChanged: _updateChannelSettings,
+          onEditChannel: _editChannel,
+        ),
+      ),
+    );
+  }
+
+  void _updateChannelSettings(ChannelSettings next) {
+    // Turning it back on later should not bring back an earlier range.
+    if (!next.rememberRange) widget.settings.forgetRange(_channel);
+    setState(() => _channel = _channel.copyWith(settings: next));
+    _notifier.updateSettings(next);
+  }
+
   // Regroups the field list into pinned/other sections after a pin is
   // toggled on the field chart screen — _FieldList reads isPinned at build
   // time, so this screen needs its own rebuild, not just the outer callback.
@@ -282,9 +304,9 @@ class _ChannelDetailScreenState extends State<ChannelDetailScreen> {
         title: Text(_channel.displayName),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: l10n.editChannelTooltip,
-            onPressed: _editChannel,
+            icon: const Icon(Icons.tune),
+            tooltip: l10n.channelSettingsTooltip,
+            onPressed: _openChannelSettings,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),

@@ -7,6 +7,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_platfor
 import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/backup/import_plan.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/range_preset.dart';
+import 'package:thingviewer/models/channel_settings.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
 import 'package:thingviewer/models/pinned_field.dart';
 import 'package:thingviewer/storage/channel_storage.dart';
@@ -417,6 +419,40 @@ void main() {
         expect(plan.channels.single.changes, {ChannelFieldChange.name});
       },
     );
+
+    test('a channel with different channel settings is updated, with settings '
+        'flagged', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await ChannelStorage(prefs).saveChannels([_channel]);
+      final service = await _service();
+      final changed = _channel.copyWith(
+        settings: const ChannelSettings(rememberRange: true),
+      );
+      final contents = BackupContents(channels: [changed]);
+
+      final plan = service.planImport(contents);
+
+      expect(plan.channels.single.change, ChannelChange.updated);
+      expect(plan.channels.single.changes, {ChannelFieldChange.settings});
+    });
+
+    test('channel settings survive export and import', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      const settings = ChannelSettings(
+        defaultRange: RangePreset.last30Days,
+        rememberRange: true,
+      );
+      await ChannelStorage(
+        prefs,
+      ).saveChannels([_channel.copyWith(settings: settings)]);
+      final service = await _service();
+
+      final contents = service.parse(await service.export());
+
+      expect(contents.channels!.single.settings, settings);
+    });
 
     test(
       'a keyless private channel with no saved match needs an API key',

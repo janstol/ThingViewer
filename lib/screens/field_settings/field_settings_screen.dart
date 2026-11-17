@@ -5,7 +5,7 @@ import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../models/field_chart_settings.dart';
 import '../../models/range_preset.dart';
-import '../field_chart/range_preset_label.dart';
+import '../../widgets/default_range_tile.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/content_width.dart';
 
@@ -116,8 +116,10 @@ class _FieldSettingsScreenState extends State<FieldSettingsScreen> {
               current: _settings.type,
               onChanged: (v) => _apply(type: v),
             ),
-            _DefaultRangeTile(
+            DefaultRangeTile(
               current: _settings.defaultRange,
+              fallback:
+                  widget.channel.settings.defaultRange ?? RangePreset.last7Days,
               onChanged: (v) => _apply(defaultRange: v),
             ),
             _TextTile(
@@ -456,69 +458,6 @@ class _RoundingTile extends StatelessWidget {
             ),
           );
           if (selected != null) onChanged(selected.decimals);
-        },
-      ),
-    );
-  }
-}
-
-// Same reason as _RoundingChoice: null is a real choice ("Default") here.
-class _DefaultRangeChoice {
-  final RangePreset? preset;
-  const _DefaultRangeChoice(this.preset);
-}
-
-class _DefaultRangeTile extends StatelessWidget {
-  final RangePreset? current;
-  final ValueChanged<RangePreset?> onChanged;
-
-  const _DefaultRangeTile({required this.current, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final defaultLabel = l10n.fieldSettingsDefaultRangeDefault(
-      rangePresetLabel(l10n, RangePreset.last7Days),
-    );
-    final current = this.current;
-    final label = current == null
-        ? defaultLabel
-        : rangePresetLabel(l10n, current);
-
-    return MergeSemantics(
-      child: ListTile(
-        leading: const Icon(Icons.date_range),
-        title: Text(l10n.fieldSettingsDefaultRange),
-        subtitle: Text(label),
-        onTap: () async {
-          final selected = await showDialog<_DefaultRangeChoice>(
-            context: context,
-            builder: (context) => SimpleDialog(
-              title: Text(l10n.fieldSettingsDefaultRange),
-              children: [
-                RadioGroup<RangePreset?>(
-                  groupValue: current,
-                  onChanged: (v) =>
-                      Navigator.pop(context, _DefaultRangeChoice(v)),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioListTile<RangePreset?>(
-                        title: Text(defaultLabel),
-                        value: null,
-                      ),
-                      for (final preset in RangePreset.values)
-                        RadioListTile<RangePreset?>(
-                          title: Text(rangePresetLabel(l10n, preset)),
-                          value: preset,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-          if (selected != null) onChanged(selected.preset);
         },
       ),
     );

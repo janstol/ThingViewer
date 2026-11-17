@@ -9,12 +9,14 @@ import 'package:thingviewer/backup/backup_service.dart';
 import 'package:thingviewer/backup/import_plan.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_settings.dart';
 import 'package:thingviewer/models/channel_snapshot.dart';
 import 'package:thingviewer/models/channel_status.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
 import 'package:thingviewer/models/pinned_field.dart';
 import 'package:thingviewer/screens/channel_add/channel_add_screen.dart';
+import 'package:thingviewer/screens/channel_settings/channel_settings_screen.dart';
 import 'package:thingviewer/screens/channel_detail/channel_detail_screen.dart';
 import 'package:thingviewer/screens/channel_list/channel_list_screen.dart';
 import 'package:thingviewer/screens/channel_status/channel_status_screen.dart';
@@ -562,6 +564,22 @@ void main() {
               field: _fields.first,
               settings: FieldChartSettings.defaults,
               onChanged: (_) {},
+            ),
+            themeMode,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await _checkA11y(tester);
+      });
+
+      testWidgets('channel settings', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            ChannelSettingsScreen(
+              settings: ChannelSettings.defaults,
+              onChanged: (_) {},
+              onEditChannel: () {},
             ),
             themeMode,
           ),

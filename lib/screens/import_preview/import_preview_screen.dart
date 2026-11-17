@@ -314,6 +314,8 @@ class _ImportPreviewScreenState extends State<ImportPreviewScreen> {
             '${l10n.importPreviewValueChange(existing.displayName, diff.incoming.displayName)}';
       case ChannelFieldChange.apiKey:
         return l10n.importPreviewChangeApiKey;
+      case ChannelFieldChange.settings:
+        return l10n.importPreviewChangeChannelSettings;
       case ChannelFieldChange.visibility:
         return '${l10n.importPreviewChangeVisibility}: '
             '${l10n.importPreviewValueChange(_visibilityLabel(l10n, existing.isPublic), _visibilityLabel(l10n, diff.incoming.isPublic))}';

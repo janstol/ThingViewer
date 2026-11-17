@@ -81,12 +81,17 @@ class FieldChartNotifier extends ChangeNotifier {
     this._channel,
     this._field, {
     RangePreset? initialPreset,
+    DateTimeRange? initialRange,
   }) : _cache = List.of(_field.values),
        _invalidCache = Set.of(_field.invalidAt) {
     // Always fetch the initial range from the API on first open. The single
     // cached value from the channel detail screen is not enough to draw a
     // useful chart, and isn't recorded as covered.
-    applyDefault(initialPreset);
+    if (initialRange != null) {
+      applyFilter(initialRange);
+    } else {
+      applyDefault(initialPreset);
+    }
   }
 
   /// Shows [preset], or the last 7 days when it is null.

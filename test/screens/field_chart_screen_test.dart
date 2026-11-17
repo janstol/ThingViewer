@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:thingviewer/api/thingspeak_api.dart';
 import 'package:thingviewer/l10n/app_localizations.dart';
 import 'package:thingviewer/models/channel.dart';
+import 'package:thingviewer/models/channel_settings.dart';
 import 'package:thingviewer/models/field.dart';
 import 'package:thingviewer/models/field_chart_settings.dart';
 import 'package:thingviewer/models/range_preset.dart';
@@ -130,6 +131,119 @@ void main() {
         end: anyNamed('end'),
       ),
     ).thenAnswer((_) async => FieldRange(field: _field, truncated: false));
+  });
+
+  group('channel range settings', () {
+    final field2 = Field(id: 2, label: 'Humidity', values: _field.values);
+    const remembering = Channel(
+      id: 1,
+      serverUrl: 'https://api.thingspeak.com',
+      isPublic: true,
+      settings: ChannelSettings(rememberRange: true),
+    );
+
+    Future<void> openField(
+      WidgetTester tester,
+      Channel channel,
+      Field field,
+      SettingsNotifier settings, {
+      FieldSettingsStorage? fieldSettingsStorage,
+    }) async {
+      await tester.pumpWidget(
+        _wrap(
+          FieldChartScreen(
+            key: ValueKey(field.id),
+            channel: channel,
+            field: field,
+            api: mockApi,
+            settings: settings,
+            fieldSettingsStorage:
+                fieldSettingsStorage ?? await _fieldSettingsStorage(),
+            pinnedFieldsStorage: await _pinnedFieldsStorage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    DateTime lastRequestedStart(int fieldId) =>
+        verify(
+              mockApi.readFieldRange(
+                any,
+                fieldId,
+                apiKey: anyNamed('apiKey'),
+                start: captureAnyNamed('start'),
+                end: anyNamed('end'),
+              ),
+            ).captured.last
+            as DateTime;
+
+    DateTime startOf(RangePreset preset) => preset.rangeEndingAt(_now).start;
+
+    _testWidgetsAtNow('remembering channel opens the next field on the range '
+        'picked on the last one', (tester) async {
+      final settings = await _settings();
+
+      await openField(tester, remembering, _field, settings);
+      await tester.tap(find.text('30d'));
+      await tester.pumpAndSettle();
+      await openField(tester, remembering, field2, settings);
+
+      expect(lastRequestedStart(2), startOf(RangePreset.last30Days));
+    });
+
+    _testWidgetsAtNow('other channels open on their default', (tester) async {
+      final settings = await _settings();
+
+      await openField(tester, _channel, _field, settings);
+      await tester.tap(find.text('30d'));
+      await tester.pumpAndSettle();
+      await openField(tester, _channel, field2, settings);
+
+      expect(lastRequestedStart(2), startOf(RangePreset.last7Days));
+    });
+
+    _testWidgetsAtNow('a chart opens on the channel default range', (
+      tester,
+    ) async {
+      const channel = Channel(
+        id: 1,
+        serverUrl: 'https://api.thingspeak.com',
+        isPublic: true,
+        settings: ChannelSettings(defaultRange: RangePreset.last24Hours),
+      );
+
+      await openField(tester, channel, _field, await _settings());
+
+      expect(lastRequestedStart(1), startOf(RangePreset.last24Hours));
+    });
+
+    _testWidgetsAtNow('a field default range beats the channel default', (
+      tester,
+    ) async {
+      const channel = Channel(
+        id: 1,
+        serverUrl: 'https://api.thingspeak.com',
+        isPublic: true,
+        settings: ChannelSettings(defaultRange: RangePreset.last24Hours),
+      );
+      final fieldSettings = await _fieldSettingsStorage();
+      await fieldSettings.save(
+        channel,
+        _field.id,
+        const FieldChartSettings(defaultRange: RangePreset.last30Days),
+      );
+
+      await openField(
+        tester,
+        channel,
+        _field,
+        await _settings(),
+        fieldSettingsStorage: fieldSettings,
+      );
+
+      expect(lastRequestedStart(1), startOf(RangePreset.last30Days));
+    });
   });
 
   testWidgets(

@@ -14,6 +14,7 @@ import '../../models/channel.dart';
 import '../../models/field.dart';
 import '../../models/field_chart_settings.dart';
 import '../../models/field_stats.dart';
+import '../../models/range_preset.dart';
 import '../../storage/field_settings_storage.dart';
 import '../../storage/pinned_fields_storage.dart';
 import '../../widgets/motion.dart';
@@ -71,11 +72,15 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
       widget.channel,
       widget.field.id,
     );
+    final remembered = widget.channel.settings.rememberRange
+        ? widget.settings.rememberedRange(widget.channel)
+        : null;
     _notifier = FieldChartNotifier(
       widget.api,
       widget.channel,
       widget.field,
-      initialPreset: _chartSettings.defaultRange,
+      initialPreset: remembered == null ? _defaultRange : remembered.preset,
+      initialRange: remembered?.preset == null ? remembered?.range : null,
     );
     _pinned = widget.pinnedFieldsStorage.isPinned(
       widget.channel,
@@ -87,6 +92,32 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
   void dispose() {
     _notifier.dispose();
     super.dispose();
+  }
+
+  /// The field's own default range, else the channel's. Null leaves it to
+  /// the notifier's built-in default.
+  RangePreset? get _defaultRange =>
+      _chartSettings.defaultRange ?? widget.channel.settings.defaultRange;
+
+  /// Records the range the notifier just switched to. The notifier sets its
+  /// range synchronously before fetching, so this can run right after the
+  /// apply call without awaiting it.
+  void _rememberRange() {
+    if (!widget.channel.settings.rememberRange) return;
+    widget.settings.recordRange(widget.channel, (
+      preset: _notifier.activePreset,
+      range: _notifier.range,
+    ));
+  }
+
+  void _applyPreset(RangePreset preset) {
+    _notifier.applyPreset(preset);
+    _rememberRange();
+  }
+
+  void _showLastReading() {
+    _notifier.showLastReading();
+    _rememberRange();
   }
 
   Future<void> _togglePin() async {
@@ -113,7 +144,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
             final rangeChanged =
                 next.defaultRange != _chartSettings.defaultRange;
             setState(() => _chartSettings = next);
-            if (rangeChanged) _notifier.applyDefault(next.defaultRange);
+            if (rangeChanged) _notifier.applyDefault(_defaultRange);
           },
         ),
       ),
@@ -242,7 +273,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
               range: _notifier.range,
               activePreset: _notifier.activePreset,
               settings: widget.settings,
-              onPreset: _notifier.applyPreset,
+              onPreset: _applyPreset,
               onCustom: () => _showFilterSheet(context),
             ),
             Expanded(child: _buildBody(context, l10n, chartTitle)),
@@ -267,7 +298,7 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
           key: const ValueKey('empty'),
           range: range,
           lastReading: _notifier.lastReading,
-          onShowLastReading: _notifier.showLastReading,
+          onShowLastReading: _showLastReading,
         ),
         FieldChartError(
           :final cachedValues,
@@ -407,7 +438,10 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
           FilterSheet(initialRange: _notifier.range, settings: widget.settings),
     );
 
-    if (range != null) _notifier.applyFilter(range);
+    if (range != null) {
+      _notifier.applyFilter(range);
+      _rememberRange();
+    }
   }
 }
 

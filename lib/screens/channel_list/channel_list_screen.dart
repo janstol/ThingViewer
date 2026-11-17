@@ -176,6 +176,12 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
   }
 
   void _openPinnedField(PinnedEntry entry) {
+    // The entry's channel is a copy from its last fetch; channel settings may
+    // have been edited since.
+    final channel = _channels.firstWhere(
+      (c) => c == entry.channel,
+      orElse: () => entry.channel,
+    );
     final snapshot = entry.snapshot;
     final value = snapshot?.value;
     final valueAt = snapshot?.valueAt;
@@ -183,7 +189,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => FieldChartScreen(
-          channel: entry.channel,
+          channel: channel,
           // Seed the field with its cached snapshot value so the chart's
           // default range anchors to it, not to now() — otherwise a field
           // that hasn't reported in a while opens on an empty window even

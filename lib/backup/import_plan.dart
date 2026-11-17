@@ -4,7 +4,7 @@ import 'backup_service.dart';
 
 enum ChannelChange { added, updated, unchanged }
 
-enum ChannelFieldChange { name, apiKey, visibility }
+enum ChannelFieldChange { name, apiKey, visibility, settings }
 
 /// A single app setting tracked by the import preview, together with the
 /// SharedPreferences key(s) it reads/writes. Must stay in sync with the
