@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.50.0'

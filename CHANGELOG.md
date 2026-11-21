@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped AGP to 9.3.1, Gradle to 9.5.0 and the Kotlin Gradle Plugin to 2.4.20, the versions Flutter 3.50 now recommends. AGP 9.3's lint needs a Java 21 runtime, so `mise.toml` and the CI workflows now use JDK 21. The app still targets Java 17 bytecode.
+
 ## [0.15.0] - 2026-11-21
 
 ### Added
