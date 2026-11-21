@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-21
+
 ### Added
 
 - Channel settings, opened with the new button on a channel's screen. They're included in backups. Editing the channel ID, server and API key has moved there too, under "Connection".
@@ -196,6 +198,7 @@ Open-source release: rewritten from a BLoC/get_it/clean-architecture layout into
 - Migrated from Hive/get_it/BLoC to `SharedPreferences` + `ChangeNotifier`.
 - Updated dependencies to their latest versions compatible with existing constraints (`build_runner`, `equatable`, `path_provider_android`, and others).
 
+[0.15.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.15.0
 [0.14.1]: https://github.com/janstol/ThingViewer/releases/tag/v0.14.1
 [0.14.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.14.0
 [0.13.0]: https://github.com/janstol/ThingViewer/releases/tag/v0.13.0
