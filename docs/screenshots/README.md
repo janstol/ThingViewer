@@ -1,6 +1,6 @@
 # Screenshots
 
-The Google Play store listing screenshots. The phone set also illustrates the main README.
+The Google Play store listing screenshots. The phone set and `tablet/03_split_dark.png` also illustrate the main README.
 
 - `phone/`: 1080x1920 (9:16), Play's phone slot
 - `tablet/`: 2560x1440 (16:9), Play's 7-inch and 10-inch tablet slots

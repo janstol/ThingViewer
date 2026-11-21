@@ -12,7 +12,7 @@ Use the [issue templates](https://github.com/janstol/ThingViewer/issues/new/choo
 
 ## Development setup
 
-See [README.md § Development](README.md#development) for the full setup. In short:
+See [docs/development.md](docs/development.md) for the full setup. In short:
 
 ```bash
 mise install          # installs the pinned Flutter version
