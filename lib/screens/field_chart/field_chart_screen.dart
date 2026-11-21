@@ -265,19 +265,23 @@ class _FieldChartScreenState extends State<FieldChartScreen> {
           ),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: _notifier,
-        builder: (context, _) => Column(
-          children: [
-            RangeSelector(
-              range: _notifier.range,
-              activePreset: _notifier.activePreset,
-              settings: widget.settings,
-              onPreset: _applyPreset,
-              onCustom: () => _showFilterSheet(context),
-            ),
-            Expanded(child: _buildBody(context, l10n, chartTitle)),
-          ],
+      // The chart's time axis is the bottom-most content, so the body has to clear the system navigation bar (three-button mode especially) itself.
+      body: SafeArea(
+        top: false,
+        child: ListenableBuilder(
+          listenable: _notifier,
+          builder: (context, _) => Column(
+            children: [
+              RangeSelector(
+                range: _notifier.range,
+                activePreset: _notifier.activePreset,
+                settings: widget.settings,
+                onPreset: _applyPreset,
+                onCustom: () => _showFilterSheet(context),
+              ),
+              Expanded(child: _buildBody(context, l10n, chartTitle)),
+            ],
+          ),
         ),
       ),
     );
